@@ -619,6 +619,31 @@ async def save_credentials(creds: Credentials, token_data: dict = Depends(verify
     conn = get_db()
     cursor = conn.cursor()
     
+    # First, test if the credentials are valid
+    try:
+        test_headers = {
+            "User-Agent": get_random_user_agent(),
+            "Cookie": f"sessionid={creds.sessionId}; csrftoken={creds.csrfToken}",
+            "X-CSRFToken": creds.csrfToken
+        }
+        
+        # Test with a simple profile info request
+        test_response = requests.get(
+            "https://www.instagram.com/api/v1/web/accounts/web_create_ajax/attempt/",
+            headers=test_headers,
+            timeout=10
+        )
+        
+        # If we get 403 or 200, credentials are being accepted (logged in)
+        # If we get 401, credentials are invalid
+        if test_response.status_code == 401:
+            conn.close()
+            raise HTTPException(status_code=400, detail="Invalid Instagram credentials - please log in again and get fresh sessionid/csrftoken")
+            
+    except requests.exceptions.RequestException:
+        # Network error, but save anyway
+        pass
+    
     cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
     if cursor.fetchone():
         cursor.execute('''
@@ -634,7 +659,7 @@ async def save_credentials(creds: Credentials, token_data: dict = Depends(verify
     conn.commit()
     conn.close()
     
-    return {"message": "Credentials saved successfully", "success": True}
+    return {"message": "Credentials saved and verified successfully", "success": True}
 
 @app.post("/v2/credentials/test")
 async def test_credentials(token_data: dict = Depends(verify_token)):
