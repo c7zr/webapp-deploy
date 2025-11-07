@@ -82,7 +82,7 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     
-    # Users table with security enhancements
+    # Users table with security enhancements and approval system
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
             id TEXT PRIMARY KEY,
@@ -92,6 +92,9 @@ def init_db():
             role TEXT DEFAULT 'user',
             isActive INTEGER DEFAULT 1,
             isProtected INTEGER DEFAULT 0,
+            isApproved INTEGER DEFAULT 0,
+            approvedBy TEXT,
+            approvedAt TEXT,
             createdAt TEXT,
             reportCount INTEGER DEFAULT 0,
             failedLoginAttempts INTEGER DEFAULT 0,
@@ -151,8 +154,10 @@ def init_db():
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.utcnow().isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxReportsPerUser', '1000', ?)", (datetime.utcnow().isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxBulkTargets', '200', ?)", (datetime.utcnow().isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxPremiumBulkTargets', '500', ?)", (datetime.utcnow().isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('apiTimeout', '30', ?)", (datetime.utcnow().isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('rateLimitPerMinute', '60', ?)", (datetime.utcnow().isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('requireApproval', 'true', ?)", (datetime.utcnow().isoformat(),))
     
     conn.commit()
     
@@ -162,9 +167,9 @@ def init_db():
         owner_id = "owner_" + hashlib.md5(b"sw4t").hexdigest()
         hashed_pw = bcrypt.hashpw("SwAtNf0!2024#Pr0T3cT3d".encode(), bcrypt.gensalt()).decode()
         cursor.execute('''
-            INSERT INTO users (id, username, email, password, role, isActive, isProtected, createdAt, reportCount)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (owner_id, "sw4t", "owner@swatnfo.com", hashed_pw, "owner", 1, 1, datetime.utcnow().isoformat(), 0))
+            INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (owner_id, "sw4t", "owner@swatnfo.com", hashed_pw, "owner", 1, 1, 1, "system", datetime.utcnow().isoformat(), datetime.utcnow().isoformat(), 0))
         conn.commit()
         print("✅ Owner account created: sw4t")
     
@@ -388,15 +393,28 @@ async def register(user: UserRegister):
     user_id = "user_" + str(uuid.uuid4())[:8]
     hashed_pw = hash_password(user.password)
     
+    # Check if approval is required
+    cursor.execute("SELECT value FROM settings WHERE key = 'requireApproval'")
+    require_approval_setting = cursor.fetchone()
+    require_approval = require_approval_setting and require_approval_setting["value"] == "true"
+    
+    # Set isApproved based on settings
+    is_approved = 0 if require_approval else 1
+    approved_by = None if require_approval else "auto"
+    approved_at = None if require_approval else datetime.utcnow().isoformat()
+    
     cursor.execute('''
-        INSERT INTO users (id, username, email, password, role, isActive, isProtected, createdAt, reportCount, failedLoginAttempts, lastFailedLogin, accountLockedUntil)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (user_id, user.username, email, hashed_pw, "user", 1, 0, datetime.utcnow().isoformat(), 0, 0, None, None))
+        INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts, lastFailedLogin, accountLockedUntil)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (user_id, user.username, email, hashed_pw, "user", 1, 0, is_approved, approved_by, approved_at, datetime.utcnow().isoformat(), 0, 0, None, None))
     
     conn.commit()
     conn.close()
     
-    return {"message": "Account created successfully", "success": True}
+    if require_approval:
+        return {"message": "Account created successfully. Please wait for admin approval before logging in.", "success": True, "requiresApproval": True}
+    else:
+        return {"message": "Account created successfully", "success": True, "requiresApproval": False}
 
 @app.post("/v2/auth/login")
 async def login(credentials: UserLogin):
@@ -455,6 +473,11 @@ async def login(credentials: UserLogin):
     if not user["isActive"]:
         conn.close()
         raise HTTPException(status_code=403, detail="Account is disabled")
+    
+    # Check if account is approved
+    if not user["isApproved"]:
+        conn.close()
+        raise HTTPException(status_code=403, detail="Account is pending approval. Please wait for admin review.")
     
     # Reset failed login attempts on successful login
     cursor.execute("UPDATE users SET failedLoginAttempts = 0, lastFailedLogin = NULL, accountLockedUntil = NULL WHERE id = ?", (user["id"],))
@@ -904,10 +927,11 @@ async def admin_create_user(user_data: dict, token_data: dict = Depends(verify_a
     hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
     user_id = str(uuid.uuid4())
     
+    # Admin-created users are auto-approved
     cursor.execute('''
-        INSERT INTO users (id, username, email, password, role, isActive, isProtected, createdAt, reportCount, failedLoginAttempts)
-        VALUES (?, ?, ?, ?, ?, 1, 0, ?, 0, 0)
-    ''', (user_id, username, email, hashed_password, role, datetime.utcnow().isoformat()))
+        INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts)
+        VALUES (?, ?, ?, ?, ?, 1, 0, 1, ?, ?, ?, 0, 0)
+    ''', (user_id, username, email, hashed_password, role, token_data["username"], datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
     
     conn.commit()
     conn.close()
@@ -1009,10 +1033,12 @@ async def admin_get_config(token_data: dict = Depends(verify_admin)):
     return {
         "maxReportsPerUser": int(settings.get("maxReportsPerUser", "1000")),
         "maxBulkTargets": int(settings.get("maxBulkTargets", "200")),
+        "maxPremiumBulkTargets": int(settings.get("maxPremiumBulkTargets", "500")),
         "apiTimeout": int(settings.get("apiTimeout", "30")),
         "rateLimitPerMinute": int(settings.get("rateLimitPerMinute", "60")),
         "maintenanceMode": settings.get("maintenanceMode", "false") == "true",
-        "registrationEnabled": settings.get("registrationEnabled", "true") == "true"
+        "registrationEnabled": settings.get("registrationEnabled", "true") == "true",
+        "requireApproval": settings.get("requireApproval", "true") == "true"
     }
 
 @app.put("/v2/admin/config")
@@ -1041,6 +1067,104 @@ async def admin_update_config(config_data: dict, token_data: dict = Depends(veri
 @app.get("/v2/admin/logs")
 async def admin_get_logs(limit: int = 100, token_data: dict = Depends(verify_admin)):
     return {"logs": []}
+
+# Pending Accounts Review Routes
+@app.get("/v2/admin/pending-accounts")
+async def get_pending_accounts(token_data: dict = Depends(verify_admin)):
+    """Get list of accounts pending approval"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM users WHERE isApproved = 0 ORDER BY createdAt DESC")
+    pending_users = [dict(row) for row in cursor.fetchall()]
+    
+    conn.close()
+    
+    return {"pendingAccounts": pending_users, "total": len(pending_users)}
+
+@app.post("/v2/admin/approve-account/{user_id}")
+async def approve_account(user_id: str, token_data: dict = Depends(verify_admin)):
+    """Approve a pending account"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    
+    if not user:
+        conn.close()
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user["isApproved"]:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Account is already approved")
+    
+    cursor.execute('''
+        UPDATE users 
+        SET isApproved = 1, approvedBy = ?, approvedAt = ?
+        WHERE id = ?
+    ''', (token_data["username"], datetime.utcnow().isoformat(), user_id))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"message": f"Account {user['username']} approved successfully"}
+
+@app.post("/v2/admin/reject-account/{user_id}")
+async def reject_account(user_id: str, token_data: dict = Depends(verify_admin)):
+    """Reject and delete a pending account"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    
+    if not user:
+        conn.close()
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user["isProtected"]:
+        conn.close()
+        raise HTTPException(status_code=403, detail="Cannot reject protected account")
+    
+    # Delete the user
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    cursor.execute("DELETE FROM credentials WHERE userId = ?", (user_id,))
+    cursor.execute("DELETE FROM reports WHERE userId = ?", (user_id,))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"message": f"Account {user['username']} rejected and deleted"}
+
+@app.put("/v2/admin/assign-role/{user_id}")
+async def assign_role(user_id: str, role_data: dict, token_data: dict = Depends(verify_admin)):
+    """Assign or change user role (user, premium, admin, owner)"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    new_role = role_data.get("role", "").lower()
+    
+    if new_role not in ["user", "premium", "admin", "owner"]:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Invalid role. Must be: user, premium, admin, or owner")
+    
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    
+    if not user:
+        conn.close()
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user["isProtected"] and new_role != "owner":
+        conn.close()
+        raise HTTPException(status_code=403, detail="Cannot change role of protected owner account")
+    
+    cursor.execute("UPDATE users SET role = ? WHERE id = ?", (new_role, user_id))
+    conn.commit()
+    conn.close()
+    
+    return {"message": f"Role updated to {new_role} for user {user['username']}"}
 
 # Blacklist Routes
 @app.get("/v2/admin/blacklist")
