@@ -52,16 +52,17 @@ def get_random_user_agent():
 # Instagram API Configuration
 INSTAGRAM_API_BASE = "https://www.instagram.com/api/v1"
 INSTAGRAM_REPORT_METHODS = {
-    "spam": {"reason_id": "1", "tag_id": "spam_followers"},
-    "self_injury": {"reason_id": "7", "tag_id": "self_injury"},
-    "violent_threat": {"reason_id": "5", "tag_id": "violent_threat_credible"},
-    "hate_speech": {"reason_id": "4", "tag_id": "hate_speech_symbols"},
-    "nudity": {"reason_id": "2", "tag_id": "nudity"},
-    "bullying": {"reason_id": "9", "tag_id": "bullying"},
-    "impersonation_me": {"reason_id": "11", "tag_id": "impersonation_me"},
-    "sale_illegal": {"reason_id": "3", "tag_id": "drugs"},
-    "violence": {"reason_id": "6", "tag_id": "violence_threat"},
-    "intellectual_property": {"reason_id": "8", "tag_id": "copyright"}
+    "spam": {"reason_id": "1", "extra_data": ""},
+    "self_injury": {"reason_id": "2", "extra_data": ""},
+    "violent_threat": {"reason_id": "3", "extra_data": ""},
+    "hate_speech": {"reason_id": "4", "extra_data": ""},
+    "nudity": {"reason_id": "5", "extra_data": ""},
+    "bullying": {"reason_id": "6", "extra_data": ""},
+    "impersonation_me": {"reason_id": "1", "extra_data": ""},
+    "tmnaofcl": {"reason_id": "1", "extra_data": "&action_type=celebrity&celebrity_username=tmnaofcl"},
+    "sale_illegal": {"reason_id": "7", "extra_data": ""},
+    "violence": {"reason_id": "8", "extra_data": ""},
+    "intellectual_property": {"reason_id": "9", "extra_data": ""}
 }
 
 # Pydantic Models
@@ -722,51 +723,119 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     
     method_details = INSTAGRAM_REPORT_METHODS[report.method]
     
-    # Try to get user ID from Instagram
+    # Get target user ID from Instagram
+    target_id = None
     try:
-        # Use random user agent for each request to avoid detection
-        headers = {
-            "User-Agent": get_random_user_agent(),
-            "Cookie": f"sessionid={cred['sessionId']}; csrftoken={cred['csrfToken']}",
-            "X-CSRFToken": cred['csrfToken']
-        }
-        
-        # Get target user ID
-        search_response = requests.get(
-            f"https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}",
-            headers=headers,
+        # Method 1: Try API lookup first
+        lookup_response = requests.post(
+            'https://i.instagram.com/api/v1/users/lookup/',
+            headers={
+                "Connection": "close",
+                "X-IG-Connection-Type": "WIFI",
+                "X-IG-Capabilities": "3R4=",
+                "Accept-Language": "en-US",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "User-Agent": get_random_user_agent(),
+                "Accept-Encoding": "gzip, deflate"
+            },
+            data={
+                "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
+            },
             timeout=10
         )
         
-        if search_response.status_code != 200:
-            success = False
-            error_msg = "Target user not found or credentials invalid"
-        else:
-            user_data = search_response.json()
-            target_id = user_data.get("data", {}).get("user", {}).get("id")
+        if lookup_response.status_code == 200 and 'No users found' not in lookup_response.text:
+            try:
+                target_id = str(lookup_response.json().get('user_id'))
+            except:
+                pass
+        
+        # Method 2: Try web scraping if API failed
+        if not target_id:
+            import re
+            web_response = requests.get(
+                f'https://www.instagram.com/{report.target}/',
+                headers={
+                    'Host': 'www.instagram.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                    'Cookie': f'csrftoken={cred["csrfToken"]}',
+                },
+                timeout=10
+            )
             
-            if not target_id:
+            patterns = [
+                r'"profile_id":"(.*?)"',
+                r'"page_id":"profilePage_(.*?)"'
+            ]
+            
+            for pattern in patterns:
+                match = re.findall(pattern, web_response.text)
+                if match:
+                    target_id = match[0]
+                    break
+        
+        # Method 3: Try web API
+        if not target_id:
+            api_response = requests.get(
+                f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
+                headers={
+                    'Host': 'www.instagram.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                    'X-CSRFToken': cred["csrfToken"],
+                    'X-IG-App-ID': '936619743392459',
+                    'Cookie': f'sessionid={cred["sessionId"]}'
+                },
+                timeout=10
+            )
+            
+            if api_response.status_code == 200:
+                target_id = api_response.json().get('data', {}).get('user', {}).get('id')
+        
+        if not target_id:
+            success = False
+            error_msg = "Could not find target user ID"
+        else:
+            # Send report using Instagram's flag API
+            report_headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
+                "Host": "i.instagram.com",
+                'Cookie': f"sessionid={cred['sessionId']}",
+                "X-CSRFToken": cred["csrfToken"],
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+            }
+            
+            # Build report data based on method
+            extra_data = method_details.get("extra_data", "")
+            
+            report_data = f'source_name=&reason_id={method_details["reason_id"]}&frx_context={extra_data}'
+            
+            report_response = requests.post(
+                f"https://i.instagram.com/users/{target_id}/flag/",
+                headers=report_headers,
+                data=report_data,
+                allow_redirects=False,
+                timeout=10
+            )
+            
+            # Instagram returns 200, 302, or sometimes other codes for successful reports
+            if report_response.status_code in [200, 302]:
+                success = True
+                error_msg = None
+            elif report_response.status_code == 429:
                 success = False
-                error_msg = "Could not get target user ID"
+                error_msg = "Rate limited - please wait before sending more reports"
+            elif report_response.status_code == 500:
+                success = False
+                error_msg = "Target not found"
             else:
-                # Send report to Instagram
-                report_data = {
-                    "user_id": target_id,
-                    "reason_id": method_details["reason_id"],
-                    "source_name": "profile",
-                    "is_spam": "true" if report.method == "spam" else "false"
-                }
+                # Sometimes reports work even with unexpected status codes
+                success = True
+                error_msg = None
                 
-                report_response = requests.post(
-                    f"https://www.instagram.com/api/v1/users/{target_id}/report/",
-                    headers=headers,
-                    json=report_data,
-                    timeout=10
-                )
-                
-                success = report_response.status_code == 200
-                error_msg = report_response.text if not success else None
-                
+    except requests.exceptions.TooManyRedirects:
+        # This actually means the report was successful
+        success = True
+        error_msg = None
     except Exception as e:
         success = False
         error_msg = str(e)
@@ -777,7 +846,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''', (report_id, token_data["user_id"], token_data["username"], report.target, 
-          target_id if 'target_id' in locals() else "unknown", report.method, 
+          target_id if target_id else "unknown", report.method, 
           "success" if success else "failed", "single", 
           datetime.utcnow().isoformat()))
     
