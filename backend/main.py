@@ -155,6 +155,7 @@ def init_db():
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxReportsPerUser', '1000', ?)", (datetime.utcnow().isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxBulkTargets', '200', ?)", (datetime.utcnow().isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxPremiumBulkTargets', '500', ?)", (datetime.utcnow().isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('dailyReportLimit', '100', ?)", (datetime.utcnow().isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('apiTimeout', '30', ?)", (datetime.utcnow().isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('rateLimitPerMinute', '60', ?)", (datetime.utcnow().isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('requireApproval', 'true', ?)", (datetime.utcnow().isoformat(),))
@@ -642,9 +643,39 @@ async def test_credentials(token_data: dict = Depends(verify_token)):
 
 # Reporting Routes
 @app.post("/v2/reports/send")
-async def send_report(report: ReportRequest, token_data: dict = Depends(verify_token)):
+async def send_report(report: ReportRequest, token_data: dict = Depends(verify_token), is_bulk: bool = False):
     conn = get_db()
     cursor = conn.cursor()
+    
+    # Get user info to check role
+    cursor.execute("SELECT role FROM users WHERE id = ?", (token_data["user_id"],))
+    user = cursor.fetchone()
+    user_role = user["role"] if user else "user"
+    
+    # Check if bulk reporting is allowed
+    if is_bulk and user_role not in ["premium", "admin", "owner"]:
+        conn.close()
+        raise HTTPException(
+            status_code=403, 
+            detail="Bulk reporting is exclusive to Premium users. Contact SWATNFO or Xefi for payment to upgrade your account."
+        )
+    
+    # Check daily report limit for regular users (100 reports per day)
+    if user_role == "user":
+        # Get today's date at midnight
+        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        cursor.execute(
+            "SELECT COUNT(*) as count FROM reports WHERE userId = ? AND timestamp >= ?",
+            (token_data["user_id"], today)
+        )
+        daily_count = cursor.fetchone()["count"]
+        
+        if daily_count >= 100:
+            conn.close()
+            raise HTTPException(
+                status_code=429,
+                detail="Daily report limit reached (100/day). Upgrade to Premium for unlimited reports. Contact SWATNFO or Xefi for payment."
+            )
     
     # Check if target is blacklisted
     cursor.execute("SELECT * FROM blacklist WHERE username = ?", (report.target.lower(),))
@@ -745,6 +776,11 @@ async def get_stats(token_data: dict = Depends(verify_token)):
     conn = get_db()
     cursor = conn.cursor()
     
+    # Get user role
+    cursor.execute("SELECT role FROM users WHERE id = ?", (token_data["user_id"],))
+    user = cursor.fetchone()
+    user_role = user["role"] if user else "user"
+    
     cursor.execute("SELECT COUNT(*) as total FROM reports WHERE userId = ?", (token_data["user_id"],))
     total = cursor.fetchone()["total"]
     
@@ -757,13 +793,30 @@ async def get_stats(token_data: dict = Depends(verify_token)):
     cursor.execute("SELECT COUNT(DISTINCT target) as targets FROM reports WHERE userId = ?", (token_data["user_id"],))
     targets = cursor.fetchone()["targets"]
     
+    # Get today's report count for daily limit
+    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    cursor.execute(
+        "SELECT COUNT(*) as count FROM reports WHERE userId = ? AND timestamp >= ?",
+        (token_data["user_id"], today)
+    )
+    daily_count = cursor.fetchone()["count"]
+    
+    # Get daily limit from settings
+    cursor.execute("SELECT value FROM settings WHERE key = 'dailyReportLimit'")
+    daily_limit_row = cursor.fetchone()
+    daily_limit = int(daily_limit_row["value"]) if daily_limit_row else 100
+    
     conn.close()
     
     return {
         "total": total,
         "successful": successful,
         "failed": failed,
-        "targets": targets
+        "targets": targets,
+        "dailyCount": daily_count,
+        "dailyLimit": daily_limit if user_role == "user" else None,
+        "canBulkReport": user_role in ["premium", "admin", "owner"],
+        "role": user_role
     }
 
 @app.get("/v2/reports/recent")
