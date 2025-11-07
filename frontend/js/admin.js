@@ -338,6 +338,8 @@ function showAddUserModal() {
     document.getElementById('modalTitle').textContent = 'Add New User';
     document.getElementById('userEditForm').reset();
     document.getElementById('editUserId').value = '';
+    document.getElementById('editPassword').required = true;
+    document.getElementById('editPassword').placeholder = 'Enter password';
     document.getElementById('userModal').classList.add('active');
 }
 
@@ -353,6 +355,9 @@ async function editUser(userId) {
             document.getElementById('editUserId').value = user.id;
             document.getElementById('editUsername').value = user.username;
             document.getElementById('editEmail').value = user.email;
+            document.getElementById('editPassword').value = '';
+            document.getElementById('editPassword').required = false;
+            document.getElementById('editPassword').placeholder = 'Leave blank to keep current password';
             document.getElementById('editRole').value = user.role;
             document.getElementById('editActive').checked = user.isActive;
             document.getElementById('userModal').classList.add('active');
@@ -367,12 +372,19 @@ async function saveUserChanges(e) {
     e.preventDefault();
     
     const userId = document.getElementById('editUserId').value;
+    const password = document.getElementById('editPassword').value;
+    
     const userData = {
         username: document.getElementById('editUsername').value,
         email: document.getElementById('editEmail').value,
         role: document.getElementById('editRole').value,
         isActive: document.getElementById('editActive').checked
     };
+    
+    // Add password if provided (required for new users, optional for edits)
+    if (password || !userId) {
+        userData.password = password;
+    }
     
     const url = userId 
         ? `/v2/admin/users/${userId}`
@@ -392,7 +404,7 @@ async function saveUserChanges(e) {
             loadUsers();
         } else {
             const data = await response.json();
-            showNotification(data.message || 'Failed to save user', 'error');
+            showNotification(data.detail || data.message || 'Failed to save user', 'error');
         }
     } catch (error) {
         console.error('Error saving user:', error);
