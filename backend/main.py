@@ -616,11 +616,16 @@ async def get_credentials(token_data: dict = Depends(verify_token)):
 
 @app.post("/v2/credentials")
 async def save_credentials(creds: Credentials, token_data: dict = Depends(verify_token)):
+    print(f"🔐 Credential save attempt for user {token_data['user_id']}")
+    print(f"   SessionId: {creds.sessionId[:20]}... (truncated)")
+    print(f"   CsrfToken: {creds.csrfToken[:20]}... (truncated)")
+    
     conn = get_db()
     cursor = conn.cursor()
     
     # First, test if the credentials are valid
     try:
+        print(f"🧪 Testing credentials with Instagram API...")
         test_headers = {
             "User-Agent": get_random_user_agent(),
             "Cookie": f"sessionid={creds.sessionId}; csrftoken={creds.csrfToken}",
@@ -634,29 +639,40 @@ async def save_credentials(creds: Credentials, token_data: dict = Depends(verify
             timeout=10
         )
         
+        print(f"   Test Response Status: {test_response.status_code}")
+        
         # If we get 403 or 200, credentials are being accepted (logged in)
         # If we get 401, credentials are invalid
         if test_response.status_code == 401:
             conn.close()
+            print(f"❌ Credentials rejected by Instagram (401)")
             raise HTTPException(status_code=400, detail="Invalid Instagram credentials - please log in again and get fresh sessionid/csrftoken")
+        
+        print(f"✅ Credentials validated successfully")
             
-    except requests.exceptions.RequestException:
+    except requests.exceptions.RequestException as e:
         # Network error, but save anyway
+        print(f"⚠️ Network error during validation: {e}")
         pass
     
     cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
-    if cursor.fetchone():
+    existing = cursor.fetchone()
+    
+    if existing:
+        print(f"📝 Updating existing credentials for user {token_data['user_id']}")
         cursor.execute('''
             UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?
             WHERE userId = ?
         ''', (creds.sessionId, creds.csrfToken, datetime.utcnow().isoformat(), token_data["user_id"]))
     else:
+        print(f"📝 Inserting new credentials for user {token_data['user_id']}")
         cursor.execute('''
             INSERT INTO credentials (userId, sessionId, csrfToken, updatedAt)
             VALUES (?, ?, ?, ?)
         ''', (token_data["user_id"], creds.sessionId, creds.csrfToken, datetime.utcnow().isoformat()))
     
     conn.commit()
+    print(f"💾 Credentials saved to database successfully")
     conn.close()
     
     return {"message": "Credentials saved and verified successfully", "success": True}
@@ -739,7 +755,11 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     
     if not cred:
         conn.close()
+        print(f"❌ No credentials found for user {token_data['user_id']}")
         raise HTTPException(status_code=400, detail="Please configure Instagram credentials first")
+    
+    print(f"✅ Credentials loaded for user {token_data['user_id']}")
+    print(f"📝 Attempting to report @{report.target} using method: {report.method}")
     
     # Get report method details
     if report.method not in INSTAGRAM_REPORT_METHODS:
@@ -752,6 +772,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     target_id = None
     try:
         # Method 1: Try web API first (most reliable with valid credentials)
+        print(f"🔍 Method 1: Trying web_profile_info API for @{report.target}")
         api_response = requests.get(
             f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
             headers={
@@ -764,14 +785,17 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             timeout=10
         )
         
+        print(f"   Status: {api_response.status_code}")
         if api_response.status_code == 200:
             try:
                 target_id = str(api_response.json()['data']['user']['id'])
-            except:
-                pass
+                print(f"   ✅ Found target ID: {target_id}")
+            except Exception as e:
+                print(f"   ❌ Failed to parse JSON: {e}")
         
         # Method 2: Try web scraping if API failed
         if not target_id:
+            print(f"🔍 Method 2: Trying web scraping for @{report.target}")
             import re
             web_response = requests.get(
                 f'https://www.instagram.com/{report.target}/',
@@ -783,6 +807,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 timeout=10
             )
             
+            print(f"   Status: {web_response.status_code}")
             patterns = [
                 r'"profile_id":"(.*?)"',
                 r'"page_id":"profilePage_(.*?)"'
@@ -792,10 +817,12 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 match = re.findall(pattern, web_response.text)
                 if match:
                     target_id = match[0]
+                    print(f"   ✅ Found target ID via scraping: {target_id}")
                     break
         
         # Method 3: Try mobile API lookup (no auth needed but may be blocked)
         if not target_id:
+            print(f"🔍 Method 3: Trying mobile API lookup for @{report.target}")
             lookup_response = requests.post(
                 'https://i.instagram.com:443/api/v1/users/lookup/',
                 headers={
@@ -814,19 +841,31 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 timeout=10
             )
             
+            print(f"   Status: {lookup_response.status_code}")
+            print(f"   Response preview: {lookup_response.text[:200]}")
             if 'No users found' not in lookup_response.text and '"spam":true' not in lookup_response.text:
                 try:
                     target_id = str(lookup_response.json()['user_id'])
-                except:
-                    pass
+                    print(f"   ✅ Found target ID via mobile API: {target_id}")
+                except Exception as e:
+                    print(f"   ❌ Failed to parse response: {e}")
         
         if not target_id:
             success = False
             error_msg = "Target user not found - please check the username"
+            print(f"❌ All methods failed to find @{report.target}")
         else:
             # Send report using Instagram's flag API
+            user_agent = get_random_user_agent()
+            report_url = f"https://i.instagram.com/users/{target_id}/flag/"
+            
+            print(f"📤 Sending report to Instagram")
+            print(f"   URL: {report_url}")
+            print(f"   Reason ID: {method_details['reason_id']}")
+            print(f"   User-Agent: {user_agent}")
+            
             report_headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
+                "User-Agent": user_agent,
                 "Host": "i.instagram.com",
                 'cookie': f"sessionid={cred['sessionId']}",
                 "X-CSRFToken": cred["csrfToken"],
@@ -839,35 +878,47 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             report_data = f'source_name=&reason_id={method_details["reason_id"]}&frx_context={extra_data}'
             
             report_response = requests.post(
-                f"https://i.instagram.com/users/{target_id}/flag/",
+                report_url,
                 headers=report_headers,
                 data=report_data,
                 allow_redirects=False,
                 timeout=10
             )
             
+            print(f"📨 Instagram Response:")
+            print(f"   Status Code: {report_response.status_code}")
+            print(f"   Response Body: {report_response.text[:500]}")
+            
             # Instagram returns 200, 302, or sometimes other codes for successful reports
             if report_response.status_code in [200, 302]:
                 success = True
                 error_msg = None
+                print(f"✅ Report successful!")
             elif report_response.status_code == 429:
                 success = False
                 error_msg = "Rate limited - please wait before sending more reports"
+                print(f"⚠️ Rate limited by Instagram")
             elif report_response.status_code == 500:
                 success = False
                 error_msg = "Target not found"
+                print(f"❌ Target not found (500)")
             else:
                 # Sometimes reports work even with unexpected status codes
                 success = True
                 error_msg = None
+                print(f"⚠️ Unexpected status {report_response.status_code}, marking as success")
                 
     except requests.exceptions.TooManyRedirects:
         # This actually means the report was successful
         success = True
         error_msg = None
+        print(f"✅ Report successful (redirect)")
     except Exception as e:
         success = False
         error_msg = str(e)
+        print(f"❌ Exception during report: {e}")
+        import traceback
+        traceback.print_exc()
     
     # Log report
     report_id = str(uuid.uuid4())
