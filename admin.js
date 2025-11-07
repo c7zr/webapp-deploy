@@ -89,6 +89,8 @@ function switchTab(tabName) {
         // Load data for the specific tab
         if (tabName === 'users') {
             loadUsers();
+        } else if (tabName === 'pending') {
+            loadPendingAccounts();
         } else if (tabName === 'reports') {
             loadAllReports();
         } else if (tabName === 'blacklist') {
@@ -176,9 +178,123 @@ function getRoleBadge(role) {
     const badges = {
         'owner': '<span class="role-badge owner">Owner</span>',
         'admin': '<span class="role-badge admin">Admin</span>',
+        'premium': '<span class="role-badge premium">Premium</span>',
         'user': '<span class="role-badge user">User</span>'
     };
     return badges[role] || badges['user'];
+}
+
+// Load pending accounts
+async function loadPendingAccounts() {
+    try {
+        const response = await apiCall('/v2/admin/pending-accounts', {
+            method: 'GET'
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            displayPendingAccounts(data.pending_accounts || []);
+        }
+    } catch (error) {
+        console.error('Error loading pending accounts:', error);
+        displayPendingAccounts([]);
+    }
+}
+
+function displayPendingAccounts(accounts) {
+    const tbody = document.getElementById('pendingAccountsBody');
+    
+    if (accounts.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center;">No pending accounts</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = accounts.map(account => {
+        const registered = new Date(account.createdAt).toLocaleDateString() + ' ' + 
+                          new Date(account.createdAt).toLocaleTimeString();
+        
+        return `
+            <tr>
+                <td>${account.username}</td>
+                <td>${account.email}</td>
+                <td>${registered}</td>
+                <td>
+                    <button class="btn btn-success btn-sm" onclick="approveAccount('${account.id}')">Approve</button>
+                    <button class="btn btn-danger btn-sm" onclick="rejectAccount('${account.id}')">Reject</button>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+async function approveAccount(userId) {
+    if (!confirm('Are you sure you want to approve this account?')) {
+        return;
+    }
+    
+    try {
+        const response = await apiCall(`/v2/admin/approve-account/${userId}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            showNotification('Account approved successfully', 'success');
+            loadPendingAccounts(); // Reload the list
+        } else {
+            const error = await response.json();
+            showNotification(error.detail || 'Failed to approve account', 'error');
+        }
+    } catch (error) {
+        console.error('Error approving account:', error);
+        showNotification('Error approving account', 'error');
+    }
+}
+
+async function rejectAccount(userId) {
+    if (!confirm('Are you sure you want to reject and delete this account? This action cannot be undone.')) {
+        return;
+    }
+    
+    try {
+        const response = await apiCall(`/v2/admin/reject-account/${userId}`, {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            showNotification('Account rejected and deleted', 'success');
+            loadPendingAccounts(); // Reload the list
+        } else {
+            const error = await response.json();
+            showNotification(error.detail || 'Failed to reject account', 'error');
+        }
+    } catch (error) {
+        console.error('Error rejecting account:', error);
+        showNotification('Error rejecting account', 'error');
+    }
+}
+
+async function assignRole(userId, newRole) {
+    try {
+        const response = await apiCall(`/v2/admin/assign-role/${userId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ role: newRole })
+        });
+        
+        if (response.ok) {
+            showNotification('Role assigned successfully', 'success');
+            closeEditUserModal();
+            loadUsers(); // Reload users list
+        } else {
+            const error = await response.json();
+            showNotification(error.detail || 'Failed to assign role', 'error');
+        }
+    } catch (error) {
+        console.error('Error assigning role:', error);
+        showNotification('Error assigning role', 'error');
+    }
 }
 
 async function loadAllReports() {
@@ -239,10 +355,12 @@ async function loadSystemConfig() {
             const data = await response.json();
             document.getElementById('maxReportsPerUser').value = data.maxReportsPerUser || 1000;
             document.getElementById('maxBulkTargets').value = data.maxBulkTargets || 200;
+            document.getElementById('maxPremiumBulkTargets').value = data.maxPremiumBulkTargets || 500;
             document.getElementById('apiTimeout').value = data.apiTimeout || 30;
             document.getElementById('rateLimitPerMinute').value = data.rateLimitPerMinute || 60;
             document.getElementById('maintenanceMode').checked = data.maintenanceMode || false;
             document.getElementById('registrationEnabled').checked = data.registrationEnabled !== false;
+            document.getElementById('requireApproval').checked = data.requireApproval || false;
         }
     } catch (error) {
         console.error('Error loading system config:', error);
@@ -255,10 +373,12 @@ async function saveSystemConfig(e) {
     const config = {
         maxReportsPerUser: parseInt(document.getElementById('maxReportsPerUser').value),
         maxBulkTargets: parseInt(document.getElementById('maxBulkTargets').value),
+        maxPremiumBulkTargets: parseInt(document.getElementById('maxPremiumBulkTargets').value),
         apiTimeout: parseInt(document.getElementById('apiTimeout').value),
         rateLimitPerMinute: parseInt(document.getElementById('rateLimitPerMinute').value),
         maintenanceMode: document.getElementById('maintenanceMode').checked,
-        registrationEnabled: document.getElementById('registrationEnabled').checked
+        registrationEnabled: document.getElementById('registrationEnabled').checked,
+        requireApproval: document.getElementById('requireApproval').checked
     };
     
     try {
