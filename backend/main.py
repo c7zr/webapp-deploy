@@ -277,6 +277,13 @@ async def add_security_headers(request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     # Don't add HSTS in development (only HTTPS)
     # response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    
+    # Prevent browser caching for JavaScript and CSS files
+    if request.url.path.endswith(('.js', '.css', '.html')):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    
     return response
 
 @app.get("/", response_class=HTMLResponse)
