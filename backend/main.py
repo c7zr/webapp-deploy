@@ -784,7 +784,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     "Cookie": f'sessionid={cred["sessionId"]}; csrftoken={cred["csrfToken"]}',
                     "Accept-Encoding": "gzip, deflate"
                 },
-                data=f'signed_body=35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}',
+                data='signed_body=35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"' + report.target + '"}}',
                 timeout=10
             )
             
