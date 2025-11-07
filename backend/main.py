@@ -495,8 +495,8 @@ async def login(credentials: UserLogin):
         conn.close()
         raise HTTPException(status_code=403, detail="Account is disabled")
     
-    # Check if account is approved
-    if not user["isApproved"]:
+    # Check if account is approved (skip check if field doesn't exist for backward compatibility)
+    if user.get("isApproved") is not None and not user["isApproved"]:
         conn.close()
         raise HTTPException(status_code=403, detail="Account is pending approval. Please wait for admin review.")
     
