@@ -17,6 +17,7 @@ import sqlite3
 import hashlib
 import uuid
 import os
+import random
 
 # Configuration
 SECRET_KEY = os.environ.get("SECRET_KEY", "swatnfo_secret_key_change_in_production_2025_" + hashlib.sha256(str(datetime.now()).encode()).hexdigest()[:16])
@@ -29,6 +30,24 @@ MAX_LOGIN_ATTEMPTS = 5
 LOGIN_TIMEOUT = 900  # 15 minutes lockout after max attempts
 PASSWORD_MIN_LENGTH = 8
 TOKEN_EXPIRY_DAYS = 7
+
+# Instagram User Agents Pool (for rotation to avoid detection)
+INSTAGRAM_USER_AGENTS = [
+    "Instagram 250.0.0.0.0 Android (30/11; 420dpi; 1080x2340; OnePlus; ONEPLUS A6000; OnePlus6; qcom; en_US; 232834545)",
+    "Instagram 248.0.0.0.0 Android (29/10; 480dpi; 1080x2220; samsung; SM-G973F; beyond1; exynos9820; en_US; 229968015)",
+    "Instagram 251.0.0.0.0 Android (31/12; 560dpi; 1440x3040; samsung; SM-G998B; p3s; exynos2100; en_US; 235678901)",
+    "Instagram 249.0.0.0.0 Android (30/11; 440dpi; 1080x2400; Xiaomi; M2007J20CG; alioth; qcom; en_US; 231234567)",
+    "Instagram 252.0.0.0.0 Android (32/12; 420dpi; 1080x2340; Google; Pixel 6; oriole; google; en_US; 237890123)",
+    "Instagram 247.0.0.0.0 Android (28/9; 480dpi; 1080x2280; Huawei; VOG-L29; HWVOG; kirin980; en_US; 228901234)",
+    "Instagram 253.0.0.0.0 Android (33/13; 560dpi; 1440x3200; OnePlus; LE2125; OnePlus9Pro; qcom; en_US; 240123456)",
+    "Instagram 246.0.0.0.0 Android (29/10; 420dpi; 1080x2400; vivo; V2145; PD2145F; qcom; en_US; 227456789)",
+    "Instagram 254.0.0.0.0 Android (31/12; 480dpi; 1080x2400; OPPO; CPH2247; OP4BA2; qcom; en_US; 242345678)",
+    "Instagram 245.0.0.0.0 Android (30/11; 440dpi; 1080x2340; realme; RMX3085; RE54E4L1; qcom; en_US; 225567890)"
+]
+
+def get_random_user_agent():
+    """Return a random Instagram user agent from the pool"""
+    return random.choice(INSTAGRAM_USER_AGENTS)
 
 # Instagram API Configuration
 INSTAGRAM_API_BASE = "https://www.instagram.com/api/v1"
@@ -628,8 +647,9 @@ async def test_credentials(token_data: dict = Depends(verify_token)):
         return {"valid": False, "message": "No credentials configured"}
     
     try:
+        # Use random user agent for credentials test
         headers = {
-            "User-Agent": "Instagram 250.0.0.0.0 Android",
+            "User-Agent": get_random_user_agent(),
             "Cookie": f"sessionid={cred['sessionId']}"
         }
         response = requests.get(
@@ -704,8 +724,9 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     
     # Try to get user ID from Instagram
     try:
+        # Use random user agent for each request to avoid detection
         headers = {
-            "User-Agent": "Instagram 250.0.0.0.0 Android (30/11; 420dpi; 1080x2340; OnePlus; ONEPLUS A6000; OnePlus6; qcom; en_US; 232834545)",
+            "User-Agent": get_random_user_agent(),
             "Cookie": f"sessionid={cred['sessionId']}; csrftoken={cred['csrfToken']}",
             "X-CSRFToken": cred['csrfToken']
         }
