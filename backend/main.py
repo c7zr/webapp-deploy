@@ -682,6 +682,8 @@ async def save_credentials(creds: Credentials, token_data: dict = Depends(verify
 
 @app.post("/v2/credentials/test")
 async def test_credentials(token_data: dict = Depends(verify_token)):
+    print(f"🧪 Testing credentials for user {token_data['user_id']}")
+    
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
@@ -689,7 +691,10 @@ async def test_credentials(token_data: dict = Depends(verify_token)):
     conn.close()
     
     if not cred:
+        print(f"❌ No credentials found for user {token_data['user_id']}")
         return {"valid": False, "message": "No credentials configured"}
+    
+    print(f"   SessionId: {cred['sessionId'][:20]}... (truncated)")
     
     try:
         # Use random user agent for credentials test
@@ -697,13 +702,24 @@ async def test_credentials(token_data: dict = Depends(verify_token)):
             "User-Agent": get_random_user_agent(),
             "Cookie": f"sessionid={cred['sessionId']}"
         }
+        
+        print(f"   Sending test request to Instagram...")
         response = requests.get(
             "https://www.instagram.com/api/v1/accounts/current_user/",
             headers=headers,
             timeout=10
         )
-        return {"valid": response.status_code == 200}
-    except:
+        
+        print(f"   Response Status: {response.status_code}")
+        
+        if response.status_code == 200:
+            print(f"✅ Credentials are valid!")
+            return {"valid": True, "message": "Credentials are valid"}
+        else:
+            print(f"❌ Credentials invalid (status {response.status_code})")
+            return {"valid": False, "message": f"Invalid credentials (status {response.status_code})"}
+    except Exception as e:
+        print(f"❌ Connection error: {e}")
         return {"valid": False, "message": "Connection error"}
 
 # Reporting Routes
