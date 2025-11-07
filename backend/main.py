@@ -751,28 +751,22 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     # Get target user ID from Instagram
     target_id = None
     try:
-        # Method 1: Try mobile API lookup first
-        lookup_response = requests.post(
-            'https://i.instagram.com:443/api/v1/users/lookup/',
+        # Method 1: Try web API first (most reliable with valid credentials)
+        api_response = requests.get(
+            f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
             headers={
-                "Connection": "close",
-                "X-IG-Connection-Type": "WIFI",
-                "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
-                "X-IG-Capabilities": "3R4=",
-                "Accept-Language": "en-US",
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "User-Agent": "Instagram 99.4.0",
-                "Accept-Encoding": "gzip, deflate"
-            },
-            data={
-                "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
+                'Host': 'www.instagram.com',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                'X-CSRFToken': cred["csrfToken"],
+                'X-IG-App-ID': '936619743392459',
+                'Cookie': f'sessionid={cred["sessionId"]}'
             },
             timeout=10
         )
         
-        if 'No users found' not in lookup_response.text and '"spam":true' not in lookup_response.text:
+        if api_response.status_code == 200:
             try:
-                target_id = str(lookup_response.json()['user_id'])
+                target_id = str(api_response.json()['data']['user']['id'])
             except:
                 pass
         
@@ -800,23 +794,29 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     target_id = match[0]
                     break
         
-        # Method 3: Try web API
+        # Method 3: Try mobile API lookup (no auth needed but may be blocked)
         if not target_id:
-            api_response = requests.get(
-                f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
+            lookup_response = requests.post(
+                'https://i.instagram.com:443/api/v1/users/lookup/',
                 headers={
-                    'Host': 'www.instagram.com',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
-                    'X-CSRFToken': cred["csrfToken"],
-                    'X-IG-App-ID': '936619743392459',
-                    'Cookie': f'sessionid={cred["sessionId"]}'
+                    "Connection": "close",
+                    "X-IG-Connection-Type": "WIFI",
+                    "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
+                    "X-IG-Capabilities": "3R4=",
+                    "Accept-Language": "en-US",
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "User-Agent": "Instagram 99.4.0",
+                    "Accept-Encoding": "gzip, deflate"
+                },
+                data={
+                    "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
                 },
                 timeout=10
             )
             
-            if api_response.status_code == 200:
+            if 'No users found' not in lookup_response.text and '"spam":true' not in lookup_response.text:
                 try:
-                    target_id = str(api_response.json()['data']['user']['id'])
+                    target_id = str(lookup_response.json()['user_id'])
                 except:
                     pass
         
