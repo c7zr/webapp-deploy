@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWATNFO - Admin Dashboard</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">SWATNFO <span class="admin-badge">ADMIN</span></div>
+            <ul class="nav-menu">
+                <li><a href="/admin" class="active">Admin Dashboard</a></li>
+                <li><a href="/dashboard">User Dashboard</a></li>
+                <li><a href="/reporting">Report</a></li>
+                <li><a href="/history">History</a></li>
+            </ul>
+            <div class="profile-dropdown" id="profileDropdown">
+                <div class="profile-button" id="profileButton">
+                    <div class="profile-avatar" id="profileAvatar">U</div>
+                    <span class="profile-name" id="profileName">Admin</span>
+                    <span class="profile-arrow">▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-header">
+                        <div class="username" id="dropdownUsername">Admin</div>
+                        <div class="role" id="dropdownRole">admin</div>
+                    </div>
+                    <a href="/settings" class="dropdown-item">
+                        <i>⚙️</i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="/admin" class="dropdown-item active">
+                        <i>👑</i>
+                        <span>Admin Panel</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="logout(); return false;" class="dropdown-item logout">
+                        <i>🚪</i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="main-content fade-in">
+        <div class="welcome-section">
+            <h1>Admin Dashboard</h1>
+            <p class="subtitle">System Management & Analytics</p>
+        </div>
+        
+        <!-- System Stats -->
+        <div class="admin-stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon">👥</div>
+                <div class="stat-info">
+                    <h3 id="totalUsers">0</h3>
+                    <p>Total Users</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">📊</div>
+                <div class="stat-info">
+                    <h3 id="totalSystemReports">0</h3>
+                    <p>Total Reports</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">✅</div>
+                <div class="stat-info">
+                    <h3 id="systemSuccessRate">0%</h3>
+                    <p>Success Rate</p>
+                </div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon">🟢</div>
+                <div class="stat-info">
+                    <h3 id="activeUsers">0</h3>
+                    <p>Active Today</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Admin Tabs -->
+        <div class="admin-tabs">
+            <button class="tab-btn active" data-tab="users">Users Management</button>
+            <button class="tab-btn" data-tab="reports">All Reports</button>
+            <button class="tab-btn" data-tab="blacklist">Blacklist</button>
+            <button class="tab-btn" data-tab="system">System Settings</button>
+            <button class="tab-btn" data-tab="logs">System Logs</button>
+        </div>
+        
+        <!-- Users Management Tab -->
+        <div id="usersTab" class="admin-tab-content active">
+            <div class="admin-section">
+                <div class="section-header">
+                    <h2>Users Management</h2>
+                    <div class="section-actions">
+                        <input type="text" id="userSearch" placeholder="Search users..." class="search-input">
+                        <button id="addUserBtn" class="btn btn-primary">Add User</button>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Reports</th>
+                                <th>Registered</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- All Reports Tab -->
+        <div id="reportsTab" class="admin-tab-content">
+            <div class="admin-section">
+                <div class="section-header">
+                    <h2>All System Reports</h2>
+                    <div class="section-actions">
+                        <select id="reportStatusFilter" class="select-input">
+                            <option value="all">All Status</option>
+                            <option value="success">Success</option>
+                            <option value="failed">Failed</option>
+                        </select>
+                        <button id="exportReports" class="btn btn-secondary">Export CSV</button>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>User</th>
+                                <th>Target</th>
+                                <th>Method</th>
+                                <th>Status</th>
+                                <th>Timestamp</th>
+                                <th>IP Address</th>
+                            </tr>
+                        </thead>
+                        <tbody id="reportsTableBody">
+                            <!-- Reports will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="pagination">
+                    <button id="prevReportsPage" class="btn btn-secondary">Previous</button>
+                    <span id="reportsPageInfo">Page 1 of 1</span>
+                    <button id="nextReportsPage" class="btn btn-secondary">Next</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Blacklist Tab -->
+        <div id="blacklistTab" class="admin-tab-content">
+            <div class="admin-section">
+                <div class="section-header">
+                    <h2>Blacklisted Accounts</h2>
+                    <div class="section-actions">
+                        <input type="text" id="blacklistSearch" placeholder="Search blacklisted accounts..." class="search-input">
+                        <button onclick="showBlacklistModal()" class="btn btn-primary">Add to Blacklist</button>
+                    </div>
+                </div>
+                
+                <div class="blacklist-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">Total Blacklisted:</span>
+                        <span class="stat-value" id="totalBlacklisted">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Blocked Reports:</span>
+                        <span class="stat-value" id="blockedReports">0</span>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Reason</th>
+                                <th>Added By</th>
+                                <th>Date Added</th>
+                                <th>Blocked Attempts</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="blacklistTableBody">
+                            <!-- Blacklist entries will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- System Settings Tab -->
+        <div id="systemTab" class="admin-tab-content">
+            <div class="admin-section">
+                <h2>System Configuration</h2>
+                
+                <form id="systemConfigForm" class="form">
+                    <h3>Report Limits</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="maxReportsPerUser">Max Reports Per User (Daily)</label>
+                            <input type="number" id="maxReportsPerUser" value="1000">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="maxBulkTargets">Max Bulk Targets</label>
+                            <input type="number" id="maxBulkTargets" value="200">
+                        </div>
+                    </div>
+                    
+                    <h3>Security Settings</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="maxLoginAttempts">Max Login Attempts</label>
+                            <input type="number" id="maxLoginAttempts" value="5">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="lockoutDuration">Lockout Duration (minutes)</label>
+                            <input type="number" id="lockoutDuration" value="15">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="sessionTimeout">Session Timeout (hours)</label>
+                            <input type="number" id="sessionTimeout" value="24">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="minPasswordLength">Min Password Length</label>
+                            <input type="number" id="minPasswordLength" value="8">
+                        </div>
+                    </div>
+                    
+                    <h3>Rate Limiting</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="apiTimeout">API Timeout (seconds)</label>
+                            <input type="number" id="apiTimeout" value="30">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="rateLimitPerMinute">Rate Limit (per minute)</label>
+                            <input type="number" id="rateLimitPerMinute" value="60">
+                        </div>
+                    </div>
+                    
+                    <h3>System Controls</h3>
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="maintenanceMode">
+                            <span>Enable Maintenance Mode</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="registrationEnabled" checked>
+                            <span>Allow New Registrations</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="requireEmailVerification">
+                            <span>Require Email Verification</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="enableLogging" checked>
+                            <span>Enable System Logging</span>
+                        </label>
+                    </div>
+                    
+                    <h3>Report Methods Control</h3>
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="method_spam" checked>
+                            <span>Enable Spam Reports</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="method_harassment" checked>
+                            <span>Enable Harassment Reports</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="method_hate" checked>
+                            <span>Enable Hate Speech Reports</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="method_violence" checked>
+                            <span>Enable Violence Reports</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="method_scam" checked>
+                            <span>Enable Scam Reports</span>
+                        </label>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Configuration</button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- System Logs Tab -->
+        <div id="logsTab" class="admin-tab-content">
+            <div class="admin-section">
+                <div class="section-header">
+                    <h2>System Logs</h2>
+                    <div class="section-actions">
+                        <select id="logLevelFilter" class="select-input">
+                            <option value="all">All Levels</option>
+                            <option value="info">Info</option>
+                            <option value="warning">Warning</option>
+                            <option value="error">Error</option>
+                        </select>
+                        <button id="clearLogs" class="btn btn-danger">Clear Logs</button>
+                    </div>
+                </div>
+                
+                <div class="logs-container" id="logsContainer">
+                    <!-- Logs will be loaded here -->
+                </div>
+            </div>
+        </div>
+        
+        <div class="watermark">Made by SWATNFO - Admin Panel</div>
+    </div>
+    
+    <!-- User Edit Modal -->
+    <div id="userModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Edit User</h2>
+            <form id="userEditForm" class="form">
+                <input type="hidden" id="editUserId">
+                
+                <div class="form-group">
+                    <label for="editUsername">Username</label>
+                    <input type="text" id="editUsername" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="editEmail">Email</label>
+                    <input type="email" id="editEmail" required>
+                </div>
+                
+                <div class="form-group" id="passwordGroup">
+                    <label for="editPassword">Password</label>
+                    <input type="password" id="editPassword" placeholder="Leave blank to keep current password">
+                </div>
+                
+                <div class="form-group">
+                    <label for="editRole">Role</label>
+                    <select id="editRole" class="select-input">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                        <option value="owner">Owner</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox">
+                        <input type="checkbox" id="editActive">
+                        <span>Account Active</span>
+                    </label>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Blacklist Add Modal -->
+    <div id="blacklistModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Add Account to Blacklist</h2>
+            <form id="blacklistAddForm" class="form">
+                <div class="form-group">
+                    <label for="blacklistUsername">Instagram Username</label>
+                    <input type="text" id="blacklistUsername" placeholder="Enter username to blacklist" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="blacklistReason">Reason</label>
+                    <select id="blacklistReason" class="select-input" required>
+                        <option value="">Select reason...</option>
+                        <option value="protected">Protected Account</option>
+                        <option value="staff">Platform Staff</option>
+                        <option value="verified">Verified Account</option>
+                        <option value="legal">Legal Request</option>
+                        <option value="abuse">Abuse Prevention</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="blacklistNotes">Additional Notes (Optional)</label>
+                    <textarea id="blacklistNotes" rows="3" placeholder="Enter any additional information..."></textarea>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="submit" class="btn btn-primary">Add to Blacklist</button>
+                    <button type="button" class="btn btn-secondary close-modal">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>
