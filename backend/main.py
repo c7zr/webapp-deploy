@@ -751,22 +751,28 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     # Get target user ID from Instagram
     target_id = None
     try:
-        # Method 1: Try web API first (most reliable)
-        api_response = requests.get(
-            f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
+        # Method 1: Try mobile API lookup first
+        lookup_response = requests.post(
+            'https://i.instagram.com:443/api/v1/users/lookup/',
             headers={
-                'Host': 'www.instagram.com',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
-                'X-CSRFToken': cred["csrfToken"],
-                'X-IG-App-ID': '936619743392459',
-                'Cookie': f'sessionid={cred["sessionId"]}; csrftoken={cred["csrfToken"]}'
+                "Connection": "close",
+                "X-IG-Connection-Type": "WIFI",
+                "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
+                "X-IG-Capabilities": "3R4=",
+                "Accept-Language": "en-US",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "User-Agent": "Instagram 99.4.0",
+                "Accept-Encoding": "gzip, deflate"
+            },
+            data={
+                "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
             },
             timeout=10
         )
         
-        if api_response.status_code == 200:
+        if 'No users found' not in lookup_response.text and '"spam":true' not in lookup_response.text:
             try:
-                target_id = str(api_response.json().get('data', {}).get('user', {}).get('id'))
+                target_id = str(lookup_response.json()['user_id'])
             except:
                 pass
         
@@ -778,15 +784,14 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 headers={
                     'Host': 'www.instagram.com',
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
-                    'Cookie': f'sessionid={cred["sessionId"]}; csrftoken={cred["csrfToken"]}',
+                    'Cookie': f'csrftoken={cred["csrfToken"]}',
                 },
                 timeout=10
             )
             
             patterns = [
-                r'"profile_id":"(\d+)"',
-                r'"profilePage_(\d+)"',
-                r'"owner":{"id":"(\d+)"'
+                r'"profile_id":"(.*?)"',
+                r'"page_id":"profilePage_(.*?)"'
             ]
             
             for pattern in patterns:
@@ -795,29 +800,23 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     target_id = match[0]
                     break
         
-        # Method 3: Try mobile API lookup
+        # Method 3: Try web API
         if not target_id:
-            lookup_response = requests.post(
-                'https://i.instagram.com/api/v1/users/lookup/',
+            api_response = requests.get(
+                f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
                 headers={
-                    "Connection": "close",
-                    "X-IG-Connection-Type": "WIFI",
-                    "X-IG-Capabilities": "3R4=",
-                    "Accept-Language": "en-US",
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "User-Agent": get_random_user_agent(),
-                    "Cookie": f'sessionid={cred["sessionId"]}; csrftoken={cred["csrfToken"]}',
-                    "Accept-Encoding": "gzip, deflate"
+                    'Host': 'www.instagram.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                    'X-CSRFToken': cred["csrfToken"],
+                    'X-IG-App-ID': '936619743392459',
+                    'Cookie': f'sessionid={cred["sessionId"]}'
                 },
-                data='signed_body=35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"' + report.target + '"}}',
                 timeout=10
             )
             
-            if lookup_response.status_code == 200 and 'No users found' not in lookup_response.text:
+            if api_response.status_code == 200:
                 try:
-                    result = lookup_response.json()
-                    if 'user' in result:
-                        target_id = str(result['user'].get('pk') or result['user'].get('id'))
+                    target_id = str(api_response.json()['data']['user']['id'])
                 except:
                     pass
         
@@ -829,7 +828,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             report_headers = {
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
                 "Host": "i.instagram.com",
-                'Cookie': f"sessionid={cred['sessionId']}",
+                'cookie': f"sessionid={cred['sessionId']}",
                 "X-CSRFToken": cred["csrfToken"],
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
