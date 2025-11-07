@@ -496,9 +496,12 @@ async def login(credentials: UserLogin):
         raise HTTPException(status_code=403, detail="Account is disabled")
     
     # Check if account is approved (skip check if field doesn't exist for backward compatibility)
-    if user.get("isApproved") is not None and not user["isApproved"]:
-        conn.close()
-        raise HTTPException(status_code=403, detail="Account is pending approval. Please wait for admin review.")
+    try:
+        if "isApproved" in user.keys() and not user["isApproved"]:
+            conn.close()
+            raise HTTPException(status_code=403, detail="Account is pending approval. Please wait for admin review.")
+    except (KeyError, IndexError):
+        pass  # Field doesn't exist in old schema, skip check
     
     # Reset failed login attempts on successful login
     cursor.execute("UPDATE users SET failedLoginAttempts = 0, lastFailedLogin = NULL, accountLockedUntil = NULL WHERE id = ?", (user["id"],))
