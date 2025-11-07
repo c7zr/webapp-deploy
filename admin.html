@@ -89,6 +89,7 @@
         <!-- Admin Tabs -->
         <div class="admin-tabs">
             <button class="tab-btn active" data-tab="users">Users Management</button>
+            <button class="tab-btn" data-tab="pending">Pending Accounts</button>
             <button class="tab-btn" data-tab="reports">All Reports</button>
             <button class="tab-btn" data-tab="blacklist">Blacklist</button>
             <button class="tab-btn" data-tab="system">System Settings</button>
@@ -122,6 +123,34 @@
                         </thead>
                         <tbody id="usersTableBody">
                             <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Pending Accounts Tab -->
+        <div id="pendingTab" class="admin-tab-content">
+            <div class="admin-section">
+                <div class="section-header">
+                    <h2>Pending Account Approvals</h2>
+                    <div class="section-actions">
+                        <span id="pendingCount" class="badge">0 pending</span>
+                    </div>
+                </div>
+                
+                <div class="table-container">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Email</th>
+                                <th>Registered</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pendingAccountsTableBody">
+                            <!-- Pending accounts will be loaded here -->
                         </tbody>
                     </table>
                 </div>
@@ -226,8 +255,15 @@
                         </div>
                         
                         <div class="form-group">
-                            <label for="maxBulkTargets">Max Bulk Targets</label>
+                            <label for="maxBulkTargets">Max Bulk Targets (Free Users)</label>
                             <input type="number" id="maxBulkTargets" value="200">
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="maxPremiumBulkTargets">Max Bulk Targets (Premium)</label>
+                            <input type="number" id="maxPremiumBulkTargets" value="500">
                         </div>
                     </div>
                     
@@ -281,6 +317,13 @@
                         <label class="checkbox">
                             <input type="checkbox" id="registrationEnabled" checked>
                             <span>Allow New Registrations</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="requireApproval" checked>
+                            <span>Require Admin Approval for New Accounts</span>
                         </label>
                     </div>
                     
@@ -391,6 +434,7 @@
                     <label for="editRole">Role</label>
                     <select id="editRole" class="select-input">
                         <option value="user">User</option>
+                        <option value="premium">Premium</option>
                         <option value="admin">Admin</option>
                         <option value="owner">Owner</option>
                     </select>
