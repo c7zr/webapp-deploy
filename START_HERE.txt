@@ -1,0 +1,185 @@
+╔═══════════════════════════════════════════════════════════════╗
+║         SWATNFO INSTAGRAM REPORT BOT - WEB APPLICATION       ║
+║                    QUICK START GUIDE                          ║
+╚═══════════════════════════════════════════════════════════════╝
+
+✅ EVERYTHING IS READY! NO MONGODB NEEDED!
+
+═══════════════════════════════════════════════════════════════
+📁 PROJECT STRUCTURE
+═══════════════════════════════════════════════════════════════
+
+WebApp/
+  ├── backend/          → Python FastAPI + SQLite Database
+  │   ├── main.py       → Backend API (All routes included)
+  │   ├── requirements.txt
+  │   └── swatnfo.db    → SQLite database (auto-created)
+  │
+  └── frontend/         → HTML + CSS + JavaScript
+      ├── login.html
+      ├── register.html
+      ├── dashboard.html
+      ├── reporting.html
+      ├── history.html
+      ├── settings.html
+      ├── about.html
+      ├── admin.html
+      ├── css/styles.css
+      └── js/*.js
+
+═══════════════════════════════════════════════════════════════
+🚀 HOW TO START
+═══════════════════════════════════════════════════════════════
+
+STEP 1: Start the Backend Server
+---------------------------------
+Open PowerShell and run:
+
+   cd "c:\Users\awzax\OneDrive\Desktop\Project 7747\WebApp\backend"
+   python main.py
+
+You should see:
+   ✅ SWATNFO Backend Started!
+   ✅ Database: SQLite (no MongoDB needed)
+   ✅ API: http://localhost:8000
+   Default Login: sw4t / SwAtNf0!2024#Pr0T3cT3d
+
+Keep this window open!
+
+
+STEP 2: Open the Frontend
+--------------------------
+Open in your browser:
+   c:\Users\awzax\OneDrive\Desktop\Project 7747\WebApp\frontend\login.html
+
+Or double-click login.html in File Explorer
+
+
+STEP 3: Login
+-------------
+Use the default owner account:
+   Username: sw4t
+   Password: SwAtNf0!2024#Pr0T3cT3d
+
+═══════════════════════════════════════════════════════════════
+🎨 FEATURES INCLUDED
+═══════════════════════════════════════════════════════════════
+
+✅ User Authentication (Register, Login, JWT tokens)
+✅ Dashboard with statistics and quick actions
+✅ Instagram Report Tool (11 report methods)
+   - spam, self_injury, violent_threat, hate_speech
+   - nudity, bullying, impersonation, sale_illegal
+   - violence, intellectual_property, tmnaofcl
+✅ Single & Bulk Report modes
+✅ Report History with filters and search
+✅ User Settings (profile, credentials, password)
+✅ Admin Panel (user management, reports viewer, logs)
+✅ Beautiful Black & Purple Theme
+✅ Responsive Design (works on all devices)
+✅ Real-time progress tracking
+✅ Protected owner account
+
+═══════════════════════════════════════════════════════════════
+🔐 DEFAULT ACCOUNTS
+═══════════════════════════════════════════════════════════════
+
+Owner Account (cannot be deleted):
+   Username: sw4t
+   Password: SwAtNf0!2024#Pr0T3cT3d
+   Role: owner (full admin access)
+
+New users can register at: register.html
+
+═══════════════════════════════════════════════════════════════
+📱 INSTAGRAM CREDENTIALS SETUP
+═══════════════════════════════════════════════════════════════
+
+Before sending reports, configure Instagram credentials:
+
+1. Go to Settings page (after login)
+2. Click "Instagram Credentials"
+3. Enter your Instagram sessionid and csrf_token
+4. Click "Test Connection" to verify
+5. Save credentials
+
+How to get sessionid and csrf_token:
+   1. Login to Instagram in Chrome/Firefox
+   2. Press F12 (Developer Tools)
+   3. Go to "Application" → "Cookies"
+   4. Find "sessionid" and "csrftoken"
+   5. Copy their values
+
+═══════════════════════════════════════════════════════════════
+🛠️ API DOCUMENTATION
+═══════════════════════════════════════════════════════════════
+
+Interactive API Docs:
+   http://localhost:8000/docs
+
+API Base URL:
+   http://localhost:8000
+
+Main Endpoints:
+   POST /v2/auth/register
+   POST /v2/auth/login
+   GET  /v2/user/profile
+   POST /v2/credentials
+   POST /v2/reports/send
+   GET  /v2/reports/history
+   GET  /v2/admin/stats (admin only)
+
+═══════════════════════════════════════════════════════════════
+❌ TROUBLESHOOTING
+═══════════════════════════════════════════════════════════════
+
+Backend won't start:
+   → Install dependencies: pip install -r requirements.txt
+   → Check if port 8000 is free
+
+Can't login:
+   → Make sure backend is running (check http://localhost:8000)
+   → Check browser console for errors (F12)
+   → Use correct credentials (sw4t / SwAtNf0!2024#Pr0T3cT3d)
+
+CORS errors:
+   → Backend already configured for CORS
+   → Make sure you're accessing via file:// or http://
+
+Database errors:
+   → SQLite database auto-creates on first run
+   → If issues, delete swatnfo.db and restart backend
+
+═══════════════════════════════════════════════════════════════
+📝 NOTES
+═══════════════════════════════════════════════════════════════
+
+- No MongoDB installation needed (uses SQLite)
+- All data stored in swatnfo.db file
+- Backend runs on port 8000
+- Frontend is pure HTML/CSS/JS (no build needed)
+- Protected owner account cannot be deleted
+- All passwords hashed with bcrypt
+- JWT tokens expire after 7 days
+
+═══════════════════════════════════════════════════════════════
+🎯 NEXT STEPS
+═══════════════════════════════════════════════════════════════
+
+1. ✅ Start backend: python main.py
+2. ✅ Open login.html in browser
+3. ✅ Login with sw4t account
+4. ✅ Explore dashboard
+5. ✅ Configure Instagram credentials in Settings
+6. ✅ Test single report
+7. ✅ Check history page
+8. ✅ Explore admin panel
+
+═══════════════════════════════════════════════════════════════
+
+Made by SWATNFO 
+Project: SWATNFO Instagram Report Bot v2
+Database: SQLite (no external dependencies)
+API: d3sapiv2
+
+═══════════════════════════════════════════════════════════════

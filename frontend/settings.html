@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWATNFO - Settings</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">SWATNFO</div>
+            <ul class="nav-menu">
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/reporting">Report</a></li>
+                <li><a href="/history">History</a></li>
+                <li><a href="/about">About</a></li>
+            </ul>
+            <div class="profile-dropdown" id="profileDropdown">
+                <div class="profile-button" id="profileButton">
+                    <div class="profile-avatar" id="profileAvatar">U</div>
+                    <span class="profile-name" id="profileName">User</span>
+                    <span class="profile-arrow">▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-header">
+                        <div class="username" id="dropdownUsername">User</div>
+                        <div class="role" id="dropdownRole">user</div>
+                    </div>
+                    <a href="/settings" class="dropdown-item active">
+                        <i>⚙️</i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="/admin" class="dropdown-item" id="adminLink" style="display: none;">
+                        <i>👑</i>
+                        <span>Admin Panel</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="logout(); return false;" class="dropdown-item logout">
+                        <i>🚪</i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="main-content fade-in">
+        <div class="welcome-section">
+            <h1>Settings</h1>
+            <p class="subtitle">Manage your account and credentials</p>
+        </div>
+        
+        <div class="settings-container">
+            <!-- Account Settings -->
+            <div class="settings-section">
+                <h2>Account Information</h2>
+                <form id="accountForm" class="form">
+                    <div class="form-group">
+                        <label for="accountUsername">Username</label>
+                        <input type="text" id="accountUsername" disabled>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="accountEmail">Email</label>
+                        <input type="email" id="accountEmail">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Update Account</button>
+                </form>
+            </div>
+            
+            <!-- Instagram Credentials -->
+            <div class="settings-section">
+                <h2>Instagram Credentials</h2>
+                <p class="help-text">Add your Instagram sessionid and csrf_token for reporting</p>
+                
+                <form id="credentialsForm" class="form">
+                    <div class="form-group">
+                        <label for="sessionId">Session ID</label>
+                        <input type="text" id="sessionId" placeholder="Enter Instagram sessionid">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="csrfToken">CSRF Token</label>
+                        <input type="text" id="csrfToken" placeholder="Enter Instagram csrf_token">
+                    </div>
+                    
+                    <div class="credentials-status" id="credentialsStatus">
+                        <span class="status-dot"></span>
+                        <span class="status-text">Not configured</span>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Save Credentials</button>
+                    <button type="button" id="testCredentials" class="btn btn-secondary">Test Connection</button>
+                </form>
+                
+                <div class="help-section">
+                    <h3>How to get Instagram cookies:</h3>
+                    <ol>
+                        <li>Open Instagram in your browser</li>
+                        <li>Login to your account</li>
+                        <li>Press F12 to open Developer Tools</li>
+                        <li>Go to Application → Cookies → instagram.com</li>
+                        <li>Copy <strong>sessionid</strong> and <strong>csrftoken</strong> values</li>
+                    </ol>
+                </div>
+            </div>
+            
+            <!-- Password Change -->
+            <div class="settings-section">
+                <h2>Change Password</h2>
+                <form id="passwordForm" class="form">
+                    <div class="form-group">
+                        <label for="currentPassword">Current Password</label>
+                        <input type="password" id="currentPassword">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="newPassword">New Password</label>
+                        <input type="password" id="newPassword">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="confirmNewPassword">Confirm New Password</label>
+                        <input type="password" id="confirmNewPassword">
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary">Change Password</button>
+                </form>
+            </div>
+            
+            <!-- Danger Zone -->
+            <div class="settings-section danger-zone">
+                <h2>Danger Zone</h2>
+                <div class="danger-actions">
+                    <button id="clearHistory" class="btn btn-danger">Clear All History</button>
+                    <button id="deleteAccount" class="btn btn-danger">Delete Account</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="watermark">Made by SWATNFO</div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/settings.js"></script>
+</body>
+</html>

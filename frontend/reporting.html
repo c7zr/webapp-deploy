@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWATNFO - Report</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">SWATNFO</div>
+            <ul class="nav-menu">
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/reporting" class="active">Report</a></li>
+                <li><a href="/history">History</a></li>
+                <li><a href="/about">About</a></li>
+            </ul>
+            <div class="profile-dropdown" id="profileDropdown">
+                <div class="profile-button" id="profileButton">
+                    <div class="profile-avatar" id="profileAvatar">U</div>
+                    <span class="profile-name" id="profileName">User</span>
+                    <span class="profile-arrow">▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-header">
+                        <div class="username" id="dropdownUsername">User</div>
+                        <div class="role" id="dropdownRole">user</div>
+                    </div>
+                    <a href="/settings" class="dropdown-item">
+                        <i>⚙️</i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="/admin" class="dropdown-item" id="adminLink" style="display: none;">
+                        <i>👑</i>
+                        <span>Admin Panel</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="logout(); return false;" class="dropdown-item logout">
+                        <i>🚪</i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="main-content fade-in">
+        <div class="welcome-section">
+            <h1>Instagram Reporting</h1>
+            <p class="subtitle">Report Instagram accounts using multiple methods</p>
+        </div>
+        
+        <!-- Instagram Credentials Section -->
+        <div class="credentials-container">
+            <div class="credentials-box">
+                <h2>Instagram Account Credentials</h2>
+                <p class="help-text">Required for reporting. Your credentials are stored locally and never sent to our servers.</p>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="instagramSessionId">Session ID</label>
+                        <input type="text" id="instagramSessionId" placeholder="Enter your Instagram sessionid cookie">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="instagramCsrfToken">CSRF Token</label>
+                        <input type="text" id="instagramCsrfToken" placeholder="Enter your Instagram csrftoken cookie">
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="checkbox">
+                        <input type="checkbox" id="saveCredentials">
+                        <span>Save credentials locally (encrypted)</span>
+                    </label>
+                </div>
+                
+                <div class="credentials-status" id="credentialsStatus">
+                    <span class="status-indicator"></span>
+                    <span class="status-text">No credentials saved</span>
+                </div>
+                
+                <div class="credentials-actions">
+                    <button id="saveCredsBtn" class="btn btn-primary">Save Credentials</button>
+                    <button id="clearCredsBtn" class="btn btn-danger">Clear Credentials</button>
+                    <a href="#" onclick="alert('Guide:\\n\\n1. Open Instagram in your browser\\n2. Press F12 to open DevTools\\n3. Go to Application > Cookies\\n4. Find sessionid and csrftoken\\n5. Copy and paste their values here'); return false;" class="btn-link">How to get credentials?</a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="report-container">
+            <div class="report-mode-selector">
+                <button id="singleModeBtn" class="mode-btn active">Single Report</button>
+                <button id="bulkModeBtn" class="mode-btn">Bulk Report</button>
+            </div>
+            
+            <!-- Single Report Mode -->
+            <div id="singleReportSection" class="report-section">
+                <div class="report-box">
+                    <h2>Single Target Report</h2>
+                    
+                    <div class="form-group">
+                        <label for="singleTarget">Target Username</label>
+                        <input type="text" id="singleTarget" placeholder="Enter Instagram username">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reportMethod">Report Method</label>
+                        <select id="reportMethod" class="select-input">
+                            <option value="spam">1. Spam</option>
+                            <option value="self_injury">2. Self Injury</option>
+                            <option value="violent_threat">3. Violent Threat</option>
+                            <option value="hate_speech">4. Hate Speech</option>
+                            <option value="nudity">5. Nudity</option>
+                            <option value="bullying">6. Bullying</option>
+                            <option value="impersonation_me">7. Impersonation (Me)</option>
+                            <option value="sale_illegal">8. Sale of Illegal Goods</option>
+                            <option value="violence">9. Violence</option>
+                            <option value="intellectual_property">10. Intellectual Property</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="reportCount">Number of Reports</label>
+                        <input type="number" id="reportCount" value="1" min="1" max="1000">
+                    </div>
+                    
+                    <button id="startSingleReport" class="btn btn-primary btn-large">Start Reporting</button>
+                </div>
+            </div>
+            
+            <!-- Bulk Report Mode -->
+            <div id="bulkReportSection" class="report-section" style="display: none;">
+                <div class="report-box">
+                    <h2>Bulk Target Report (Max 200)</h2>
+                    
+                    <div class="form-group">
+                        <label for="bulkMethod">Report Method (All Targets)</label>
+                        <select id="bulkMethod" class="select-input">
+                            <option value="spam">1. Spam</option>
+                            <option value="self_injury">2. Self Injury</option>
+                            <option value="violent_threat">3. Violent Threat</option>
+                            <option value="hate_speech">4. Hate Speech</option>
+                            <option value="nudity">5. Nudity</option>
+                            <option value="bullying">6. Bullying</option>
+                            <option value="impersonation_me">7. Impersonation (Me)</option>
+                            <option value="sale_illegal">8. Sale of Illegal Goods</option>
+                            <option value="violence">9. Violence</option>
+                            <option value="intellectual_property">10. Intellectual Property</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Input Method</label>
+                        <div class="toggle-buttons">
+                            <button id="manualInputBtn" class="toggle-btn active">Manual Input</button>
+                            <button id="fileUploadBtn" class="toggle-btn">File Upload</button>
+                        </div>
+                    </div>
+                    
+                    <div id="manualInputSection">
+                        <div class="form-group">
+                            <label for="bulkTargets">Target Usernames (one per line)</label>
+                            <textarea id="bulkTargets" rows="10" placeholder="username1&#10;username2&#10;username3&#10;..."></textarea>
+                        </div>
+                    </div>
+                    
+                    <div id="fileUploadSection" style="display: none;">
+                        <div class="form-group">
+                            <label for="targetsFile">Upload Targets File (.txt)</label>
+                            <input type="file" id="targetsFile" accept=".txt">
+                            <p class="help-text">Format: One username per line</p>
+                        </div>
+                    </div>
+                    
+                    <button id="startBulkReport" class="btn btn-primary btn-large">Start Bulk Report</button>
+                </div>
+            </div>
+            
+            <!-- Progress Section -->
+            <div id="progressSection" class="progress-section" style="display: none;">
+                <h2>Reporting Progress</h2>
+                
+                <div class="progress-stats">
+                    <div class="progress-stat">
+                        <span class="stat-label">Target:</span>
+                        <span id="currentTarget" class="stat-value">-</span>
+                    </div>
+                    <div class="progress-stat">
+                        <span class="stat-label">Progress:</span>
+                        <span id="progressText" class="stat-value">0/0</span>
+                    </div>
+                    <div class="progress-stat">
+                        <span class="stat-label">Success:</span>
+                        <span id="successCount" class="stat-value success-text">0</span>
+                    </div>
+                    <div class="progress-stat">
+                        <span class="stat-label">Failed:</span>
+                        <span id="failCount" class="stat-value danger-text">0</span>
+                    </div>
+                </div>
+                
+                <div class="progress-bar-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                
+                <div id="liveLog" class="live-log"></div>
+                
+                <button id="stopReport" class="btn btn-danger">Stop Reporting</button>
+            </div>
+            
+            <!-- Results Section -->
+            <div id="resultsSection" class="results-section" style="display: none;">
+                <h2>Report Complete</h2>
+                
+                <div class="results-summary">
+                    <div class="result-card">
+                        <h3 id="totalReported">0</h3>
+                        <p>Total Reports Sent</p>
+                    </div>
+                    <div class="result-card success-card">
+                        <h3 id="totalSuccess">0</h3>
+                        <p>Successful</p>
+                    </div>
+                    <div class="result-card danger-card">
+                        <h3 id="totalFailed">0</h3>
+                        <p>Failed</p>
+                    </div>
+                </div>
+                
+                <div class="results-actions">
+                    <button id="newReport" class="btn btn-primary">New Report</button>
+                    <button id="viewHistory" class="btn btn-secondary">View History</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="watermark">Made by SWATNFO</div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/reporting.js"></script>
+</body>
+</html>

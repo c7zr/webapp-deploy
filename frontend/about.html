@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWATNFO - About</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">SWATNFO</div>
+            <ul class="nav-menu">
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/reporting">Report</a></li>
+                <li><a href="/history">History</a></li>
+                <li><a href="/about" class="active">About</a></li>
+            </ul>
+            <div class="profile-dropdown" id="profileDropdown">
+                <div class="profile-button" id="profileButton">
+                    <div class="profile-avatar" id="profileAvatar">U</div>
+                    <span class="profile-name" id="profileName">User</span>
+                    <span class="profile-arrow">▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-header">
+                        <div class="username" id="dropdownUsername">User</div>
+                        <div class="role" id="dropdownRole">user</div>
+                    </div>
+                    <a href="/settings" class="dropdown-item">
+                        <i>⚙️</i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="/admin" class="dropdown-item" id="adminLink" style="display: none;">
+                        <i>👑</i>
+                        <span>Admin Panel</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="logout(); return false;" class="dropdown-item logout">
+                        <i>🚪</i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="main-content fade-in">
+        <div class="about-container">
+            <div class="about-header">
+                <h1>Instagram Report Bot</h1>
+                <p class="version">Version 2.0.0</p>
+            </div>
+            
+            <div class="about-section">
+                <h2>About This Tool</h2>
+                <p>Instagram Report Bot is a powerful Instagram reporting automation tool designed to help users report violations on Instagram efficiently. Built with modern web technologies.</p>
+            </div>
+            
+            <div class="about-section">
+                <h2>Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">🎯</div>
+                        <h3>10 Report Methods</h3>
+                        <p>Comprehensive reporting options including spam, harassment, violence, and more</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">⚡</div>
+                        <h3>Bulk Reporting</h3>
+                        <p>Report up to 200 accounts simultaneously with advanced queuing</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🔒</div>
+                        <h3>Secure Authentication</h3>
+                        <p>JWT-based authentication for secure access</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">📊</div>
+                        <h3>Real-time Analytics</h3>
+                        <p>Track your reporting history with detailed statistics</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🌐</div>
+                        <h3>Modern API</h3>
+                        <p>Enhanced API with real-time updates</p>
+                    </div>
+                    
+                    <div class="feature-card">
+                        <div class="feature-icon">🎨</div>
+                        <h3>Modern Interface</h3>
+                        <p>Sleek black and purple design with smooth animations</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="about-section">
+                <h2>Report Methods</h2>
+                <div class="methods-list">
+                    <div class="method-item">
+                        <span class="method-number">1</span>
+                        <div class="method-info">
+                            <strong>Spam</strong>
+                            <p>Report accounts posting repetitive or commercial content</p>
+                        </div>
+                    </div>
+                    <div class="method-item">
+                        <span class="method-number">2</span>
+                        <div class="method-info">
+                            <strong>Self Injury</strong>
+                            <p>Report content promoting self-harm or suicide</p>
+                        </div>
+                    </div>
+                    <div class="method-item">
+                        <span class="method-number">3</span>
+                        <div class="method-info">
+                            <strong>Violent Threat</strong>
+                            <p>Report accounts making threats of violence</p>
+                        </div>
+                    </div>
+                    <div class="method-item">
+                        <span class="method-number">4</span>
+                        <div class="method-info">
+                            <strong>Hate Speech</strong>
+                            <p>Report discriminatory or hateful content</p>
+                        </div>
+                    </div>
+                    <div class="method-item">
+                        <span class="method-number">5</span>
+                        <div class="method-info">
+                            <strong>Nudity</strong>
+                            <p>Report inappropriate sexual content</p>
+                        </div>
+                    </div>
+                    <div class="method-item">
+                        <span class="method-number">6</span>
+                        <div class="method-info">
+                            <strong>Bullying</strong>
+                            <p>Report harassment and bullying behavior</p>
+                        </div>
+                    </div>
+                    <div class="method-item">
+                        <span class="method-number">7</span>
+                        <div class="method-info">
+                            <strong>Impersonation (Me)</strong>
+                            <p>Report accounts impersonating you</p>
+                        </div>
+                    </div>
+                    <div class="method-item">
+                        <span class="method-number">8</span>
+                        <div class="method-info">
+                            <strong>Sale of Illegal Goods</strong>
+                            <p>Report accounts selling illegal products</p>
+                        </div>
+                    </div>
+                    <div class="method-item">
+                        <span class="method-number">9</span>
+                        <div class="method-info">
+                            <strong>Violence</strong>
+                            <p>Report graphic violence content</p>
+                        </div>
+                    </div>
+                    <div class="method-item">
+                        <span class="method-number">10</span>
+                        <div class="method-info">
+                            <strong>Intellectual Property</strong>
+                            <p>Report copyright or trademark violations</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="about-section">
+                <h2>Support & Contact</h2>
+                <p>For support, questions, or feedback, join our Discord server:</p>
+                <div class="contact-info">
+                    <p>� Discord Server: <a href="https://discord.gg/zAWGxssHq6" target="_blank" style="color: var(--purple);">https://discord.gg/zAWGxssHq6</a></p>
+                </div>
+            </div>
+            
+            <div class="about-footer">
+                <p>© 2025 Instagram Report Bot. All rights reserved.</p>
+                <p class="disclaimer">This tool is for educational purposes. Use responsibly and in accordance with Instagram's Terms of Service.</p>
+            </div>
+        </div>
+        
+        <div class="watermark">Instagram Report Bot</div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/about.js"></script>
+</body>
+</html>

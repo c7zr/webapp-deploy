@@ -1,0 +1,23 @@
+# Instagram Report Bot Backend Dependencies
+
+# FastAPI Framework - Latest stable versions
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+
+# Authentication & Security - Latest stable versions
+PyJWT>=2.8.0
+bcrypt>=4.1.2
+cryptography>=42.0.0
+
+# HTTP Requests
+requests>=2.31.0
+
+# Database
+# SQLite3 is included with Python - no external database required
+# For production: Use external PostgreSQL/MySQL with environment variables
+
+# Security Notes:
+# - All dependencies pinned to minimum secure versions
+# - Regular updates recommended (pip install --upgrade)
+# - Database should be on separate server in production
+# - Use environment variables for all sensitive config

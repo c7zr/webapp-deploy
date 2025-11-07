@@ -1,0 +1,1117 @@
+# SWATNFO Instagram Report Bot - Backend API (SQLite Version)
+# Made by SWATNFO - d3sapiv2
+
+from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel, EmailStr
+from typing import Optional, List
+from datetime import datetime, timedelta
+from contextlib import asynccontextmanager
+import jwt
+import bcrypt
+import requests
+import sqlite3
+import hashlib
+import uuid
+import os
+
+# Configuration
+SECRET_KEY = os.environ.get("SECRET_KEY", "swatnfo_secret_key_change_in_production_2025_" + hashlib.sha256(str(datetime.now()).encode()).hexdigest()[:16])
+DB_PATH = "swatnfo.db"
+FRONTEND_DIR = os.path.join(os.path.dirname(__file__), "..", "frontend")
+
+# Security Configuration
+security = HTTPBearer()
+MAX_LOGIN_ATTEMPTS = 5
+LOGIN_TIMEOUT = 900  # 15 minutes lockout after max attempts
+PASSWORD_MIN_LENGTH = 8
+TOKEN_EXPIRY_DAYS = 7
+
+# Instagram API Configuration
+INSTAGRAM_API_BASE = "https://www.instagram.com/api/v1"
+INSTAGRAM_REPORT_METHODS = {
+    "spam": {"reason_id": "1", "tag_id": "spam_followers"},
+    "self_injury": {"reason_id": "7", "tag_id": "self_injury"},
+    "violent_threat": {"reason_id": "5", "tag_id": "violent_threat_credible"},
+    "hate_speech": {"reason_id": "4", "tag_id": "hate_speech_symbols"},
+    "nudity": {"reason_id": "2", "tag_id": "nudity"},
+    "bullying": {"reason_id": "9", "tag_id": "bullying"},
+    "impersonation_me": {"reason_id": "11", "tag_id": "impersonation_me"},
+    "sale_illegal": {"reason_id": "3", "tag_id": "drugs"},
+    "violence": {"reason_id": "6", "tag_id": "violence_threat"},
+    "intellectual_property": {"reason_id": "8", "tag_id": "copyright"}
+}
+
+# Pydantic Models
+class UserRegister(BaseModel):
+    username: str
+    email: Optional[str] = None
+    password: str
+
+class UserLogin(BaseModel):
+    username: str
+    password: str
+    remember: bool = False
+
+class UserUpdate(BaseModel):
+    email: Optional[EmailStr] = None
+
+class PasswordChange(BaseModel):
+    currentPassword: str
+    newPassword: str
+
+class Credentials(BaseModel):
+    sessionId: str
+    csrfToken: str
+
+class ReportRequest(BaseModel):
+    target: str
+    method: str
+
+# Database Helper
+def get_db():
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+# Initialize Database
+def init_db():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    # Users table with security enhancements
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            id TEXT PRIMARY KEY,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password TEXT NOT NULL,
+            role TEXT DEFAULT 'user',
+            isActive INTEGER DEFAULT 1,
+            isProtected INTEGER DEFAULT 0,
+            createdAt TEXT,
+            reportCount INTEGER DEFAULT 0,
+            failedLoginAttempts INTEGER DEFAULT 0,
+            lastFailedLogin TEXT,
+            accountLockedUntil TEXT
+        )
+    ''')
+    
+    # Credentials table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS credentials (
+            userId TEXT PRIMARY KEY,
+            sessionId TEXT,
+            csrfToken TEXT,
+            updatedAt TEXT
+        )
+    ''')
+    
+    # Reports table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS reports (
+            id TEXT PRIMARY KEY,
+            userId TEXT,
+            username TEXT,
+            target TEXT,
+            targetId TEXT,
+            method TEXT,
+            status TEXT,
+            type TEXT,
+            timestamp TEXT
+        )
+    ''')
+    
+    # Blacklist table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS blacklist (
+            username TEXT PRIMARY KEY,
+            reason TEXT NOT NULL,
+            notes TEXT,
+            added_by TEXT,
+            blocked_attempts INTEGER DEFAULT 0,
+            created_at TEXT NOT NULL
+        )
+    ''')
+    
+    # Settings table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TEXT
+        )
+    ''')
+    
+    # Initialize default settings
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maintenanceMode', 'false', ?)", (datetime.utcnow().isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.utcnow().isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxReportsPerUser', '1000', ?)", (datetime.utcnow().isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxBulkTargets', '200', ?)", (datetime.utcnow().isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('apiTimeout', '30', ?)", (datetime.utcnow().isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('rateLimitPerMinute', '60', ?)", (datetime.utcnow().isoformat(),))
+    
+    conn.commit()
+    
+    # Create owner account
+    cursor.execute("SELECT * FROM users WHERE username = ?", ("sw4t",))
+    if not cursor.fetchone():
+        owner_id = "owner_" + hashlib.md5(b"sw4t").hexdigest()
+        hashed_pw = bcrypt.hashpw("SwAtNf0!2024#Pr0T3cT3d".encode(), bcrypt.gensalt()).decode()
+        cursor.execute('''
+            INSERT INTO users (id, username, email, password, role, isActive, isProtected, createdAt, reportCount)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (owner_id, "sw4t", "owner@swatnfo.com", hashed_pw, "owner", 1, 1, datetime.utcnow().isoformat(), 0))
+        conn.commit()
+        print("✅ Owner account created: sw4t")
+    
+    conn.close()
+
+# Lifespan
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    init_db()
+    print("=" * 50)
+    print("✅ SWATNFO Backend Started!")
+    print("✅ Database: SQLite (no MongoDB needed)")
+    print("✅ API: http://localhost:8000")
+    print("✅ Docs: http://localhost:8000/docs")
+    print("=" * 50)
+    print("Default Login: sw4t / SwAtNf0!2024#Pr0T3cT3d")
+    print("=" * 50)
+    yield
+
+# FastAPI App
+app = FastAPI(title="SWATNFO API v2", version="2.0.0", lifespan=lifespan)
+
+# Mount static files (CSS, JS)
+app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND_DIR, "css")), name="css")
+app.mount("/js", StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")), name="js")
+app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="assets")
+
+# CORS - Restrict in production
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],  # Restrict origins
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Only allow necessary methods
+    allow_headers=["Content-Type", "Authorization"],  # Only necessary headers
+)
+
+# Rate limiting storage (in-memory, use Redis in production)
+rate_limit_storage = {}
+
+def check_rate_limit(identifier: str, max_requests: int = 10, window_seconds: int = 60) -> bool:
+    """Simple rate limiter - blocks excessive requests"""
+    now = datetime.utcnow()
+    
+    if identifier not in rate_limit_storage:
+        rate_limit_storage[identifier] = []
+    
+    # Clean old requests outside the time window
+    rate_limit_storage[identifier] = [
+        req_time for req_time in rate_limit_storage[identifier]
+        if (now - req_time).total_seconds() < window_seconds
+    ]
+    
+    # Check if limit exceeded
+    if len(rate_limit_storage[identifier]) >= max_requests:
+        return False
+    
+    # Add current request
+    rate_limit_storage[identifier].append(now)
+    return True
+
+# Helper Functions
+def hash_password(password: str) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+def verify_password(password: str, hashed: str) -> bool:
+    return bcrypt.checkpw(password.encode(), hashed.encode())
+
+def create_token(user_id: str, username: str, role: str, remember: bool = False) -> str:
+    expiry = timedelta(days=TOKEN_EXPIRY_DAYS) if remember else timedelta(hours=12)
+    payload = {
+        "user_id": user_id,
+        "username": username,
+        "role": role,
+        "exp": datetime.utcnow() + expiry,
+        "iat": datetime.utcnow(),
+        "jti": str(uuid.uuid4())  # Unique token ID
+    }
+    return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
+
+async def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    try:
+        token = credentials.credentials
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users WHERE id = ?", (payload["user_id"],))
+        user = cursor.fetchone()
+        conn.close()
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return payload
+    except jwt.ExpiredSignatureError:
+        raise HTTPException(status_code=401, detail="Token expired")
+    except jwt.InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+async def verify_admin(token_data: dict = Depends(verify_token)):
+    if token_data["role"] not in ["admin", "owner"]:
+        raise HTTPException(status_code=403, detail="Admin access required")
+    return token_data
+
+# Routes
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request, call_next):
+    response = await call_next(request)
+    # XSS Protection
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    # Don't add HSTS in development (only HTTPS)
+    # response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Redirect to login page"""
+    return RedirectResponse(url="/login")
+
+@app.get("/login", response_class=HTMLResponse)
+async def login_page():
+    """Serve login page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "login.html"))
+
+@app.get("/register", response_class=HTMLResponse)
+async def register_page():
+    """Serve register page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "register.html"))
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard_page():
+    """Serve dashboard page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "dashboard.html"))
+
+@app.get("/reporting", response_class=HTMLResponse)
+async def reporting_page():
+    """Serve reporting page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "reporting.html"))
+
+@app.get("/history", response_class=HTMLResponse)
+async def history_page():
+    """Serve history page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "history.html"))
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page():
+    """Serve settings page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "settings.html"))
+
+@app.get("/about", response_class=HTMLResponse)
+async def about_page():
+    """Serve about page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "about.html"))
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page():
+    """Serve admin page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "admin.html"))
+
+@app.get("/api")
+async def api_info():
+    return {
+        "name": "Instagram Report Bot API",
+        "version": "2.0.0",
+        "status": "online"
+    }
+
+# Auth Routes
+@app.post("/v2/auth/register")
+async def register(user: UserRegister):
+    # Rate limiting for registration
+    rate_limit_key = f"register_{user.email if user.email else user.username}"
+    if not check_rate_limit(rate_limit_key, max_requests=3, window_seconds=300):
+        raise HTTPException(status_code=429, detail="Too many registration attempts. Please try again later.")
+    
+    # Validate password strength
+    if len(user.password) < PASSWORD_MIN_LENGTH:
+        raise HTTPException(status_code=400, detail=f"Password must be at least {PASSWORD_MIN_LENGTH} characters long")
+    
+    # Check for password complexity
+    if not any(c.isupper() for c in user.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
+    if not any(c.islower() for c in user.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one lowercase letter")
+    if not any(c.isdigit() for c in user.password):
+        raise HTTPException(status_code=400, detail="Password must contain at least one number")
+    
+    # Validate username (alphanumeric and underscores only)
+    if not user.username.replace('_', '').isalnum():
+        raise HTTPException(status_code=400, detail="Username can only contain letters, numbers, and underscores")
+    
+    if len(user.username) < 3 or len(user.username) > 20:
+        raise HTTPException(status_code=400, detail="Username must be between 3 and 20 characters")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Check if username exists
+    cursor.execute("SELECT * FROM users WHERE username = ?", (user.username,))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    # Check if email exists (only if provided)
+    if user.email:
+        cursor.execute("SELECT * FROM users WHERE email = ?", (user.email,))
+        if cursor.fetchone():
+            conn.close()
+            raise HTTPException(status_code=400, detail="Email already exists")
+    
+    # Use provided email or generate placeholder
+    email = user.email if user.email else f"{user.username}@local.user"
+    
+    user_id = "user_" + str(uuid.uuid4())[:8]
+    hashed_pw = hash_password(user.password)
+    
+    cursor.execute('''
+        INSERT INTO users (id, username, email, password, role, isActive, isProtected, createdAt, reportCount, failedLoginAttempts, lastFailedLogin, accountLockedUntil)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (user_id, user.username, email, hashed_pw, "user", 1, 0, datetime.utcnow().isoformat(), 0, 0, None, None))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"message": "Account created successfully", "success": True}
+
+@app.post("/v2/auth/login")
+async def login(credentials: UserLogin):
+    # Rate limiting for login attempts
+    if not check_rate_limit(f"login_{credentials.username}", max_requests=5, window_seconds=300):
+        raise HTTPException(status_code=429, detail="Too many login attempts. Please try again in 5 minutes.")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Check if username exists (use parameterized queries to prevent SQL injection)
+    cursor.execute("SELECT * FROM users WHERE username = ?", (credentials.username,))
+    user = cursor.fetchone()
+    
+    if not user:
+        conn.close()
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    
+    # Check if account is locked
+    if user["accountLockedUntil"]:
+        locked_until = datetime.fromisoformat(user["accountLockedUntil"])
+        if datetime.utcnow() < locked_until:
+            conn.close()
+            raise HTTPException(status_code=403, detail=f"Account locked due to too many failed login attempts. Try again later.")
+        else:
+            # Unlock account if time has passed
+            cursor.execute("UPDATE users SET failedLoginAttempts = 0, accountLockedUntil = NULL WHERE id = ?", (user["id"],))
+            conn.commit()
+    
+    # Verify password
+    if not verify_password(credentials.password, user["password"]):
+        # Increment failed login attempts
+        failed_attempts = user["failedLoginAttempts"] + 1
+        
+        if failed_attempts >= MAX_LOGIN_ATTEMPTS:
+            # Lock account
+            locked_until = datetime.utcnow() + timedelta(seconds=LOGIN_TIMEOUT)
+            cursor.execute(
+                "UPDATE users SET failedLoginAttempts = ?, lastFailedLogin = ?, accountLockedUntil = ? WHERE id = ?",
+                (failed_attempts, datetime.utcnow().isoformat(), locked_until.isoformat(), user["id"])
+            )
+            conn.commit()
+            conn.close()
+            raise HTTPException(status_code=403, detail=f"Account locked due to too many failed login attempts. Try again in {LOGIN_TIMEOUT//60} minutes.")
+        else:
+            # Update failed attempts
+            cursor.execute(
+                "UPDATE users SET failedLoginAttempts = ?, lastFailedLogin = ? WHERE id = ?",
+                (failed_attempts, datetime.utcnow().isoformat(), user["id"])
+            )
+            conn.commit()
+            conn.close()
+            raise HTTPException(status_code=401, detail=f"Invalid credentials. {MAX_LOGIN_ATTEMPTS - failed_attempts} attempts remaining.")
+    
+    # Check if account is active
+    if not user["isActive"]:
+        conn.close()
+        raise HTTPException(status_code=403, detail="Account is disabled")
+    
+    # Reset failed login attempts on successful login
+    cursor.execute("UPDATE users SET failedLoginAttempts = 0, lastFailedLogin = NULL, accountLockedUntil = NULL WHERE id = ?", (user["id"],))
+    conn.commit()
+    conn.close()
+    
+    # Create token with remember option
+    token = create_token(user["id"], user["username"], user["role"], credentials.remember)
+    
+    return {
+        "token": token,
+        "user": {
+            "id": user["id"],
+            "username": user["username"],
+            "email": user["email"],
+            "role": user["role"]
+        }
+    }
+
+# User Routes
+@app.get("/v2/user/profile")
+async def get_profile(token_data: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (token_data["user_id"],))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    return {
+        "username": user["username"],
+        "email": user["email"],
+        "role": user["role"],
+        "reportCount": user["reportCount"],
+        "createdAt": user["createdAt"]
+    }
+
+@app.put("/v2/user/update")
+async def update_user(update: UserUpdate, token_data: dict = Depends(verify_token)):
+    if update.email:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET email = ? WHERE id = ?", (update.email, token_data["user_id"]))
+        conn.commit()
+        
+        cursor.execute("SELECT * FROM users WHERE id = ?", (token_data["user_id"],))
+        user = cursor.fetchone()
+        conn.close()
+        
+        return {"message": "Profile updated", "user": {
+            "username": user["username"],
+            "email": user["email"]
+        }}
+    return {"message": "Nothing to update"}
+
+@app.put("/v2/user/password")
+async def change_password(change: PasswordChange, token_data: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (token_data["user_id"],))
+    user = cursor.fetchone()
+    
+    if not verify_password(change.currentPassword, user["password"]):
+        conn.close()
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    
+    new_hash = hash_password(change.newPassword)
+    cursor.execute("UPDATE users SET password = ? WHERE id = ?", (new_hash, token_data["user_id"]))
+    conn.commit()
+    conn.close()
+    
+    return {"message": "Password changed successfully"}
+
+@app.delete("/v2/user/delete")
+async def delete_user(token_data: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (token_data["user_id"],))
+    user = cursor.fetchone()
+    
+    if user["isProtected"]:
+        conn.close()
+        raise HTTPException(status_code=403, detail="Protected account cannot be deleted")
+    
+    cursor.execute("DELETE FROM users WHERE id = ?", (token_data["user_id"],))
+    cursor.execute("DELETE FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    cursor.execute("DELETE FROM reports WHERE userId = ?", (token_data["user_id"],))
+    conn.commit()
+    conn.close()
+    
+    return {"message": "Account deleted successfully"}
+
+# Credentials Routes
+@app.get("/v2/credentials")
+async def get_credentials(token_data: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    cred = cursor.fetchone()
+    conn.close()
+    
+    if not cred:
+        return {"credentials": None, "configured": False}
+    
+    return {
+        "credentials": {
+            "sessionId": cred["sessionId"],
+            "csrfToken": cred["csrfToken"],
+            "isValid": True
+        },
+        "configured": True
+    }
+
+@app.post("/v2/credentials")
+async def save_credentials(creds: Credentials, token_data: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    if cursor.fetchone():
+        cursor.execute('''
+            UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?
+            WHERE userId = ?
+        ''', (creds.sessionId, creds.csrfToken, datetime.utcnow().isoformat(), token_data["user_id"]))
+    else:
+        cursor.execute('''
+            INSERT INTO credentials (userId, sessionId, csrfToken, updatedAt)
+            VALUES (?, ?, ?, ?)
+        ''', (token_data["user_id"], creds.sessionId, creds.csrfToken, datetime.utcnow().isoformat()))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"message": "Credentials saved successfully", "success": True}
+
+@app.post("/v2/credentials/test")
+async def test_credentials(token_data: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    cred = cursor.fetchone()
+    conn.close()
+    
+    if not cred:
+        return {"valid": False, "message": "No credentials configured"}
+    
+    try:
+        headers = {
+            "User-Agent": "Instagram 250.0.0.0.0 Android",
+            "Cookie": f"sessionid={cred['sessionId']}"
+        }
+        response = requests.get(
+            "https://www.instagram.com/api/v1/accounts/current_user/",
+            headers=headers,
+            timeout=10
+        )
+        return {"valid": response.status_code == 200}
+    except:
+        return {"valid": False, "message": "Connection error"}
+
+# Reporting Routes
+@app.post("/v2/reports/send")
+async def send_report(report: ReportRequest, token_data: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Check if target is blacklisted
+    cursor.execute("SELECT * FROM blacklist WHERE username = ?", (report.target.lower(),))
+    blacklisted = cursor.fetchone()
+    
+    if blacklisted:
+        # Increment blocked attempts
+        cursor.execute("UPDATE blacklist SET blocked_attempts = blocked_attempts + 1 WHERE username = ?", (report.target.lower(),))
+        conn.commit()
+        conn.close()
+        raise HTTPException(status_code=403, detail=f"Target @{report.target} is blacklisted and cannot be reported")
+    
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    cred = cursor.fetchone()
+    
+    if not cred:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Please configure Instagram credentials first")
+    
+    # Get report method details
+    if report.method not in INSTAGRAM_REPORT_METHODS:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Invalid report method")
+    
+    method_details = INSTAGRAM_REPORT_METHODS[report.method]
+    
+    # Try to get user ID from Instagram
+    try:
+        headers = {
+            "User-Agent": "Instagram 250.0.0.0.0 Android (30/11; 420dpi; 1080x2340; OnePlus; ONEPLUS A6000; OnePlus6; qcom; en_US; 232834545)",
+            "Cookie": f"sessionid={cred['sessionId']}; csrftoken={cred['csrfToken']}",
+            "X-CSRFToken": cred['csrfToken']
+        }
+        
+        # Get target user ID
+        search_response = requests.get(
+            f"https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}",
+            headers=headers,
+            timeout=10
+        )
+        
+        if search_response.status_code != 200:
+            success = False
+            error_msg = "Target user not found or credentials invalid"
+        else:
+            user_data = search_response.json()
+            target_id = user_data.get("data", {}).get("user", {}).get("id")
+            
+            if not target_id:
+                success = False
+                error_msg = "Could not get target user ID"
+            else:
+                # Send report to Instagram
+                report_data = {
+                    "user_id": target_id,
+                    "reason_id": method_details["reason_id"],
+                    "source_name": "profile",
+                    "is_spam": "true" if report.method == "spam" else "false"
+                }
+                
+                report_response = requests.post(
+                    f"https://www.instagram.com/api/v1/users/{target_id}/report/",
+                    headers=headers,
+                    json=report_data,
+                    timeout=10
+                )
+                
+                success = report_response.status_code == 200
+                error_msg = report_response.text if not success else None
+                
+    except Exception as e:
+        success = False
+        error_msg = str(e)
+    
+    # Log report
+    report_id = str(uuid.uuid4())
+    cursor.execute('''
+        INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (report_id, token_data["user_id"], token_data["username"], report.target, 
+          target_id if 'target_id' in locals() else "unknown", report.method, 
+          "success" if success else "failed", "single", 
+          datetime.utcnow().isoformat()))
+    
+    if success:
+        cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+    
+    conn.commit()
+    conn.close()
+    
+    if success:
+        return {"success": True, "message": "Report sent successfully"}
+    else:
+        return {"success": False, "message": error_msg or "Report failed"}
+
+@app.get("/v2/reports/stats")
+async def get_stats(token_data: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) as total FROM reports WHERE userId = ?", (token_data["user_id"],))
+    total = cursor.fetchone()["total"]
+    
+    cursor.execute("SELECT COUNT(*) as success FROM reports WHERE userId = ? AND status = 'success'", (token_data["user_id"],))
+    successful = cursor.fetchone()["success"]
+    
+    cursor.execute("SELECT COUNT(*) as failed FROM reports WHERE userId = ? AND status = 'failed'", (token_data["user_id"],))
+    failed = cursor.fetchone()["failed"]
+    
+    cursor.execute("SELECT COUNT(DISTINCT target) as targets FROM reports WHERE userId = ?", (token_data["user_id"],))
+    targets = cursor.fetchone()["targets"]
+    
+    conn.close()
+    
+    return {
+        "total": total,
+        "successful": successful,
+        "failed": failed,
+        "targets": targets
+    }
+
+@app.get("/v2/reports/recent")
+async def get_recent_reports(limit: int = 10, token_data: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT * FROM reports WHERE userId = ? ORDER BY timestamp DESC LIMIT ?
+    ''', (token_data["user_id"], limit))
+    reports = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return {"reports": reports}
+
+@app.get("/v2/reports/history")
+async def get_history(
+    page: int = 1,
+    limit: int = 50,
+    status: str = "all",
+    method: str = "all",
+    search: str = "",
+    token_data: dict = Depends(verify_token)
+):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    query = "SELECT * FROM reports WHERE userId = ?"
+    params = [token_data["user_id"]]
+    
+    if status != "all":
+        query += " AND status = ?"
+        params.append(status)
+    if method != "all":
+        query += " AND method = ?"
+        params.append(method)
+    if search:
+        query += " AND target LIKE ?"
+        params.append(f"%{search}%")
+    
+    query += " ORDER BY timestamp DESC LIMIT ? OFFSET ?"
+    params.extend([limit, (page - 1) * limit])
+    
+    cursor.execute(query, params)
+    reports = [dict(row) for row in cursor.fetchall()]
+    
+    # Get stats
+    cursor.execute("SELECT COUNT(*) as total FROM reports WHERE userId = ?", (token_data["user_id"],))
+    total_reports = cursor.fetchone()["total"]
+    
+    cursor.execute("SELECT COUNT(*) as success FROM reports WHERE userId = ? AND status = 'success'", (token_data["user_id"],))
+    success_count = cursor.fetchone()["success"]
+    
+    cursor.execute("SELECT COUNT(*) as failed FROM reports WHERE userId = ? AND status = 'failed'", (token_data["user_id"],))
+    failed_count = cursor.fetchone()["failed"]
+    
+    conn.close()
+    
+    return {
+        "reports": reports,
+        "stats": {
+            "total": total_reports,
+            "successful": success_count,
+            "failed": failed_count
+        },
+        "pagination": {
+            "currentPage": page,
+            "totalPages": (len(reports) + limit - 1) // limit if reports else 1,
+            "total": len(reports)
+        }
+    }
+
+@app.delete("/v2/reports/clear")
+async def clear_history(token_data: dict = Depends(verify_token)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM reports WHERE userId = ?", (token_data["user_id"],))
+    conn.commit()
+    conn.close()
+    return {"message": "History cleared successfully"}
+
+# Admin Routes
+@app.get("/v2/admin/stats")
+async def admin_stats(token_data: dict = Depends(verify_admin)):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT COUNT(*) as total FROM users")
+    total_users = cursor.fetchone()["total"]
+    
+    cursor.execute("SELECT COUNT(*) as total FROM reports")
+    total_reports = cursor.fetchone()["total"]
+    
+    cursor.execute("SELECT COUNT(*) as success FROM reports WHERE status = 'success'")
+    successful = cursor.fetchone()["success"]
+    
+    success_rate = (successful / total_reports * 100) if total_reports > 0 else 0
+    
+    conn.close()
+    
+    return {
+        "totalUsers": total_users,
+        "totalReports": total_reports,
+        "successRate": round(success_rate, 1),
+        "activeToday": 0
+    }
+
+@app.get("/v2/admin/users")
+async def admin_get_users(token_data: dict = Depends(verify_admin)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users")
+    users = [dict(row) for row in cursor.fetchall()]
+    conn.close()
+    
+    return {"users": users}
+
+@app.get("/v2/admin/users/{user_id}")
+async def admin_get_user(user_id: str, token_data: dict = Depends(verify_admin)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    conn.close()
+    
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return dict(user)
+
+@app.post("/v2/admin/users")
+async def admin_create_user(user_data: dict, token_data: dict = Depends(verify_admin)):
+    """Admin endpoint to create new user"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    username = user_data.get("username", "").strip()
+    email = user_data.get("email", "").strip()
+    password = user_data.get("password", "")
+    role = user_data.get("role", "user")
+    
+    if not username or not email or not password:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Username, email, and password are required")
+    
+    if len(password) < PASSWORD_MIN_LENGTH:
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"Password must be at least {PASSWORD_MIN_LENGTH} characters")
+    
+    # Check if username exists
+    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Username already exists")
+    
+    # Check if email exists
+    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Email already exists")
+    
+    # Hash password
+    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+    user_id = str(uuid.uuid4())
+    
+    cursor.execute('''
+        INSERT INTO users (id, username, email, password, role, isActive, isProtected, createdAt, reportCount, failedLoginAttempts)
+        VALUES (?, ?, ?, ?, ?, 1, 0, ?, 0, 0)
+    ''', (user_id, username, email, hashed_password, role, datetime.utcnow().isoformat()))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"message": f"User {username} created successfully", "userId": user_id}
+
+@app.put("/v2/admin/users/{user_id}")
+async def admin_update_user(user_id: str, user_data: dict, token_data: dict = Depends(verify_admin)):
+    """Admin endpoint to update user"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    
+    if not user:
+        conn.close()
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Build update query dynamically
+    updates = []
+    params = []
+    
+    if "email" in user_data:
+        updates.append("email = ?")
+        params.append(user_data["email"])
+    
+    if "role" in user_data:
+        updates.append("role = ?")
+        params.append(user_data["role"])
+    
+    if "isActive" in user_data:
+        updates.append("isActive = ?")
+        params.append(1 if user_data["isActive"] else 0)
+    
+    if updates:
+        params.append(user_id)
+        query = f"UPDATE users SET {', '.join(updates)} WHERE id = ?"
+        cursor.execute(query, params)
+        conn.commit()
+    
+    conn.close()
+    return {"message": "User updated successfully"}
+
+@app.delete("/v2/admin/users/{user_id}")
+async def admin_delete_user(user_id: str, token_data: dict = Depends(verify_admin)):
+    """Admin endpoint to delete user"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
+    user = cursor.fetchone()
+    
+    if not user:
+        conn.close()
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    if user["role"] == "owner":
+        conn.close()
+        raise HTTPException(status_code=403, detail="Cannot delete owner account")
+    
+    cursor.execute("DELETE FROM users WHERE id = ?", (user_id,))
+    conn.commit()
+    conn.close()
+    
+    return {"message": "User deleted successfully"}
+
+@app.get("/v2/admin/reports")
+async def admin_get_reports(page: int = 1, limit: int = 50, token_data: dict = Depends(verify_admin)):
+    conn = get_db()
+    cursor = conn.cursor()
+    offset = (page - 1) * limit
+    cursor.execute("SELECT * FROM reports ORDER BY timestamp DESC LIMIT ? OFFSET ?", (limit, offset))
+    reports = [dict(row) for row in cursor.fetchall()]
+    
+    cursor.execute("SELECT COUNT(*) as total FROM reports")
+    total = cursor.fetchone()["total"]
+    
+    conn.close()
+    
+    return {
+        "reports": reports,
+        "pagination": {
+            "currentPage": page,
+            "totalPages": (total + limit - 1) // limit if total else 1,
+            "total": total
+        }
+    }
+
+@app.get("/v2/admin/config")
+async def admin_get_config(token_data: dict = Depends(verify_admin)):
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT key, value FROM settings")
+    settings = {row["key"]: row["value"] for row in cursor.fetchall()}
+    conn.close()
+    
+    # Convert string values to appropriate types
+    return {
+        "maxReportsPerUser": int(settings.get("maxReportsPerUser", "1000")),
+        "maxBulkTargets": int(settings.get("maxBulkTargets", "200")),
+        "apiTimeout": int(settings.get("apiTimeout", "30")),
+        "rateLimitPerMinute": int(settings.get("rateLimitPerMinute", "60")),
+        "maintenanceMode": settings.get("maintenanceMode", "false") == "true",
+        "registrationEnabled": settings.get("registrationEnabled", "true") == "true"
+    }
+
+@app.put("/v2/admin/config")
+async def admin_update_config(config_data: dict, token_data: dict = Depends(verify_admin)):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Update each setting
+    for key, value in config_data.items():
+        # Convert boolean values to string
+        if isinstance(value, bool):
+            value = "true" if value else "false"
+        else:
+            value = str(value)
+        
+        cursor.execute("""
+            INSERT OR REPLACE INTO settings (key, value, updated_at)
+            VALUES (?, ?, ?)
+        """, (key, value, datetime.utcnow().isoformat()))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"message": "Configuration updated successfully"}
+
+@app.get("/v2/admin/logs")
+async def admin_get_logs(limit: int = 100, token_data: dict = Depends(verify_admin)):
+    return {"logs": []}
+
+# Blacklist Routes
+@app.get("/v2/admin/blacklist")
+async def get_blacklist(token_data: dict = Depends(verify_admin)):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM blacklist ORDER BY created_at DESC")
+    blacklist = [dict(row) for row in cursor.fetchall()]
+    
+    cursor.execute("SELECT COUNT(*) as total FROM blacklist")
+    total = cursor.fetchone()["total"]
+    
+    cursor.execute("SELECT SUM(blocked_attempts) as blocked FROM blacklist")
+    blocked = cursor.fetchone()["blocked"] or 0
+    
+    conn.close()
+    
+    return {
+        "blacklist": blacklist,
+        "stats": {
+            "total": total,
+            "blocked": blocked
+        }
+    }
+
+@app.post("/v2/admin/blacklist")
+async def add_to_blacklist(data: dict, token_data: dict = Depends(verify_admin)):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    username = data.get("username", "").lower().strip()
+    reason = data.get("reason", "")
+    notes = data.get("notes", "")
+    
+    if not username or not reason:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Username and reason are required")
+    
+    # Check if already blacklisted
+    cursor.execute("SELECT * FROM blacklist WHERE username = ?", (username,))
+    if cursor.fetchone():
+        conn.close()
+        raise HTTPException(status_code=400, detail="Account is already blacklisted")
+    
+    cursor.execute('''
+        INSERT INTO blacklist (username, reason, notes, added_by, blocked_attempts, created_at)
+        VALUES (?, ?, ?, ?, 0, ?)
+    ''', (username, reason, notes, token_data["username"], datetime.utcnow().isoformat()))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"message": f"@{username} added to blacklist successfully"}
+
+@app.delete("/v2/admin/blacklist/{username}")
+async def remove_from_blacklist(username: str, token_data: dict = Depends(verify_admin)):
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    username = username.lower().strip()
+    
+    cursor.execute("DELETE FROM blacklist WHERE username = ?", (username,))
+    
+    if cursor.rowcount == 0:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Account not found in blacklist")
+    
+    conn.commit()
+    conn.close()
+    
+    return {"message": f"@{username} removed from blacklist"}
+
+@app.delete("/v2/admin/logs")
+async def admin_clear_logs(token_data: dict = Depends(verify_admin)):
+    return {"message": "Logs cleared successfully"}
+
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Starting SWATNFO Backend...")
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SWATNFO - History</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">SWATNFO</div>
+            <ul class="nav-menu">
+                <li><a href="/dashboard">Dashboard</a></li>
+                <li><a href="/reporting">Report</a></li>
+                <li><a href="/history" class="active">History</a></li>
+                <li><a href="/about">About</a></li>
+            </ul>
+            <div class="profile-dropdown" id="profileDropdown">
+                <div class="profile-button" id="profileButton">
+                    <div class="profile-avatar" id="profileAvatar">U</div>
+                    <span class="profile-name" id="profileName">User</span>
+                    <span class="profile-arrow">▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-header">
+                        <div class="username" id="dropdownUsername">User</div>
+                        <div class="role" id="dropdownRole">user</div>
+                    </div>
+                    <a href="/settings" class="dropdown-item">
+                        <i>⚙️</i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="/admin" class="dropdown-item" id="adminLink" style="display: none;">
+                        <i>👑</i>
+                        <span>Admin Panel</span>
+                    </a>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" onclick="logout(); return false;" class="dropdown-item logout">
+                        <i>🚪</i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="main-content fade-in">
+        <div class="welcome-section">
+            <h1>Report History</h1>
+            <p class="subtitle">View all your reporting activity</p>
+        </div>
+        
+        <div class="history-container">
+            <div class="filters-section">
+                <div class="filter-group">
+                    <label>Status</label>
+                    <select id="statusFilter" class="select-input">
+                        <option value="all">All</option>
+                        <option value="success">Success</option>
+                        <option value="failed">Failed</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Method</label>
+                    <select id="methodFilter" class="select-input">
+                        <option value="all">All Methods</option>
+                        <option value="spam">Spam</option>
+                        <option value="self_injury">Self Injury</option>
+                        <option value="violent_threat">Violent Threat</option>
+                        <option value="hate_speech">Hate Speech</option>
+                        <option value="nudity">Nudity</option>
+                        <option value="bullying">Bullying</option>
+                        <option value="impersonation_me">Impersonation (Me)</option>
+                        <option value="tmnaofcl">TMNAOFCL</option>
+                        <option value="sale_illegal">Sale of Illegal</option>
+                        <option value="violence">Violence</option>
+                        <option value="intellectual_property">IP Violation</option>
+                    </select>
+                </div>
+                
+                <div class="filter-group">
+                    <label>Search</label>
+                    <input type="text" id="searchInput" placeholder="Search target username..." class="search-input">
+                </div>
+                
+                <button id="applyFilters" class="btn btn-primary">Apply Filters</button>
+                <button id="clearFilters" class="btn btn-secondary">Clear</button>
+            </div>
+            
+            <div class="history-stats">
+                <div class="stat-item">
+                    <span class="stat-number" id="totalHistoryReports">0</span>
+                    <span class="stat-label">Total Reports</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number success-text" id="historySuccess">0</span>
+                    <span class="stat-label">Successful</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number danger-text" id="historyFailed">0</span>
+                    <span class="stat-label">Failed</span>
+                </div>
+            </div>
+            
+            <div class="history-table-container">
+                <table class="history-table">
+                    <thead>
+                        <tr>
+                            <th>Date/Time</th>
+                            <th>Target</th>
+                            <th>Method</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyTableBody">
+                        <!-- Data will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="pagination">
+                <button id="prevPage" class="btn btn-secondary">Previous</button>
+                <span id="pageInfo">Page 1 of 1</span>
+                <button id="nextPage" class="btn btn-secondary">Next</button>
+            </div>
+        </div>
+        
+        <div class="watermark">Made by SWATNFO</div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/history.js"></script>
+</body>
+</html>
