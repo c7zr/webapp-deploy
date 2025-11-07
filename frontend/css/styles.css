@@ -1,3 +1,4 @@
+
 /* SWATNFO Instagram Report Bot - Styles */
 /* Made by SWATNFO */
 
@@ -1565,6 +1566,11 @@ textarea:focus {
 .role-badge.admin {
     background-color: rgba(243, 156, 18, 0.2);
     color: var(--warning);
+}
+
+.role-badge.premium {
+    background-color: rgba(52, 152, 219, 0.2);
+    color: #3498db;
 }
 
 .role-badge.user {
