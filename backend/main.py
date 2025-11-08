@@ -880,6 +880,36 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             try:
                 print(f"   Attempt {attempt + 1} with proxy {list(proxy.values())[0]}")
                 r2 = requests.post(
+                    'https://i.instagram.com:443/api/v1/users/lookup/',
+                    headers={
+                        "Connection": "close",
+                        "X-IG-Connection-Type": "WIFI",
+                        "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
+                        "X-IG-Capabilities": "3R4=",
+                        "Accept-Language": "en-US",
+                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                        "User-Agent": "Instagram 99.4.0",
+                        "Accept-Encoding": "gzip, deflate"
+                    },
+                    data={
+                        "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
+                    },
+                    proxies=proxy,
+                    timeout=10
+                )
+                print(f"   Status: {r2.status_code}")
+                if 'No users found' not in r2.text and '"spam":true' not in r2.text:
+                    try:
+                        target_id = str(r2.json()['user_id'])
+                        print(f"   ✅ Found target ID via mobile API: {target_id}")
+                        break
+                    except KeyError:
+                        print(f"   ❌ KeyError in mobile API response")
+                        failed_proxies.append(proxy)
+            except Exception as e:
+                print(f"   ❌ Request failed: {str(e)}")
+                failed_proxies.append(proxy)
+                continue
                 'https://i.instagram.com:443/api/v1/users/lookup/',
                 headers={
                     "Connection": "close",
