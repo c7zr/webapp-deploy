@@ -993,17 +993,28 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     
     method_details = INSTAGRAM_REPORT_METHODS[report.method]
     
-    # Check if user has already reported this target before (for single reports only)
+    # Check if user has reported this target in the last 3 minutes (for single reports only)
     if not is_bulk:
+        three_minutes_ago = (datetime.now(timezone.utc) - timedelta(minutes=3)).isoformat()
         cursor.execute(
-            "SELECT COUNT(*) as count FROM reports WHERE userId = ? AND target = ?",
-            (token_data["user_id"], report.target)
+            "SELECT timestamp FROM reports WHERE userId = ? AND target = ? AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1",
+            (token_data["user_id"], report.target, three_minutes_ago)
         )
-        existing_reports = cursor.fetchone()["count"]
+        recent_report = cursor.fetchone()
         
-        if existing_reports > 0:
+        if recent_report:
+            # Calculate time remaining
+            last_report_time = datetime.fromisoformat(recent_report["timestamp"])
+            time_diff = datetime.now(timezone.utc) - last_report_time
+            seconds_remaining = 180 - int(time_diff.total_seconds())
+            minutes_remaining = seconds_remaining // 60
+            secs_remaining = seconds_remaining % 60
+            
             conn.close()
-            raise HTTPException(status_code=400, detail=f"You have already reported @{report.target}. Each user can only be reported once.")
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Please wait {minutes_remaining}m {secs_remaining}s before reporting @{report.target} again. Upgrade to Premium for unlimited bulk reporting."
+            )
 
     # Get target user ID from Instagram using exact logic from swatnfobest.py
     target_id = None
