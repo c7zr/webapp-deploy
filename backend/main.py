@@ -31,6 +31,31 @@ LOGIN_TIMEOUT = 900  # 15 minutes lockout after max attempts
 PASSWORD_MIN_LENGTH = 8
 TOKEN_EXPIRY_DAYS = 7
 
+# Proxy Configuration
+PROXY_FILE = "proxies.txt"
+proxies = []
+
+def load_proxies():
+    """Load proxies from the proxy file"""
+    try:
+        with open(PROXY_FILE, "r") as f:
+            for line in f:
+                if line.strip():
+                    host, port, username, password = line.strip().split(":")
+                    proxies.append({
+                        "http": f"http://{username}:{password}@{host}:{port}",
+                        "https": f"http://{username}:{password}@{host}:{port}"
+                    })
+        print(f"✅ Loaded {len(proxies)} proxies")
+    except Exception as e:
+        print(f"⚠️ Failed to load proxies: {e}")
+
+def get_random_proxy():
+    """Return a random proxy from the pool"""
+    if not proxies:
+        load_proxies()
+    return random.choice(proxies) if proxies else None
+
 # Instagram User Agents Pool (for rotation to avoid detection)
 INSTAGRAM_USER_AGENTS = [
     "Instagram 250.0.0.0.0 Android (30/11; 420dpi; 1080x2340; OnePlus; ONEPLUS A6000; OnePlus6; qcom; en_US; 232834545)",
@@ -172,10 +197,10 @@ def init_db():
     # Initialize default settings
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maintenanceMode', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.now(timezone.utc).isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxReportsPerUser', '1000', ?)", (datetime.now(timezone.utc).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxReportsPerUser', '5', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxBulkTargets', '200', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxPremiumBulkTargets', '500', ?)", (datetime.now(timezone.utc).isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('dailyReportLimit', '100', ?)", (datetime.now(timezone.utc).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('dailyReportLimit', '5', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('apiTimeout', '30', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('rateLimitPerMinute', '60', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('requireApproval', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
@@ -409,10 +434,10 @@ async def register(user: UserRegister):
                 content={"message": "Username can only contain letters, numbers, and underscores", "error": True}
             )
         
-        if len(user.username) < 3 or len(user.username) > 20:
+        if len(user.username) < 1 or len(user.username) > 20:
             return JSONResponse(
                 status_code=400,
-                content={"message": "Username must be between 3 and 20 characters", "error": True}
+                content={"message": "Username must be between 1 and 20 characters", "error": True}
             )
         
         conn = get_db()
@@ -829,25 +854,25 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     try:
         # Method 1: API lookup (from swatnfobest.py)
         print(f"🔍 Method 1: Trying mobile API lookup for @{report.target}")
-        r2 = requests.post(
-            'https://i.instagram.com:443/api/v1/users/lookup/',
-            headers={
-                "Connection": "close",
-                "X-IG-Connection-Type": "WIFI",
-                "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
-                "X-IG-Capabilities": "3R4=",
-                "Accept-Language": "en-US",
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                "User-Agent": "Instagram 99.4.0",
-                "Accept-Encoding": "gzip, deflate"
-            },
-            data={
-                "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
-            },
-            timeout=10
-        )
-        
-        print(f"   Status: {r2.status_code}")
+            proxy = get_random_proxy()
+            r2 = requests.post(
+                'https://i.instagram.com:443/api/v1/users/lookup/',
+                headers={
+                    "Connection": "close",
+                    "X-IG-Connection-Type": "WIFI",
+                    "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
+                    "X-IG-Capabilities": "3R4=",
+                    "Accept-Language": "en-US",
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "User-Agent": "Instagram 99.4.0",
+                    "Accept-Encoding": "gzip, deflate"
+                },
+                data={
+                    "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
+                },
+                proxies=proxy,
+                timeout=10
+            )        print(f"   Status: {r2.status_code}")
         if 'No users found' not in r2.text and '"spam":true' not in r2.text:
             try:
                 target_id = str(r2.json()['user_id'])
@@ -859,6 +884,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         if not target_id:
             print(f"🔍 Method 2: Trying web scraping for @{report.target}")
             import re
+            proxy = get_random_proxy()
             adv_search = requests.get(
                 f'https://www.instagram.com/{report.target}',
                 headers={
@@ -866,6 +892,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
                     'Cookie': f'csrftoken={cred["csrfToken"]}',
                 },
+                proxies=proxy,
                 timeout=10
             )
             
@@ -885,6 +912,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         # Method 3: Web API (from swatnfobest.py)
         if not target_id:
             print(f"🔍 Method 3: Trying web_profile_info API for @{report.target}")
+            proxy = get_random_proxy()
             adv_search2 = requests.get(
                 f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
                 headers={
@@ -894,6 +922,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     'X-IG-App-ID': '936619743392459',
                     'Cookie': f'sessionid={cred["sessionId"]}'
                 },
+                proxies=proxy,
                 timeout=10
             )
             
