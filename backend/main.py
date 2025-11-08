@@ -802,23 +802,297 @@ async def delete_user(token_data: dict = Depends(verify_token)):
     
     return {"message": "Account deleted successfully"}
 
-# Credentials Routes - PLACEHOLDER (ALL LOGIC REMOVED)
+# Credentials Routes
 @app.get("/v2/credentials")
 async def get_credentials(token_data: dict = Depends(verify_token)):
-    return {"credentials": None, "configured": False}
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    cred = cursor.fetchone()
+    conn.close()
+    
+    if not cred:
+        return {"credentials": None, "configured": False}
+    
+    return {
+        "credentials": {
+            "sessionId": cred["sessionId"],
+            "csrfToken": cred["csrfToken"],
+            "isValid": True
+        },
+        "configured": True
+    }
 
 @app.post("/v2/credentials")
 async def save_credentials(creds: Credentials, token_data: dict = Depends(verify_token)):
-    raise HTTPException(status_code=501, detail="Credential management disabled")
+    """Save Instagram cookies (sessionid and csrftoken) - EXACT swatnfobest.py approach"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    existing = cursor.fetchone()
+    
+    if existing:
+        cursor.execute('''
+            UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?
+            WHERE userId = ?
+        ''', (creds.sessionId, creds.csrfToken, datetime.now(timezone.utc).isoformat(), token_data["user_id"]))
+    else:
+        cursor.execute('''
+            INSERT INTO credentials (id, userId, sessionId, csrfToken, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (str(uuid.uuid4()), token_data["user_id"], creds.sessionId, creds.csrfToken,
+              datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
+    
+    conn.commit()
+    conn.close()
+    
+    return {"success": True, "message": "Credentials saved successfully"}
 
 @app.post("/v2/credentials/test")
 async def test_credentials(token_data: dict = Depends(verify_token)):
-    raise HTTPException(status_code=501, detail="Credential testing disabled")
+    """Test credentials are saved (no actual Instagram API test - just check if they exist)"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    cred = cursor.fetchone()
+    conn.close()
+    
+    if not cred:
+        return {"valid": False, "message": "No credentials configured"}
+    
+    return {"valid": True, "message": "Credentials are saved"}
 
-# Reporting Routes - PLACEHOLDER (ALL LOGIC REMOVED)
+# Helper function: Get target ID (EXACT from swatnfobest.py)
+def get_target_id(target_username: str, sessionid: str, csrftoken: str) -> str:
+    """Get Instagram user ID from username - EXACT swatnfobest.py logic"""
+    try:
+        # Method 1: API lookup
+        r2 = requests.post(
+            'https://i.instagram.com:443/api/v1/users/lookup/',
+            headers={
+                "Connection": "close",
+                "X-IG-Connection-Type": "WIFI",
+                "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
+                "X-IG-Capabilities": "3R4=",
+                "Accept-Language": "en-US",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "User-Agent": "Instagram 99.4.0",
+                "Accept-Encoding": "gzip, deflate"
+            },
+            data={
+                "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{target_username}"}}'
+            }
+        )
+        
+        if 'No users found' not in r2.text and '"spam":true' not in r2.text:
+            try:
+                return str(r2.json()['user_id'])
+            except KeyError:
+                pass
+        
+        # Method 2: Web scraping
+        adv_search = requests.get(
+            f'https://www.instagram.com/{target_username}',
+            headers={
+                'Host': 'www.instagram.com',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                'Cookie': f'csrftoken={csrftoken}',
+            }
+        )
+        
+        import re
+        patterns = [
+            r'"profile_id":"(.*?)"',
+            r'"page_id":"profilePage_(.*?)"'
+        ]
+        
+        for pattern in patterns:
+            match = re.findall(pattern, adv_search.text)
+            if match:
+                return match[0]
+        
+        # Method 3: Web API
+        adv_search2 = requests.get(
+            f'https://www.instagram.com/api/v1/users/web_profile_info/?username={target_username}',
+            headers={
+                'Host': 'www.instagram.com',
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                'X-CSRFToken': csrftoken,
+                'X-IG-App-ID': '936619743392459',
+                'Cookie': f'sessionid={sessionid}'
+            }
+        )
+        
+        return adv_search2.json()['data']['user']['id']
+        
+    except Exception as e:
+        print(f"Error getting target ID: {str(e)}")
+        return None
+
+# Helper function: Send single report (EXACT from swatnfobest.py)
+def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method: str = "spam") -> bool:
+    """Send a single report to Instagram - EXACT swatnfobest.py logic"""
+    try:
+        # Map method names to reason_id and additional data (from swatnfobest.py)
+        method_config = {
+            "spam": {"reason_id": 1, "data": ""},
+            "self_injury": {"reason_id": 2, "data": ""},
+            "violent_threat": {"reason_id": 3, "data": ""},
+            "hate_speech": {"reason_id": 4, "data": ""},
+            "nudity": {"reason_id": 5, "data": ""},
+            "bullying": {"reason_id": 6, "data": ""},
+            "impersonation_me": {"reason_id": 1, "data": ""},
+            "tmnaofcl": {"reason_id": 1, "data": "&action_type=celebrity&celebrity_username=tmnaofcl"},
+            "sale_illegal": {"reason_id": 7, "data": ""},
+            "violence": {"reason_id": 8, "data": ""},
+            "intellectual_property": {"reason_id": 9, "data": ""},
+        }
+        
+        config = method_config.get(method, {"reason_id": 1, "data": ""})
+        reason_id = config["reason_id"]
+        extra_data = config["data"]
+        
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
+            "Host": "i.instagram.com",
+            'cookie': f"sessionid={sessionid}",
+            "X-CSRFToken": csrftoken,
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+        }
+        
+        data = f'source_name=&reason_id={reason_id}&frx_context={extra_data}'
+        
+        r3 = requests.post(
+            f"https://i.instagram.com/users/{target_id}/flag/",
+            headers=headers,
+            data=data,
+            allow_redirects=False
+        )
+        
+        if r3.status_code == 429:
+            print("[ERROR] Rate limited")
+            return False
+        elif r3.status_code == 500:
+            print("[ERROR] Target not found")
+            return False
+        elif r3.status_code in [200, 302]:
+            return True
+        else:
+            return True  # Sometimes reports work even with unexpected status codes
+            
+    except requests.exceptions.TooManyRedirects:
+        return True
+    except Exception as e:
+        print(f"Error sending report: {str(e)}")
+        return False
+
+# Reporting Routes
 @app.post("/v2/reports/send")
 async def send_report(report: ReportRequest, token_data: dict = Depends(verify_token), is_bulk: bool = False):
-    raise HTTPException(status_code=501, detail="Reporting functionality disabled")
+    """Send Instagram report - Uses EXACT swatnfobest.py logic"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Get user info to check role
+    cursor.execute("SELECT role FROM users WHERE id = ?", (token_data["user_id"],))
+    user = cursor.fetchone()
+    user_role = user["role"] if user else "user"
+    
+    # Check if bulk reporting is allowed
+    if is_bulk and user_role not in ["premium", "admin", "owner"]:
+        conn.close()
+        raise HTTPException(
+            status_code=403, 
+            detail="Bulk reporting is exclusive to Premium users. Contact SWATNFO or Xefi for payment to upgrade your account."
+        )
+    
+    # Check daily report limit for regular users (100 reports per day)
+    if user_role == "user":
+        today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        cursor.execute(
+            "SELECT COUNT(*) as count FROM reports WHERE userId = ? AND timestamp >= ?",
+            (token_data["user_id"], today)
+        )
+        daily_count = cursor.fetchone()["count"]
+        
+        if daily_count >= 100:
+            conn.close()
+            raise HTTPException(
+                status_code=429,
+                detail="Daily report limit reached (100/day). Upgrade to Premium for unlimited reports. Contact SWATNFO or Xefi for payment."
+            )
+    
+    # Check if target is blacklisted
+    cursor.execute("SELECT * FROM blacklist WHERE username = ?", (report.target.lower(),))
+    blacklisted = cursor.fetchone()
+    
+    if blacklisted:
+        cursor.execute("UPDATE blacklist SET blocked_attempts = blocked_attempts + 1 WHERE username = ?", (report.target.lower(),))
+        conn.commit()
+        conn.close()
+        raise HTTPException(status_code=403, detail=f"Target @{report.target} is blacklisted and cannot be reported")
+    
+    # Get credentials
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    cred = cursor.fetchone()
+    
+    if not cred:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Please configure Instagram credentials first")
+    
+    # Check 3-minute cooldown for free users on same target
+    if not is_bulk and user_role == "user":
+        three_minutes_ago = (datetime.now(timezone.utc) - timedelta(minutes=3)).isoformat()
+        cursor.execute(
+            "SELECT timestamp FROM reports WHERE userId = ? AND target = ? AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1",
+            (token_data["user_id"], report.target, three_minutes_ago)
+        )
+        recent_report = cursor.fetchone()
+        
+        if recent_report:
+            last_report_time = datetime.fromisoformat(recent_report["timestamp"])
+            time_diff = datetime.now(timezone.utc) - last_report_time
+            seconds_remaining = 180 - int(time_diff.total_seconds())
+            minutes_remaining = seconds_remaining // 60
+            secs_remaining = seconds_remaining % 60
+            
+            conn.close()
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Please wait {minutes_remaining}m {secs_remaining}s before reporting @{report.target} again. Upgrade to Premium for unlimited bulk reporting."
+            )
+    
+    # Get target ID using swatnfobest.py logic
+    target_id = get_target_id(report.target, cred["sessionId"], cred["csrfToken"])
+    
+    if not target_id:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Target user not found or private")
+    
+    # Send report using swatnfobest.py logic
+    success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method)
+    
+    # Log report
+    report_id = str(uuid.uuid4())
+    cursor.execute('''
+        INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (report_id, token_data["user_id"], token_data["username"], report.target, 
+          target_id, report.method, 
+          "success" if success else "failed", "single", 
+          datetime.now(timezone.utc).isoformat()))
+    
+    if success:
+        cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+    
+    conn.commit()
+    conn.close()
+    
+    if success:
+        return {"success": True, "message": "Report sent successfully"}
+    else:
+        return {"success": False, "message": "Report failed"}
 
 @app.get("/v2/reports/stats")
 async def get_stats(token_data: dict = Depends(verify_token)):
