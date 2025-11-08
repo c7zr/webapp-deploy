@@ -178,7 +178,7 @@ def init_db():
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('dailyReportLimit', '100', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('apiTimeout', '30', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('rateLimitPerMinute', '60', ?)", (datetime.now(timezone.utc).isoformat(),))
-    cursor.execute("UPDATE settings SET value = 'false', updated_at = ? WHERE key = 'requireApproval'", (datetime.now(timezone.utc).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('requireApproval', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
     
     conn.commit()
     
@@ -443,15 +443,10 @@ async def register(user: UserRegister):
         user_id = "user_" + str(uuid.uuid4())[:8]
         hashed_pw = hash_password(user.password)
         
-        # Check if approval is required
-        cursor.execute("SELECT value FROM settings WHERE key = 'requireApproval'")
-        require_approval_setting = cursor.fetchone()
-        require_approval = require_approval_setting and require_approval_setting["value"] == "true"
-        
-        # Set isApproved based on settings
-        is_approved = 0 if require_approval else 1
-        approved_by = None if require_approval else "auto"
-        approved_at = None if require_approval else datetime.now(timezone.utc).isoformat()
+        # Approval system removed - all users are auto-approved
+        is_approved = 1
+        approved_by = "auto"
+        approved_at = datetime.now(timezone.utc).isoformat()
         
         cursor.execute('''
             INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts, lastFailedLogin, accountLockedUntil)
@@ -461,24 +456,14 @@ async def register(user: UserRegister):
         conn.commit()
         conn.close()
         
-        if require_approval:
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "message": "Account created successfully. Please wait for admin approval before logging in.",
-                    "success": True,
-                    "requiresApproval": True
-                }
-            )
-        else:
-            return JSONResponse(
-                status_code=200,
-                content={
-                    "message": "Account created successfully",
-                    "success": True,
-                    "requiresApproval": False
-                }
-            )
+        return JSONResponse(
+            status_code=200,
+            content={
+                "message": "Account created successfully",
+                "success": True,
+                "requiresApproval": False
+            }
+        )
             
     except Exception as e:
         print(f"⚠️ Registration error: {str(e)}")
@@ -550,13 +535,7 @@ async def login(credentials: UserLogin):
         conn.close()
         raise HTTPException(status_code=403, detail="Account is disabled")
     
-    # Check if account is approved (skip check if field doesn't exist for backward compatibility)
-    try:
-        if "isApproved" in user.keys() and not user["isApproved"]:
-            conn.close()
-            raise HTTPException(status_code=403, detail="Account is pending approval. Please wait for admin review.")
-    except (KeyError, IndexError):
-        pass  # Field doesn't exist in old schema, skip check
+    # Approval system removed - all users are auto-approved
     
     # Reset failed login attempts on successful login
     cursor.execute("UPDATE users SET failedLoginAttempts = 0, lastFailedLogin = NULL, accountLockedUntil = NULL WHERE id = ?", (user["id"],))
