@@ -1017,379 +1017,158 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 detail=f"Please wait {minutes_remaining}m {secs_remaining}s before reporting @{report.target} again. Upgrade to Premium for unlimited bulk reporting."
             )
 
-    # Get target user ID from Instagram using exact logic from swatnfobest.py
+    # Get target user ID from Instagram using EXACT logic from swatnfobest.py
     target_id = None
     success = False
     error_msg = None
-    failed_proxies = []
-    max_retries = 10  # Increased to 10 for better success rate with new proxies
     
     try:
-        # Method 1: API lookup with advanced bypasses
-        print(f"🔍 Method 1: Trying mobile API lookup for @{report.target}")
-        for attempt in range(max_retries):
-            proxy = get_random_proxy(exclude_list=failed_proxies)
-            if not proxy:
-                print(f"⚠️ No more proxies available after {attempt} attempts")
-                break
-                
-            try:
-                # Generate unique device identifiers for each attempt
-                device_id = f"android-{random.randint(1000000000000000, 9999999999999999)}"
-                session_id = ''.join(random.choices('0123456789abcdef', k=32))
-                user_agent = get_random_user_agent()
-                
-                print(f"   Attempt {attempt + 1}/{max_retries} with proxy {list(proxy.values())[0][:50]}...")
-                
-                # Advanced headers to mimic real Instagram app
-                headers = {
-                    "User-Agent": user_agent,
-                    "Connection": "keep-alive",
+        # Method 1: API lookup (EXACT from swatnfobest.py)
+        print(f"🔍 Method 1: API lookup for @{report.target}")
+        try:
+            r2 = requests.post(
+                'https://i.instagram.com:443/api/v1/users/lookup/',
+                headers={
+                    "Connection": "close",
                     "X-IG-Connection-Type": "WIFI",
-                    "X-IG-App-ID": "567067343352427",
-                    "X-IG-Device-ID": device_id,
-                    "X-IG-Android-ID": device_id,
-                    "X-Ads-Opt-Out": "0",
-                    "X-CM-Bandwidth-KBPS": str(random.randint(2000, 10000)),
-                    "X-CM-Latency": str(random.randint(10, 100)),
-                    "X-IG-Capabilities": "3brTvw==",
-                    "X-IG-App-Locale": "en_US",
-                    "X-IG-Device-Locale": "en_US",
-                    "X-Pigeon-Session-Id": session_id,
-                    "X-Pigeon-Rawclienttime": str(int(time.time())),
-                    "X-IG-Connection-Speed": f"{random.randint(1000, 5000)}kbps",
-                    "X-IG-Bandwidth-Speed-KBPS": str(random.randint(2000, 10000)),
-                    "X-IG-Bandwidth-TotalBytes-B": str(random.randint(5000000, 20000000)),
-                    "X-IG-Bandwidth-TotalTime-MS": str(random.randint(100, 1000)),
-                    "X-FB-HTTP-Engine": "Liger",
+                    "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
+                    "X-IG-Capabilities": "3R4=",
                     "Accept-Language": "en-US",
                     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "Accept-Encoding": "gzip, deflate, br",
-                    "Accept": "*/*"
-                }
-                
-                r2 = requests.post(
-                    'https://i.instagram.com:443/api/v1/users/lookup/',
-                    headers=headers,
-                    data={
-                        "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
+                    "User-Agent": "Instagram 99.4.0",
+                    "Accept-Encoding": "gzip, deflate"
+                },
+                data={
+                    "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
+                },
+                timeout=30
+            )
+            
+            print(f"   Status: {r2.status_code}")
+            if 'No users found' not in r2.text and '"spam":true' not in r2.text:
+                try:
+                    target_id = str(r2.json()['user_id'])
+                    print(f"   ✅ Found target ID via API: {target_id}")
+                except KeyError:
+                    print(f"   ❌ KeyError in API response")
+        except Exception as e:
+            print(f"   ❌ Method 1 failed: {str(e)[:100]}")
+        
+        # Method 2: Web scraping (EXACT from swatnfobest.py)
+        if not target_id:
+            print(f"🔍 Method 2: Web scraping for @{report.target}")
+            try:
+                import re
+                adv_search = requests.get(
+                    f'https://www.instagram.com/{report.target}',
+                    headers={
+                        'Host': 'www.instagram.com',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                        'Cookie': f'csrftoken={cred["csrfToken"]}',
                     },
-                    proxies=proxy,
-                    timeout=20,  # Increased timeout
-                    verify=True
+                    timeout=30
                 )
-                print(f"   Status: {r2.status_code}")
-                print(f"   Response preview: {r2.text[:200]}")
                 
-                if r2.status_code == 200:
-                    if 'No users found' not in r2.text and '"spam":true' not in r2.text:
-                        try:
-                            json_data = r2.json()
-                            if 'user_id' in json_data:
-                                target_id = str(json_data['user_id'])
-                                print(f"   ✅ Found target ID via mobile API: {target_id}")
-                                break
-                            else:
-                                print(f"   ❌ No user_id in response: {list(json_data.keys())}")
-                                failed_proxies.append(proxy)
-                        except (KeyError, ValueError) as e:
-                            print(f"   ❌ JSON parse error: {e}")
-                            failed_proxies.append(proxy)
-                    else:
-                        print(f"   ❌ User not found or spam flag")
-                        failed_proxies.append(proxy)
-                else:
-                    print(f"   ❌ Non-200 status code")
-                    failed_proxies.append(proxy)
+                print(f"   Status: {adv_search.status_code}")
+                patterns = [
+                    r'"profile_id":"(.*?)"',
+                    r'"page_id":"profilePage_(.*?)"'
+                ]
                 
-                # Add randomized delay between attempts
-                if attempt < max_retries - 1:
-                    time.sleep(4 + random.uniform(1, 3))
-                    
-            except requests.exceptions.Timeout:
-                print(f"   ⏱️ Timeout with proxy - trying another")
-                failed_proxies.append(proxy)
-                if attempt < max_retries - 1:
-                    time.sleep(5)
-                continue
-            except requests.exceptions.ProxyError:
-                print(f"   🚫 Proxy connection error - trying another")
-                failed_proxies.append(proxy)
-                if attempt < max_retries - 1:
-                    time.sleep(3)
-                continue
-            except requests.exceptions.SSLError:
-                print(f"   🔒 SSL error - trying another proxy")
-                failed_proxies.append(proxy)
-                if attempt < max_retries - 1:
-                    time.sleep(4)
-                continue
+                for pattern in patterns:
+                    match = re.findall(pattern, adv_search.text)
+                    if match:
+                        target_id = match[0]
+                        print(f"   ✅ Found target ID via scraping: {target_id}")
+                        break
             except Exception as e:
-                print(f"   ❌ Request failed: {str(e)[:100]}")
-                failed_proxies.append(proxy)
-                if attempt < max_retries - 1:
-                    time.sleep(4)
-                continue
+                print(f"   ❌ Method 2 failed: {str(e)[:100]}")
         
-        # Method 2: Web scraping with advanced browser emulation
+        # Method 3: Web API (EXACT from swatnfobest.py)
         if not target_id:
-            print(f"🔍 Method 2: Trying web scraping for @{report.target}")
-            import re
-            
-            for scrape_attempt in range(3):  # Try 3 times with different proxies
-                try:
-                    proxy = get_random_proxy()
-                    web_user_agent = get_random_web_user_agent()
-                    
-                    adv_search = requests.get(
-                        f'https://www.instagram.com/{report.target}/',
-                        headers={
-                            'Host': 'www.instagram.com',
-                            'User-Agent': web_user_agent,
-                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                            'Accept-Language': 'en-US,en;q=0.9',
-                            'Accept-Encoding': 'gzip, deflate, br',
-                            'DNT': '1',
-                            'Connection': 'keep-alive',
-                            'Upgrade-Insecure-Requests': '1',
-                            'Sec-Fetch-Dest': 'document',
-                            'Sec-Fetch-Mode': 'navigate',
-                            'Sec-Fetch-Site': 'none',
-                            'Sec-Fetch-User': '?1',
-                            'Cache-Control': 'max-age=0',
-                            'Cookie': f'csrftoken={cred["csrfToken"]}',
-                        },
-                        proxies=proxy,
-                        timeout=15,
-                        verify=True
-                    )
-                    
-                    print(f"   Scrape attempt {scrape_attempt + 1}/3 - Status: {adv_search.status_code}")
-                    
-                    if adv_search.status_code == 200:
-                        patterns = [
-                            r'"profile_id":"(\d+)"',
-                            r'"page_id":"profilePage_(\d+)"',
-                            r'"owner":{"id":"(\d+)"',
-                            r'"logging_page_id":"profilePage_(\d+)"'
-                        ]
-                        
-                        for pattern in patterns:
-                            match = re.findall(pattern, adv_search.text)
-                            if match:
-                                target_id = match[0]
-                                print(f"   ✅ Found target ID via scraping: {target_id}")
-                                break
-                        
-                        if target_id:
-                            break
-                    
-                    time.sleep(2)
-                except Exception as e:
-                    print(f"   ❌ Scrape attempt {scrape_attempt + 1} failed: {str(e)[:100]}")
-                    time.sleep(2)
-        
-        # Method 3: Web API with better headers
-        if not target_id:
-            print(f"🔍 Method 3: Trying web_profile_info API for @{report.target}")
-            
-            for api_attempt in range(3):  # Try 3 times with different proxies
-                try:
-                    proxy = get_random_proxy()
-                    web_user_agent = get_random_web_user_agent()
-                    
-                    adv_search2 = requests.get(
-                        f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
-                        headers={
-                            'Host': 'www.instagram.com',
-                            'User-Agent': web_user_agent,
-                            'Accept': '*/*',
-                            'Accept-Language': 'en-US,en;q=0.9',
-                            'Accept-Encoding': 'gzip, deflate, br',
-                            'X-CSRFToken': cred["csrfToken"],
-                            'X-IG-App-ID': '936619743392459',
-                            'X-IG-WWW-Claim': '0',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'DNT': '1',
-                            'Connection': 'keep-alive',
-                            'Referer': f'https://www.instagram.com/{report.target}/',
-                            'Sec-Fetch-Dest': 'empty',
-                            'Sec-Fetch-Mode': 'cors',
-                            'Sec-Fetch-Site': 'same-origin',
-                            'Cookie': f'sessionid={cred["sessionId"]}; csrftoken={cred["csrfToken"]}'
-                        },
-                        proxies=proxy,
-                        timeout=15,
-                        verify=True
-                    )
-                    
-                    print(f"   API attempt {api_attempt + 1}/3 - Status: {adv_search2.status_code}")
-                    
-                    if adv_search2.status_code == 200:
-                        try:
-                            json_resp = adv_search2.json()
-                            target_id = str(json_resp['data']['user']['id'])
-                            print(f"   ✅ Found target ID via web API: {target_id}")
-                            break
-                        except (KeyError, ValueError) as e:
-                            print(f"   ❌ Failed to parse web API response: {e}")
-                    
-                    time.sleep(2)
-                except Exception as e:
-                    print(f"   ❌ API attempt {api_attempt + 1} failed: {str(e)[:100]}")
-                    time.sleep(2)
+            print(f"🔍 Method 3: Web API for @{report.target}")
+            try:
+                adv_search2 = requests.get(
+                    f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
+                    headers={
+                        'Host': 'www.instagram.com',
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                        'X-CSRFToken': cred["csrfToken"],
+                        'X-IG-App-ID': '936619743392459',
+                        'Cookie': f'sessionid={cred["sessionId"]}'
+                    },
+                    timeout=30
+                )
+                
+                print(f"   Status: {adv_search2.status_code}")
+                target_id = str(adv_search2.json()['data']['user']['id'])
+                print(f"   ✅ Found target ID via web API: {target_id}")
+            except Exception as e:
+                print(f"   ❌ Method 3 failed: {str(e)[:100]}")
         
         if not target_id:
             success = False
             error_msg = "Target user not found - please check the username"
             print(f"❌ All methods failed to find @{report.target}")
         else:
-            # Send report with advanced bypasses
+            # Send report using EXACT logic from swatnfobest.py
             print(f"📤 Sending report to Instagram")
             print(f"   Target ID: {target_id}")
             print(f"   Reason ID: {method_details['reason_id']}")
             
-            # Reset proxy failure list for report sending
-            failed_proxies = []
-            success = False
+            # Use EXACT headers from swatnfobest.py
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
+                "Host": "i.instagram.com",
+                'cookie': f"sessionid={cred['sessionId']}",
+                "X-CSRFToken": cred["csrfToken"],
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+            }
             
-            for report_attempt in range(max_retries):
-                # Generate unique identifiers for each attempt
-                device_id = f"android-{random.randint(1000000000000000, 9999999999999999)}"
-                session_id = ''.join(random.choices('0123456789abcdef', k=32))
-                user_agent = get_random_user_agent()
-                
-                # Advanced headers with more Instagram app fingerprints
-                headers = {
-                    "User-Agent": user_agent,
-                    "Host": "i.instagram.com",
-                    "Accept": "*/*",
-                    "Accept-Language": "en-US",
-                    "Accept-Encoding": "gzip, deflate, br",
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "X-CSRFToken": cred["csrfToken"],
-                    "X-IG-App-ID": "567067343352427",
-                    "X-IG-Device-ID": device_id,
-                    "X-IG-Android-ID": device_id,
-                    "X-Ads-Opt-Out": "0",
-                    "X-CM-Bandwidth-KBPS": str(random.randint(2000, 10000)),
-                    "X-CM-Latency": str(random.randint(10, 100)),
-                    "X-IG-Connection-Type": "WIFI",
-                    "X-IG-Capabilities": "3brTvw==",
-                    "X-IG-App-Locale": "en_US",
-                    "X-IG-Device-Locale": "en_US",
-                    "X-Pigeon-Session-Id": session_id,
-                    "X-Pigeon-Rawclienttime": str(int(time.time())),
-                    "X-IG-Connection-Speed": f"{random.randint(1000, 5000)}kbps",
-                    "X-IG-Bandwidth-Speed-KBPS": str(random.randint(2000, 10000)),
-                    "X-IG-Bandwidth-TotalBytes-B": str(random.randint(5000000, 20000000)),
-                    "X-IG-Bandwidth-TotalTime-MS": str(random.randint(100, 1000)),
-                    "X-FB-HTTP-Engine": "Liger",
-                    "X-FB-Client-IP": "True",
-                    "X-FB-Server-Cluster": "True",
-                    "DNT": "1",
-                    "Connection": "keep-alive",
-                    "Cookie": f"sessionid={cred['sessionId']}; csrftoken={cred['csrfToken']}"
-                }
-                
-                # Build data exactly as needed
-                extra_data = method_details.get("extra_data", "")
-                data = f'source_name=&reason_id={method_details["reason_id"]}&frx_context={extra_data}'
-                
-                print(f"   Report attempt {report_attempt + 1}/{max_retries}")
-                
-                proxy = get_random_proxy(exclude_list=failed_proxies)
-                if not proxy:
-                    print("   ⚠️ No more proxies available")
-                    error_msg = "All proxies failed or unavailable"
-                    break
-                    
-                print(f"   Using proxy: {list(proxy.values())[0][:50]}...")
-                
-                try:
-                    r3 = requests.post(
-                        f"https://i.instagram.com/users/{target_id}/flag/",
-                        headers=headers,
-                        data=data,
-                        proxies=proxy,
-                        allow_redirects=False,
-                        timeout=20,  # Increased timeout
-                        verify=True
-                    )
-                    
-                    print(f"   📨 Response Status: {r3.status_code}")
-                    
-                    if r3.status_code in [200, 302]:
-                        success = True
-                        print(f"   ✅ Report successful!")
-                        break
-                    elif r3.status_code == 429:
-                        print(f"   ⏱️ Rate limited on proxy - trying another")
-                        failed_proxies.append(proxy)
-                        time.sleep(6 + random.uniform(1, 3))
-                        continue
-                    elif r3.status_code == 500:
-                        print(f"   🔴 Server error on proxy - trying another")
-                        failed_proxies.append(proxy)
-                        time.sleep(4 + random.uniform(0.5, 2))
-                        continue
-                    else:
-                        # Unexpected status but might be success
-                        print(f"   ⚠️ Unexpected status {r3.status_code} - marking as success")
-                        success = True
-                        break
-                except requests.exceptions.Timeout:
-                    print(f"   ⏱️ Request timeout - trying another proxy")
-                    failed_proxies.append(proxy)
-                    if report_attempt < max_retries - 1:
-                        time.sleep(5)
-                    continue
-                except requests.exceptions.ProxyError:
-                    print(f"   🚫 Proxy connection error - trying another proxy")
-                    failed_proxies.append(proxy)
-                    if report_attempt < max_retries - 1:
-                        time.sleep(3)
-                    continue
-                except requests.exceptions.SSLError:
-                    print(f"   🔒 SSL error - trying another proxy")
-                    failed_proxies.append(proxy)
-                    if report_attempt < max_retries - 1:
-                        time.sleep(4)
-                    continue
-                except requests.exceptions.RequestException as e:
-                    print(f"   ❌ Request failed: {str(e)[:100]}")
-                    failed_proxies.append(proxy)
-                    if report_attempt < max_retries - 1:
-                        time.sleep(4)
-                    continue
+            # Build data EXACTLY as swatnfobest.py does
+            extra_data = method_details.get("extra_data", "")
+            data = f'source_name=&reason_id={method_details["reason_id"]}&frx_context={extra_data}'
             
-            print(f"📨 Instagram Response:")
-            print(f"   Status Code: {r3.status_code}")
-            
-            # Handle response exactly as swatnfobest.py does
-            if r3.status_code == 429:
-                success = False
-                error_msg = "Rate limited! Please wait before sending more reports."
-                print(f"❌ Rate limited")
-            elif r3.status_code == 500:
-                success = False
-                error_msg = "Target not found!"
-                print(f"❌ Target not found (500)")
-            elif r3.status_code in [200, 302]:
+            try:
+                r3 = requests.post(
+                    f"https://i.instagram.com/users/{target_id}/flag/",
+                    headers=headers,
+                    data=data,
+                    allow_redirects=False,
+                    timeout=30
+                )
+                
+                print(f"   📨 Response Status: {r3.status_code}")
+                
+                # Handle response EXACTLY as swatnfobest.py does
+                if r3.status_code == 429:
+                    success = False
+                    error_msg = "Rate limited! Please wait before sending more reports."
+                    print(f"❌ Rate limited")
+                elif r3.status_code == 500:
+                    success = False
+                    error_msg = "Target not found!"
+                    print(f"❌ Target not found (500)")
+                elif r3.status_code in [200, 302]:
+                    success = True
+                    error_msg = None
+                    print(f"✅ Report successful!")
+                else:
+                    # Sometimes reports work even with unexpected status codes
+                    success = True
+                    error_msg = None
+                    print(f"✅ Unexpected status {r3.status_code}, marking as success")
+                    
+            except requests.exceptions.TooManyRedirects:
+                # From swatnfobest.py - this means success
                 success = True
                 error_msg = None
-                print(f"✅ Report successful!")
-            else:
-                # Sometimes reports work even with unexpected status codes
-                success = True
-                error_msg = None
-                print(f"✅ Unexpected status {r3.status_code}, marking as success")
+                print(f"✅ Report successful (redirect)")
+            except Exception as e:
+                success = False
+                error_msg = f"Error sending report: {str(e)}"
+                print(f"❌ Exception during report: {e}")
                 
-    except requests.exceptions.TooManyRedirects:
-        # From swatnfobest.py - this means success
-        success = True
-        error_msg = None
-        print(f"✅ Report successful (redirect)")
     except Exception as e:
         success = False
         error_msg = str(e)
