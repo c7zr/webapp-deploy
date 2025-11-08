@@ -218,13 +218,13 @@ app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND_DIR, "css")), name
 app.mount("/js", StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")), name="js")
 app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="assets")
 
-# CORS - Restrict in production
+# CORS - Allow all origins in development
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8000", "http://127.0.0.1:8000"],  # Restrict origins
+    allow_origins=["*"],  # Allow all origins in development
     allow_credentials=True,
-    allow_methods=["GET", "POST", "PUT", "DELETE"],  # Only allow necessary methods
-    allow_headers=["Content-Type", "Authorization"],  # Only necessary headers
+    allow_methods=["GET", "POST", "PUT", "DELETE"],
+    allow_headers=["*"]  # Allow all headers
 )
 
 # Rate limiting storage (in-memory, use Redis in production)
