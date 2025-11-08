@@ -959,10 +959,12 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             
             print(f"   Data: {data}")
             
+            proxy = get_random_proxy()
             r3 = requests.post(
                 f"https://i.instagram.com/users/{target_id}/flag/",
                 headers=headers,
                 data=data,
+                proxies=proxy,
                 allow_redirects=False,
                 timeout=10
             )
