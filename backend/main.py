@@ -1,7 +1,7 @@
 # SWATNFO Instagram Report Bot - Backend API (SQLite Version)
 # Made by SWATNFO - d3sapiv2
 
-from fastapi import FastAPI, HTTPException, Depends, status
+from fastapi import FastAPI, HTTPException, Depends, status, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
@@ -18,6 +18,8 @@ import hashlib
 import uuid
 import os
 import random
+import time
+import json
 
 # Configuration
 SECRET_KEY = os.environ.get("SECRET_KEY", "swatnfo_secret_key_change_in_production_2025_" + hashlib.sha256(str(datetime.now()).encode()).hexdigest()[:16])
@@ -35,25 +37,29 @@ TOKEN_EXPIRY_DAYS = 7
 PROXY_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "proxies.txt")
 proxies = []
 proxy_index = 0  # For round-robin rotation
+last_proxy_load_time = None
 
 def load_proxies():
     """Load proxies from the proxy file"""
-    global proxies
+    global proxies, last_proxy_load_time
     try:
         # Try multiple possible locations
         possible_paths = [
-            PROXY_FILE,
             os.path.join(os.path.dirname(__file__), "..", "..", "proxies.txt"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "proxies.txt"),
             "/home/ubuntu/webapp-deploy/proxies.txt",
+            os.path.join(os.getcwd(), "proxies.txt"),
             "proxies.txt"
         ]
         
         loaded = False
         for path in possible_paths:
             try:
-                if os.path.exists(path):
-                    with open(path, "r") as f:
+                abs_path = os.path.abspath(path)
+                if os.path.exists(abs_path):
+                    with open(abs_path, "r", encoding="utf-8") as f:
                         proxies = []
+                        line_count = 0
                         for line in f:
                             line = line.strip()
                             if line and not line.startswith("#"):
@@ -65,29 +71,36 @@ def load_proxies():
                                             "http": f"http://{username}:{password}@{host}:{port}",
                                             "https": f"http://{username}:{password}@{host}:{port}"
                                         })
+                                        line_count += 1
                                 except Exception as e:
-                                    print(f"⚠️ Skipping invalid proxy line: {line[:50]}... - {e}")
+                                    print(f"⚠️ Skipping invalid proxy line {line_count}: {str(e)}")
                                     continue
-                    print(f"✅ Loaded {len(proxies)} proxies from {path}")
+                    print(f"✅ Loaded {len(proxies)} proxies from {abs_path}")
+                    last_proxy_load_time = datetime.now(timezone.utc)
                     loaded = True
                     break
             except Exception as e:
                 continue
         
-        if not loaded:
-            print(f"⚠️ Failed to load proxies from any location")
-            print(f"   Tried: {possible_paths}")
+        if not loaded or len(proxies) == 0:
+            print(f"❌ Failed to load proxies from any location")
+            print(f"   Tried: {[os.path.abspath(p) for p in possible_paths]}")
+        
+        return len(proxies)
     except Exception as e:
         print(f"❌ Error loading proxies: {e}")
+        return 0
 
 def get_random_proxy(exclude_list=None):
-    """Return a random proxy from the pool, excluding any failed proxies"""
+    """Return a proxy using round-robin rotation"""
     global proxy_index
     
-    if not proxies:
+    # Reload proxies if not loaded or if we need a fresh list
+    if not proxies or len(proxies) == 0:
         load_proxies()
-    if not proxies:
-        print("⚠️ No proxies available!")
+    
+    if not proxies or len(proxies) == 0:
+        print("❌ No proxies available!")
         return None
     
     # Filter out excluded proxies
@@ -96,13 +109,16 @@ def get_random_proxy(exclude_list=None):
     else:
         available_proxies = proxies
     
-    if not available_proxies:
-        print("⚠️ All proxies have been excluded!")
-        return None
+    if not available_proxies or len(available_proxies) == 0:
+        print(f"⚠️ All proxies excluded! Total proxies: {len(proxies)}, Excluded: {len(exclude_list) if exclude_list else 0}")
+        # If all proxies are excluded, reset and use all proxies
+        available_proxies = proxies
     
-    # Use round-robin for better distribution across 40 users
+    # Use round-robin for even distribution
     proxy_index = (proxy_index + 1) % len(available_proxies)
-    return available_proxies[proxy_index]
+    selected = available_proxies[proxy_index]
+    
+    return selected
 
 # Instagram User Agents Pool (for rotation to avoid detection)
 INSTAGRAM_USER_AGENTS = [
@@ -242,6 +258,18 @@ def init_db():
         )
     ''')
     
+    # Chat messages table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS chat_messages (
+            id TEXT PRIMARY KEY,
+            userId TEXT NOT NULL,
+            username TEXT NOT NULL,
+            role TEXT NOT NULL,
+            message TEXT NOT NULL,
+            timestamp TEXT NOT NULL
+        )
+    ''')
+    
     # Initialize default settings
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maintenanceMode', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.now(timezone.utc).isoformat(),))
@@ -299,6 +327,37 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"]  # Allow all headers
 )
+
+# WebSocket Connection Manager for Chat
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: List[dict] = []
+
+    async def connect(self, websocket: WebSocket, user_info: dict):
+        await websocket.accept()
+        self.active_connections.append({"websocket": websocket, "user": user_info})
+        print(f"✅ User {user_info['username']} connected to chat")
+
+    def disconnect(self, websocket: WebSocket):
+        for conn in self.active_connections:
+            if conn["websocket"] == websocket:
+                self.active_connections.remove(conn)
+                print(f"❌ User {conn['user']['username']} disconnected from chat")
+                break
+
+    async def broadcast(self, message: dict):
+        disconnected = []
+        for connection in self.active_connections:
+            try:
+                await connection["websocket"].send_json(message)
+            except:
+                disconnected.append(connection)
+        
+        # Remove disconnected clients
+        for conn in disconnected:
+            self.disconnect(conn["websocket"])
+
+manager = ConnectionManager()
 
 # Rate limiting storage (in-memory, use Redis in production)
 rate_limit_storage = {}
@@ -950,17 +1009,28 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     except KeyError:
                         print(f"   ❌ KeyError in mobile API response")
                         failed_proxies.append(proxy)
+                
+                # Add delay between attempts to avoid rate limiting
+                if attempt < max_retries - 1:
+                    time.sleep(4)
+                    
             except requests.exceptions.Timeout:
                 print(f"   ⏱️ Timeout with proxy - trying another")
                 failed_proxies.append(proxy)
+                if attempt < max_retries - 1:
+                    time.sleep(4)
                 continue
             except requests.exceptions.ProxyError:
                 print(f"   🚫 Proxy connection error - trying another")
                 failed_proxies.append(proxy)
+                if attempt < max_retries - 1:
+                    time.sleep(4)
                 continue
             except Exception as e:
                 print(f"   ❌ Request failed: {str(e)[:100]}")
                 failed_proxies.append(proxy)
+                if attempt < max_retries - 1:
+                    time.sleep(4)
                 continue
         
         # Method 2: Web scraping (from swatnfobest.py)
@@ -1086,14 +1156,20 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 except requests.exceptions.Timeout:
                     print(f"   ⏱️ Request timeout - trying another proxy")
                     failed_proxies.append(proxy)
+                    if report_attempt < max_retries - 1:
+                        time.sleep(4)
                     continue
                 except requests.exceptions.ProxyError:
                     print(f"   🚫 Proxy connection error - trying another proxy")
                     failed_proxies.append(proxy)
+                    if report_attempt < max_retries - 1:
+                        time.sleep(4)
                     continue
                 except requests.exceptions.RequestException as e:
                     print(f"   ❌ Request failed: {str(e)[:100]}")
                     failed_proxies.append(proxy)
+                    if report_attempt < max_retries - 1:
+                        time.sleep(4)
                     continue
             
             print(f"📨 Instagram Response:")
@@ -1677,6 +1753,130 @@ async def remove_from_blacklist(username: str, token_data: dict = Depends(verify
 @app.delete("/v2/admin/logs")
 async def admin_clear_logs(token_data: dict = Depends(verify_admin)):
     return {"message": "Logs cleared successfully"}
+
+# Chat Routes
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_page():
+    """Serve chat page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "chat.html"))
+
+@app.websocket("/ws/chat")
+async def websocket_endpoint(websocket: WebSocket):
+    """WebSocket endpoint for real-time chat"""
+    # Get token from query params
+    token = websocket.query_params.get("token")
+    if not token:
+        await websocket.close(code=1008)
+        return
+    
+    try:
+        # Verify token
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        user_info = {
+            "user_id": payload["user_id"],
+            "username": payload["username"],
+            "role": payload["role"]
+        }
+        
+        await manager.connect(websocket, user_info)
+        
+        # Send user joined notification
+        await manager.broadcast({
+            "type": "user_joined",
+            "username": user_info["username"],
+            "role": user_info["role"],
+            "timestamp": datetime.now(timezone.utc).isoformat()
+        })
+        
+        try:
+            while True:
+                # Receive message from client
+                data = await websocket.receive_json()
+                
+                if data.get("type") == "message":
+                    message_text = data.get("message", "").strip()
+                    if message_text:
+                        # Save message to database
+                        conn = get_db()
+                        cursor = conn.cursor()
+                        
+                        message_id = str(uuid.uuid4())
+                        cursor.execute('''
+                            INSERT INTO chat_messages (id, userId, username, role, message, timestamp)
+                            VALUES (?, ?, ?, ?, ?, ?)
+                        ''', (
+                            message_id,
+                            user_info["user_id"],
+                            user_info["username"],
+                            user_info["role"],
+                            message_text,
+                            datetime.now(timezone.utc).isoformat()
+                        ))
+                        conn.commit()
+                        conn.close()
+                        
+                        # Broadcast message to all connected clients
+                        await manager.broadcast({
+                            "type": "message",
+                            "id": message_id,
+                            "username": user_info["username"],
+                            "role": user_info["role"],
+                            "message": message_text,
+                            "timestamp": datetime.now(timezone.utc).isoformat()
+                        })
+        except WebSocketDisconnect:
+            manager.disconnect(websocket)
+            await manager.broadcast({
+                "type": "user_left",
+                "username": user_info["username"],
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            })
+    except jwt.InvalidTokenError:
+        await websocket.close(code=1008)
+
+@app.get("/v2/chat/history")
+async def get_chat_history(limit: int = 50, token_data: dict = Depends(verify_token)):
+    """Get recent chat messages"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT id, username, role, message, timestamp
+        FROM chat_messages
+        ORDER BY timestamp DESC
+        LIMIT ?
+    ''', (limit,))
+    
+    messages = [dict(row) for row in cursor.fetchall()]
+    messages.reverse()  # Show oldest first
+    
+    conn.close()
+    
+    return {"messages": messages}
+
+@app.get("/v2/chat/users")
+async def get_online_users(token_data: dict = Depends(verify_token)):
+    """Get list of currently online users"""
+    online_users = [
+        {
+            "username": conn["user"]["username"],
+            "role": conn["user"]["role"]
+        }
+        for conn in manager.active_connections
+    ]
+    
+    return {"users": online_users, "count": len(online_users)}
+
+@app.delete("/v2/admin/chat/clear")
+async def clear_chat_history(token_data: dict = Depends(verify_admin)):
+    """Clear all chat messages (admin only)"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM chat_messages")
+    conn.commit()
+    conn.close()
+    
+    return {"message": "Chat history cleared successfully"}
 
 if __name__ == "__main__":
     import uvicorn

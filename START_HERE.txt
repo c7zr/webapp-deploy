@@ -183,3 +183,18 @@ Database: SQLite (no external dependencies)
 API: d3sapiv2
 
 ═══════════════════════════════════════════════════════════════
+
+
+
+
+cd /home/ubuntu/webapp-deploy
+git pull origin main
+pm2 restart webapp
+pm2 logs webapp --lines 20
+
+
+
+
+
+
+cd "c:\Users\awzax\OneDrive\Desktop\Project 7747\WebApp" ; & "C:\Program Files\Git\bin\git.exe" add backend/main.py ; & "C:\Program Files\Git\bin\git.exe" commit -m "Fix datetime.UTC -> timezone.utc for Python 3.11+ compatibility" ; & "C:\Program Files\Git\bin\git.exe" push origin main

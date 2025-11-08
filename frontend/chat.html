@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Room - SWATNFO</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <style>
+        .chat-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            display: grid;
+            grid-template-columns: 250px 1fr;
+            gap: 20px;
+            height: calc(100vh - 140px);
+        }
+
+        .users-sidebar {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 10px;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .users-sidebar h3 {
+            color: #a78bfa;
+            margin-bottom: 15px;
+            font-size: 18px;
+        }
+
+        .user-item {
+            padding: 10px;
+            margin-bottom: 8px;
+            background: rgba(124, 58, 237, 0.1);
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .user-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #10b981;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .user-role {
+            font-size: 12px;
+            color: #a78bfa;
+        }
+
+        .chat-main {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(124, 58, 237, 0.3);
+        }
+
+        .chat-header h2 {
+            color: #a78bfa;
+            margin: 0;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            animation: slideIn 0.3s ease;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #fff;
+            font-weight: bold;
+            flex-shrink: 0;
+        }
+
+        .message-content {
+            flex: 1;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .message-username {
+            color: #a78bfa;
+            font-weight: 600;
+        }
+
+        .message-role {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: rgba(124, 58, 237, 0.2);
+            color: #c4b5fd;
+        }
+
+        .message-role.owner {
+            background: rgba(239, 68, 68, 0.2);
+            color: #fca5a5;
+        }
+
+        .message-role.admin {
+            background: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+        }
+
+        .message-role.premium {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fde047;
+        }
+
+        .message-time {
+            font-size: 12px;
+            color: #6b7280;
+        }
+
+        .message-text {
+            color: #e5e7eb;
+            line-height: 1.5;
+        }
+
+        .system-message {
+            text-align: center;
+            color: #9ca3af;
+            font-size: 14px;
+            font-style: italic;
+            padding: 10px;
+        }
+
+        .chat-input {
+            padding: 20px;
+            border-top: 1px solid rgba(124, 58, 237, 0.3);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        #messageInput {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(124, 58, 237, 0.3);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+        }
+
+        #messageInput:focus {
+            outline: none;
+            border-color: #a78bfa;
+        }
+
+        .send-btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 8px;
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(124, 58, 237, 0.3);
+        }
+
+        .connection-status {
+            padding: 10px 20px;
+            background: rgba(16, 185, 129, 0.1);
+            color: #10b981;
+            text-align: center;
+            font-size: 14px;
+        }
+
+        .connection-status.disconnected {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-brand">
+            <span class="logo">SWATNFO</span>
+            <span class="version">v2.0</span>
+        </div>
+        <div class="nav-links">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/reporting">Report</a>
+            <a href="/history">History</a>
+            <a href="/chat" class="active">Chat</a>
+            <a href="/settings">Settings</a>
+            <a href="#" id="logoutBtn">Logout</a>
+        </div>
+    </nav>
+
+    <div class="connection-status" id="connectionStatus">
+        Connecting...
+    </div>
+
+    <div class="chat-container">
+        <div class="users-sidebar">
+            <h3>🟢 Online Users (<span id="onlineCount">0</span>)</h3>
+            <div id="usersList"></div>
+        </div>
+
+        <div class="chat-main">
+            <div class="chat-header">
+                <h2>💬 Community Chat</h2>
+            </div>
+
+            <div class="chat-messages" id="chatMessages"></div>
+
+            <div class="chat-input">
+                <div class="input-wrapper">
+                    <input type="text" id="messageInput" placeholder="Type your message..." autocomplete="off">
+                    <button class="send-btn" id="sendBtn">Send</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/chat.js"></script>
+</body>
+</html>
