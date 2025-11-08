@@ -826,9 +826,16 @@ async def get_credentials(token_data: dict = Depends(verify_token)):
 @app.post("/v2/credentials")
 async def save_credentials(creds: Credentials, token_data: dict = Depends(verify_token)):
     """Save Instagram cookies (sessionid and csrftoken) - EXACT swatnfobest.py approach"""
+    from urllib.parse import unquote
+    
+    # URL decode the credentials in case they were copied encoded
+    decoded_session = unquote(creds.sessionId)
+    decoded_csrf = unquote(creds.csrfToken)
+    
     print(f"💾 Saving credentials for user {token_data['user_id']}")
-    print(f"   SessionId: {creds.sessionId[:20]}... (length: {len(creds.sessionId)})")
-    print(f"   CsrfToken: {creds.csrfToken[:20]}... (length: {len(creds.csrfToken)})")
+    print(f"   SessionId (raw): {creds.sessionId[:20]}... (length: {len(creds.sessionId)})")
+    print(f"   SessionId (decoded): {decoded_session[:20]}... (length: {len(decoded_session)})")
+    print(f"   CsrfToken: {decoded_csrf[:20]}... (length: {len(decoded_csrf)})")
     
     conn = get_db()
     cursor = conn.cursor()
@@ -841,13 +848,13 @@ async def save_credentials(creds: Credentials, token_data: dict = Depends(verify
         cursor.execute('''
             UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?
             WHERE userId = ?
-        ''', (creds.sessionId, creds.csrfToken, datetime.now(timezone.utc).isoformat(), token_data["user_id"]))
+        ''', (decoded_session, decoded_csrf, datetime.now(timezone.utc).isoformat(), token_data["user_id"]))
     else:
         print(f"   ➕ Creating new credentials")
         cursor.execute('''
             INSERT INTO credentials (id, userId, sessionId, csrfToken, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?)
-        ''', (str(uuid.uuid4()), token_data["user_id"], creds.sessionId, creds.csrfToken,
+        ''', (str(uuid.uuid4()), token_data["user_id"], decoded_session, decoded_csrf,
               datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
     
     conn.commit()
