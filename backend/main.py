@@ -1021,7 +1021,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     success = False
     error_msg = None
     failed_proxies = []
-    max_retries = 5  # Increased from 3 to 5 for better success rate with 1k proxies
+    max_retries = 10  # Increased to 10 for better success rate with new proxies
     
     try:
         # Method 1: API lookup with advanced bypasses
@@ -1078,14 +1078,28 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     verify=True
                 )
                 print(f"   Status: {r2.status_code}")
-                if 'No users found' not in r2.text and '"spam":true' not in r2.text:
-                    try:
-                        target_id = str(r2.json()['user_id'])
-                        print(f"   ✅ Found target ID via mobile API: {target_id}")
-                        break
-                    except KeyError:
-                        print(f"   ❌ KeyError in mobile API response")
+                print(f"   Response preview: {r2.text[:200]}")
+                
+                if r2.status_code == 200:
+                    if 'No users found' not in r2.text and '"spam":true' not in r2.text:
+                        try:
+                            json_data = r2.json()
+                            if 'user_id' in json_data:
+                                target_id = str(json_data['user_id'])
+                                print(f"   ✅ Found target ID via mobile API: {target_id}")
+                                break
+                            else:
+                                print(f"   ❌ No user_id in response: {list(json_data.keys())}")
+                                failed_proxies.append(proxy)
+                        except (KeyError, ValueError) as e:
+                            print(f"   ❌ JSON parse error: {e}")
+                            failed_proxies.append(proxy)
+                    else:
+                        print(f"   ❌ User not found or spam flag")
                         failed_proxies.append(proxy)
+                else:
+                    print(f"   ❌ Non-200 status code")
+                    failed_proxies.append(proxy)
                 
                 # Add randomized delay between attempts
                 if attempt < max_retries - 1:
@@ -1120,82 +1134,109 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         if not target_id:
             print(f"🔍 Method 2: Trying web scraping for @{report.target}")
             import re
-            proxy = get_random_proxy()
-            web_user_agent = get_random_web_user_agent()
             
-            adv_search = requests.get(
-                f'https://www.instagram.com/{report.target}',
-                headers={
-                    'Host': 'www.instagram.com',
-                    'User-Agent': web_user_agent,
-                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Accept-Encoding': 'gzip, deflate, br',
-                    'DNT': '1',
-                    'Connection': 'keep-alive',
-                    'Upgrade-Insecure-Requests': '1',
-                    'Sec-Fetch-Dest': 'document',
-                    'Sec-Fetch-Mode': 'navigate',
-                    'Sec-Fetch-Site': 'none',
-                    'Sec-Fetch-User': '?1',
-                    'Cache-Control': 'max-age=0',
-                    'Cookie': f'csrftoken={cred["csrfToken"]}',
-                },
-                proxies=proxy,
-                timeout=15,
-                verify=True
-            )
-            
-            print(f"   Status: {adv_search.status_code}")
-            patterns = [
-                r'"profile_id":"(.*?)"',
-                r'"page_id":"profilePage_(.*?)"'
-            ]
-            
-            for pattern in patterns:
-                match = re.findall(pattern, adv_search.text)
-                if match:
-                    target_id = match[0]
-                    print(f"   ✅ Found target ID via scraping: {target_id}")
-                    break
+            for scrape_attempt in range(3):  # Try 3 times with different proxies
+                try:
+                    proxy = get_random_proxy()
+                    web_user_agent = get_random_web_user_agent()
+                    
+                    adv_search = requests.get(
+                        f'https://www.instagram.com/{report.target}/',
+                        headers={
+                            'Host': 'www.instagram.com',
+                            'User-Agent': web_user_agent,
+                            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                            'Accept-Language': 'en-US,en;q=0.9',
+                            'Accept-Encoding': 'gzip, deflate, br',
+                            'DNT': '1',
+                            'Connection': 'keep-alive',
+                            'Upgrade-Insecure-Requests': '1',
+                            'Sec-Fetch-Dest': 'document',
+                            'Sec-Fetch-Mode': 'navigate',
+                            'Sec-Fetch-Site': 'none',
+                            'Sec-Fetch-User': '?1',
+                            'Cache-Control': 'max-age=0',
+                            'Cookie': f'csrftoken={cred["csrfToken"]}',
+                        },
+                        proxies=proxy,
+                        timeout=15,
+                        verify=True
+                    )
+                    
+                    print(f"   Scrape attempt {scrape_attempt + 1}/3 - Status: {adv_search.status_code}")
+                    
+                    if adv_search.status_code == 200:
+                        patterns = [
+                            r'"profile_id":"(\d+)"',
+                            r'"page_id":"profilePage_(\d+)"',
+                            r'"owner":{"id":"(\d+)"',
+                            r'"logging_page_id":"profilePage_(\d+)"'
+                        ]
+                        
+                        for pattern in patterns:
+                            match = re.findall(pattern, adv_search.text)
+                            if match:
+                                target_id = match[0]
+                                print(f"   ✅ Found target ID via scraping: {target_id}")
+                                break
+                        
+                        if target_id:
+                            break
+                    
+                    time.sleep(2)
+                except Exception as e:
+                    print(f"   ❌ Scrape attempt {scrape_attempt + 1} failed: {str(e)[:100]}")
+                    time.sleep(2)
         
         # Method 3: Web API with better headers
         if not target_id:
             print(f"🔍 Method 3: Trying web_profile_info API for @{report.target}")
-            proxy = get_random_proxy()
-            web_user_agent = get_random_web_user_agent()
             
-            adv_search2 = requests.get(
-                f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
-                headers={
-                    'Host': 'www.instagram.com',
-                    'User-Agent': web_user_agent,
-                    'Accept': '*/*',
-                    'Accept-Language': 'en-US,en;q=0.9',
-                    'Accept-Encoding': 'gzip, deflate, br',
-                    'X-CSRFToken': cred["csrfToken"],
-                    'X-IG-App-ID': '936619743392459',
-                    'X-IG-WWW-Claim': '0',
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'DNT': '1',
-                    'Connection': 'keep-alive',
-                    'Referer': f'https://www.instagram.com/{report.target}/',
-                    'Sec-Fetch-Dest': 'empty',
-                    'Sec-Fetch-Mode': 'cors',
-                    'Sec-Fetch-Site': 'same-origin',
-                    'Cookie': f'sessionid={cred["sessionId"]}; csrftoken={cred["csrfToken"]}'
-                },
-                proxies=proxy,
-                timeout=15,
-                verify=True
-            )
-            
-            print(f"   Status: {adv_search2.status_code}")
-            try:
-                target_id = str(adv_search2.json()['data']['user']['id'])
-                print(f"   ✅ Found target ID via web API: {target_id}")
-            except Exception as e:
-                print(f"   ❌ Failed to parse web API response: {e}")
+            for api_attempt in range(3):  # Try 3 times with different proxies
+                try:
+                    proxy = get_random_proxy()
+                    web_user_agent = get_random_web_user_agent()
+                    
+                    adv_search2 = requests.get(
+                        f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
+                        headers={
+                            'Host': 'www.instagram.com',
+                            'User-Agent': web_user_agent,
+                            'Accept': '*/*',
+                            'Accept-Language': 'en-US,en;q=0.9',
+                            'Accept-Encoding': 'gzip, deflate, br',
+                            'X-CSRFToken': cred["csrfToken"],
+                            'X-IG-App-ID': '936619743392459',
+                            'X-IG-WWW-Claim': '0',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'DNT': '1',
+                            'Connection': 'keep-alive',
+                            'Referer': f'https://www.instagram.com/{report.target}/',
+                            'Sec-Fetch-Dest': 'empty',
+                            'Sec-Fetch-Mode': 'cors',
+                            'Sec-Fetch-Site': 'same-origin',
+                            'Cookie': f'sessionid={cred["sessionId"]}; csrftoken={cred["csrfToken"]}'
+                        },
+                        proxies=proxy,
+                        timeout=15,
+                        verify=True
+                    )
+                    
+                    print(f"   API attempt {api_attempt + 1}/3 - Status: {adv_search2.status_code}")
+                    
+                    if adv_search2.status_code == 200:
+                        try:
+                            json_resp = adv_search2.json()
+                            target_id = str(json_resp['data']['user']['id'])
+                            print(f"   ✅ Found target ID via web API: {target_id}")
+                            break
+                        except (KeyError, ValueError) as e:
+                            print(f"   ❌ Failed to parse web API response: {e}")
+                    
+                    time.sleep(2)
+                except Exception as e:
+                    print(f"   ❌ API attempt {api_attempt + 1} failed: {str(e)[:100]}")
+                    time.sleep(2)
         
         if not target_id:
             success = False
