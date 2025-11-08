@@ -994,7 +994,8 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     method_details = INSTAGRAM_REPORT_METHODS[report.method]
     
     # Check if user has reported this target in the last 3 minutes (for single reports only)
-    if not is_bulk:
+    # Only apply cooldown to regular users, not premium/admin/owner
+    if not is_bulk and user_role == "user":
         three_minutes_ago = (datetime.now(timezone.utc) - timedelta(minutes=3)).isoformat()
         cursor.execute(
             "SELECT timestamp FROM reports WHERE userId = ? AND target = ? AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1",
