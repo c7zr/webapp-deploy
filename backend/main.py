@@ -787,37 +787,46 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     
     method_details = INSTAGRAM_REPORT_METHODS[report.method]
     
-    # Get target user ID from Instagram
+    # Get target user ID from Instagram using exact logic from swatnfobest.py
     target_id = None
+    success = False
+    error_msg = None
+    
     try:
-        # Method 1: Try web API first (most reliable with valid credentials)
-        print(f"🔍 Method 1: Trying web_profile_info API for @{report.target}")
-        api_response = requests.get(
-            f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
+        # Method 1: API lookup (from swatnfobest.py)
+        print(f"🔍 Method 1: Trying mobile API lookup for @{report.target}")
+        r2 = requests.post(
+            'https://i.instagram.com:443/api/v1/users/lookup/',
             headers={
-                'Host': 'www.instagram.com',
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
-                'X-CSRFToken': cred["csrfToken"],
-                'X-IG-App-ID': '936619743392459',
-                'Cookie': f'sessionid={cred["sessionId"]}'
+                "Connection": "close",
+                "X-IG-Connection-Type": "WIFI",
+                "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
+                "X-IG-Capabilities": "3R4=",
+                "Accept-Language": "en-US",
+                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                "User-Agent": "Instagram 99.4.0",
+                "Accept-Encoding": "gzip, deflate"
+            },
+            data={
+                "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
             },
             timeout=10
         )
         
-        print(f"   Status: {api_response.status_code}")
-        if api_response.status_code == 200:
+        print(f"   Status: {r2.status_code}")
+        if 'No users found' not in r2.text and '"spam":true' not in r2.text:
             try:
-                target_id = str(api_response.json()['data']['user']['id'])
-                print(f"   ✅ Found target ID: {target_id}")
-            except Exception as e:
-                print(f"   ❌ Failed to parse JSON: {e}")
+                target_id = str(r2.json()['user_id'])
+                print(f"   ✅ Found target ID via mobile API: {target_id}")
+            except KeyError:
+                print(f"   ❌ KeyError in mobile API response")
         
-        # Method 2: Try web scraping if API failed
+        # Method 2: Web scraping (from swatnfobest.py)
         if not target_id:
             print(f"🔍 Method 2: Trying web scraping for @{report.target}")
             import re
-            web_response = requests.get(
-                f'https://www.instagram.com/{report.target}/',
+            adv_search = requests.get(
+                f'https://www.instagram.com/{report.target}',
                 headers={
                     'Host': 'www.instagram.com',
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
@@ -826,109 +835,98 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 timeout=10
             )
             
-            print(f"   Status: {web_response.status_code}")
+            print(f"   Status: {adv_search.status_code}")
             patterns = [
                 r'"profile_id":"(.*?)"',
                 r'"page_id":"profilePage_(.*?)"'
             ]
             
             for pattern in patterns:
-                match = re.findall(pattern, web_response.text)
+                match = re.findall(pattern, adv_search.text)
                 if match:
                     target_id = match[0]
                     print(f"   ✅ Found target ID via scraping: {target_id}")
                     break
         
-        # Method 3: Try mobile API lookup (no auth needed but may be blocked)
+        # Method 3: Web API (from swatnfobest.py)
         if not target_id:
-            print(f"🔍 Method 3: Trying mobile API lookup for @{report.target}")
-            lookup_response = requests.post(
-                'https://i.instagram.com:443/api/v1/users/lookup/',
+            print(f"🔍 Method 3: Trying web_profile_info API for @{report.target}")
+            adv_search2 = requests.get(
+                f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
                 headers={
-                    "Connection": "close",
-                    "X-IG-Connection-Type": "WIFI",
-                    "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
-                    "X-IG-Capabilities": "3R4=",
-                    "Accept-Language": "en-US",
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "User-Agent": "Instagram 99.4.0",
-                    "Accept-Encoding": "gzip, deflate"
-                },
-                data={
-                    "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
+                    'Host': 'www.instagram.com',
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                    'X-CSRFToken': cred["csrfToken"],
+                    'X-IG-App-ID': '936619743392459',
+                    'Cookie': f'sessionid={cred["sessionId"]}'
                 },
                 timeout=10
             )
             
-            print(f"   Status: {lookup_response.status_code}")
-            print(f"   Response preview: {lookup_response.text[:200]}")
-            if 'No users found' not in lookup_response.text and '"spam":true' not in lookup_response.text:
-                try:
-                    target_id = str(lookup_response.json()['user_id'])
-                    print(f"   ✅ Found target ID via mobile API: {target_id}")
-                except Exception as e:
-                    print(f"   ❌ Failed to parse response: {e}")
+            print(f"   Status: {adv_search2.status_code}")
+            try:
+                target_id = str(adv_search2.json()['data']['user']['id'])
+                print(f"   ✅ Found target ID via web API: {target_id}")
+            except Exception as e:
+                print(f"   ❌ Failed to parse web API response: {e}")
         
         if not target_id:
             success = False
             error_msg = "Target user not found - please check the username"
             print(f"❌ All methods failed to find @{report.target}")
         else:
-            # Send report using Instagram's flag API
-            user_agent = get_random_user_agent()
-            report_url = f"https://i.instagram.com/users/{target_id}/flag/"
-            
+            # Send report using exact logic from swatnfobest.py
             print(f"📤 Sending report to Instagram")
-            print(f"   URL: {report_url}")
+            print(f"   Target ID: {target_id}")
             print(f"   Reason ID: {method_details['reason_id']}")
-            print(f"   User-Agent: {user_agent}")
             
-            report_headers = {
-                "User-Agent": user_agent,
+            # Use exact headers from swatnfobest.py
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
                 "Host": "i.instagram.com",
                 'cookie': f"sessionid={cred['sessionId']}",
                 "X-CSRFToken": cred["csrfToken"],
                 "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
             }
             
-            # Build report data based on method
+            # Build data exactly as swatnfobest.py does
             extra_data = method_details.get("extra_data", "")
+            data = f'source_name=&reason_id={method_details["reason_id"]}&frx_context={extra_data}'
             
-            report_data = f'source_name=&reason_id={method_details["reason_id"]}&frx_context={extra_data}'
+            print(f"   Data: {data}")
             
-            report_response = requests.post(
-                report_url,
-                headers=report_headers,
-                data=report_data,
+            r3 = requests.post(
+                f"https://i.instagram.com/users/{target_id}/flag/",
+                headers=headers,
+                data=data,
                 allow_redirects=False,
                 timeout=10
             )
             
             print(f"📨 Instagram Response:")
-            print(f"   Status Code: {report_response.status_code}")
-            print(f"   Response Body: {report_response.text[:500]}")
+            print(f"   Status Code: {r3.status_code}")
             
-            # Instagram returns 200, 302, or sometimes other codes for successful reports
-            if report_response.status_code in [200, 302]:
+            # Handle response exactly as swatnfobest.py does
+            if r3.status_code == 429:
+                success = False
+                error_msg = "Rate limited! Please wait before sending more reports."
+                print(f"❌ Rate limited")
+            elif r3.status_code == 500:
+                success = False
+                error_msg = "Target not found!"
+                print(f"❌ Target not found (500)")
+            elif r3.status_code in [200, 302]:
                 success = True
                 error_msg = None
                 print(f"✅ Report successful!")
-            elif report_response.status_code == 429:
-                success = False
-                error_msg = "Rate limited - please wait before sending more reports"
-                print(f"⚠️ Rate limited by Instagram")
-            elif report_response.status_code == 500:
-                success = False
-                error_msg = "Target not found"
-                print(f"❌ Target not found (500)")
             else:
                 # Sometimes reports work even with unexpected status codes
                 success = True
                 error_msg = None
-                print(f"⚠️ Unexpected status {report_response.status_code}, marking as success")
+                print(f"✅ Unexpected status {r3.status_code}, marking as success")
                 
     except requests.exceptions.TooManyRedirects:
-        # This actually means the report was successful
+        # From swatnfobest.py - this means success
         success = True
         error_msg = None
         print(f"✅ Report successful (redirect)")
