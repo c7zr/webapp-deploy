@@ -4,7 +4,7 @@
 from fastapi import FastAPI, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
@@ -368,74 +368,129 @@ async def api_info():
 # Auth Routes
 @app.post("/v2/auth/register")
 async def register(user: UserRegister):
-    # Rate limiting for registration
-    rate_limit_key = f"register_{user.email if user.email else user.username}"
-    if not check_rate_limit(rate_limit_key, max_requests=3, window_seconds=300):
-        raise HTTPException(status_code=429, detail="Too many registration attempts. Please try again later.")
-    
-    # Validate password strength
-    if len(user.password) < PASSWORD_MIN_LENGTH:
-        raise HTTPException(status_code=400, detail=f"Password must be at least {PASSWORD_MIN_LENGTH} characters long")
-    
-    # Check for password complexity
-    if not any(c.isupper() for c in user.password):
-        raise HTTPException(status_code=400, detail="Password must contain at least one uppercase letter")
-    if not any(c.islower() for c in user.password):
-        raise HTTPException(status_code=400, detail="Password must contain at least one lowercase letter")
-    if not any(c.isdigit() for c in user.password):
-        raise HTTPException(status_code=400, detail="Password must contain at least one number")
-    
-    # Validate username (alphanumeric and underscores only)
-    if not user.username.replace('_', '').isalnum():
-        raise HTTPException(status_code=400, detail="Username can only contain letters, numbers, and underscores")
-    
-    if len(user.username) < 3 or len(user.username) > 20:
-        raise HTTPException(status_code=400, detail="Username must be between 3 and 20 characters")
-    
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    # Check if username exists
-    cursor.execute("SELECT * FROM users WHERE username = ?", (user.username,))
-    if cursor.fetchone():
-        conn.close()
-        raise HTTPException(status_code=400, detail="Username already exists")
-    
-    # Check if email exists (only if provided)
-    if user.email:
-        cursor.execute("SELECT * FROM users WHERE email = ?", (user.email,))
+    conn = None
+    try:
+        # Rate limiting for registration
+        rate_limit_key = f"register_{user.email if user.email else user.username}"
+        if not check_rate_limit(rate_limit_key, max_requests=3, window_seconds=300):
+            return JSONResponse(
+                status_code=429,
+                content={"message": "Too many registration attempts. Please try again later.", "error": True}
+            )
+        
+        # Validate password strength
+        if len(user.password) < PASSWORD_MIN_LENGTH:
+            return JSONResponse(
+                status_code=400,
+                content={"message": f"Password must be at least {PASSWORD_MIN_LENGTH} characters long", "error": True}
+            )
+        
+        # Check for password complexity
+        if not any(c.isupper() for c in user.password):
+            return JSONResponse(
+                status_code=400,
+                content={"message": "Password must contain at least one uppercase letter", "error": True}
+            )
+        if not any(c.islower() for c in user.password):
+            return JSONResponse(
+                status_code=400,
+                content={"message": "Password must contain at least one lowercase letter", "error": True}
+            )
+        if not any(c.isdigit() for c in user.password):
+            return JSONResponse(
+                status_code=400,
+                content={"message": "Password must contain at least one number", "error": True}
+            )
+        
+        # Validate username (alphanumeric and underscores only)
+        if not user.username.replace('_', '').isalnum():
+            return JSONResponse(
+                status_code=400,
+                content={"message": "Username can only contain letters, numbers, and underscores", "error": True}
+            )
+        
+        if len(user.username) < 3 or len(user.username) > 20:
+            return JSONResponse(
+                status_code=400,
+                content={"message": "Username must be between 3 and 20 characters", "error": True}
+            )
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        # Check if username exists
+        cursor.execute("SELECT * FROM users WHERE username = ?", (user.username,))
         if cursor.fetchone():
             conn.close()
-            raise HTTPException(status_code=400, detail="Email already exists")
-    
-    # Use provided email or generate placeholder
-    email = user.email if user.email else f"{user.username}@local.user"
-    
-    user_id = "user_" + str(uuid.uuid4())[:8]
-    hashed_pw = hash_password(user.password)
-    
-    # Check if approval is required
-    cursor.execute("SELECT value FROM settings WHERE key = 'requireApproval'")
-    require_approval_setting = cursor.fetchone()
-    require_approval = require_approval_setting and require_approval_setting["value"] == "true"
-    
-    # Set isApproved based on settings
-    is_approved = 0 if require_approval else 1
-    approved_by = None if require_approval else "auto"
-    approved_at = None if require_approval else datetime.now(timezone.utc).isoformat()
-    
-    cursor.execute('''
-        INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts, lastFailedLogin, accountLockedUntil)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (user_id, user.username, email, hashed_pw, "user", 1, 0, is_approved, approved_by, approved_at, datetime.now(timezone.utc).isoformat(), 0, 0, None, None))
-    
-    conn.commit()
-    conn.close()
-    
-    if require_approval:
-        return {"message": "Account created successfully. Please wait for admin approval before logging in.", "success": True, "requiresApproval": True}
-    else:
-        return {"message": "Account created successfully", "success": True, "requiresApproval": False}
+            return JSONResponse(
+                status_code=400,
+                content={"message": "Username already exists", "error": True}
+            )
+        
+        # Check if email exists (only if provided)
+        if user.email:
+            cursor.execute("SELECT * FROM users WHERE email = ?", (user.email,))
+            if cursor.fetchone():
+                conn.close()
+                return JSONResponse(
+                    status_code=400,
+                    content={"message": "Email already exists", "error": True}
+                )
+        
+        # Use provided email or generate placeholder
+        email = user.email if user.email else f"{user.username}@local.user"
+        
+        user_id = "user_" + str(uuid.uuid4())[:8]
+        hashed_pw = hash_password(user.password)
+        
+        # Check if approval is required
+        cursor.execute("SELECT value FROM settings WHERE key = 'requireApproval'")
+        require_approval_setting = cursor.fetchone()
+        require_approval = require_approval_setting and require_approval_setting["value"] == "true"
+        
+        # Set isApproved based on settings
+        is_approved = 0 if require_approval else 1
+        approved_by = None if require_approval else "auto"
+        approved_at = None if require_approval else datetime.now(timezone.utc).isoformat()
+        
+        cursor.execute('''
+            INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts, lastFailedLogin, accountLockedUntil)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, user.username, email, hashed_pw, "user", 1, 0, is_approved, approved_by, approved_at, datetime.now(timezone.utc).isoformat(), 0, 0, None, None))
+        
+        conn.commit()
+        conn.close()
+        
+        if require_approval:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "message": "Account created successfully. Please wait for admin approval before logging in.",
+                    "success": True,
+                    "requiresApproval": True
+                }
+            )
+        else:
+            return JSONResponse(
+                status_code=200,
+                content={
+                    "message": "Account created successfully",
+                    "success": True,
+                    "requiresApproval": False
+                }
+            )
+            
+    except Exception as e:
+        print(f"⚠️ Registration error: {str(e)}")
+        if conn:
+            conn.close()
+        return JSONResponse(
+            status_code=500,
+            content={
+                "message": "Internal server error during registration",
+                "error": True
+            }
+        )
 
 @app.post("/v2/auth/login")
 async def login(credentials: UserLogin):
