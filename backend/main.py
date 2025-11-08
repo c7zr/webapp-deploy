@@ -1085,17 +1085,32 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 
                 print(f"   Status: {adv_search.status_code}")
                 
+                # Try multiple patterns (Instagram keeps changing their HTML)
+                patterns = [
+                    r'"profile_id":"(.*?)"',
+                    r'"page_id":"profilePage_(.*?)"',
+                    r'"profilePage_(.*?)"',
+                    r'"owner":{"id":"(.*?)"',
+                    r'"user_id":"(.*?)"',
+                    r'"id":"(\d+)","username":"' + report.target + '"'
+                ]
+                
                 # Try first pattern
-                try:
-                    target_id = re.findall(r'"profile_id":"(.*?)"', adv_search.text)[0]
-                    print(f"   ✅ Found target ID via scraping (profile_id): {target_id}")
-                except IndexError:
-                    # Try second pattern
+                found = False
+                for pattern in patterns:
                     try:
-                        target_id = re.findall(r'"page_id":"profilePage_(.*?)"', adv_search.text)[0]
-                        print(f"   ✅ Found target ID via scraping (page_id): {target_id}")
-                    except IndexError:
-                        print(f"   ❌ No pattern matched in scraping")
+                        matches = re.findall(pattern, adv_search.text)
+                        if matches:
+                            target_id = matches[0]
+                            print(f"   ✅ Found target ID via scraping (pattern: {pattern[:30]}...): {target_id}")
+                            found = True
+                            break
+                    except (IndexError, Exception) as e:
+                        continue
+                
+                if not found:
+                    print(f"   ❌ No pattern matched in scraping")
+                    print(f"   Response preview: {adv_search.text[:500]}")
                         
             except Exception as e:
                 print(f"   ❌ Method 2 failed: {str(e)[:100]}")
@@ -1104,6 +1119,9 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         if not target_id:
             print(f"🔍 Method 3: Web API for @{report.target}")
             try:
+                print(f"   Using sessionid: {cred['sessionId'][:20]}... (truncated)")
+                print(f"   Using csrftoken: {cred['csrfToken'][:20]}... (truncated)")
+                
                 adv_search2 = requests.get(
                     f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
                     headers={
@@ -1120,7 +1138,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                         'Alt-Used': 'www.instagram.com',
                         'Connection': 'keep-alive',
                         'Referer': f'https://www.instagram.com/{report.target}/',
-                        'Cookie': f'sessionid={cred["sessionId"]}',
+                        'Cookie': f'sessionid={cred["sessionId"]}; csrftoken={cred["csrfToken"]}',
                         'Sec-Fetch-Dest': 'empty',
                         'Sec-Fetch-Mode': 'cors',
                         'Sec-Fetch-Site': 'same-origin',
@@ -1130,8 +1148,19 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 )
                 
                 print(f"   Status: {adv_search2.status_code}")
-                target_id = str(adv_search2.json()['data']['user']['id'])
-                print(f"   ✅ Found target ID via web API: {target_id}")
+                print(f"   Response preview: {adv_search2.text[:300]}")
+                
+                if adv_search2.status_code == 200:
+                    response_json = adv_search2.json()
+                    target_id = str(response_json['data']['user']['id'])
+                    print(f"   ✅ Found target ID via web API: {target_id}")
+                elif adv_search2.status_code == 401:
+                    print(f"   ❌ 401 Unauthorized - credentials may be expired or invalid")
+                    print(f"   Please re-save your Instagram credentials in Settings")
+                else:
+                    print(f"   ❌ Unexpected status code: {adv_search2.status_code}")
+            except KeyError as e:
+                print(f"   ❌ Method 3 failed - KeyError: {e}")
             except Exception as e:
                 print(f"   ❌ Method 3 failed: {str(e)[:100]}")
         
