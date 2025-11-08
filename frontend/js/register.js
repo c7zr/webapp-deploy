@@ -60,8 +60,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        if (username.length < 3) {
-            showError('Username must be at least 3 characters');
+        if (username.length < 1) {
+            showError('Username must be at least 1 character');
             registerForm.classList.add('shake');
             setTimeout(() => registerForm.classList.remove('shake'), 300);
             return;
