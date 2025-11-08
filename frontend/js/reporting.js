@@ -312,11 +312,20 @@ async function sendReport(target, method) {
         if (response.ok && data.success) {
             return { success: true };
         } else {
-            return { success: false, error: data.message || 'Unknown error' };
+            // Log the full error for debugging
+            console.error('Report failed:', {
+                status: response.status,
+                statusText: response.statusText,
+                data: data
+            });
+            
+            // Return detailed error message
+            let errorMsg = data.message || data.detail || 'Unknown error';
+            return { success: false, error: errorMsg };
         }
     } catch (error) {
         console.error('Report error:', error);
-        return { success: false, error: 'Network error' };
+        return { success: false, error: 'Network error: ' + error.message };
     }
 }
 
