@@ -434,10 +434,10 @@ async def register(user: UserRegister):
                 content={"message": "Username can only contain letters, numbers, and underscores", "error": True}
             )
         
-        if len(user.username) < 1 or len(user.username) > 20:
+        if len(user.username) < 3 or len(user.username) > 20:
             return JSONResponse(
                 status_code=400,
-                content={"message": "Username must be between 1 and 20 characters", "error": True}
+                content={"message": "Username must be between 3 and 20 characters", "error": True}
             )
         
         conn = get_db()
