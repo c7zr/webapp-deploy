@@ -1023,7 +1023,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     error_msg = None
     
     try:
-        # Method 1: API lookup (EXACT from swatnfobest.py)
+        # Method 1: API lookup (EXACT from swatnfobest.py) - NO CREDENTIALS NEEDED
         print(f"🔍 Method 1: API lookup for @{report.target}")
         try:
             r2 = requests.post(
@@ -1045,12 +1045,18 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             )
             
             print(f"   Status: {r2.status_code}")
-            if 'No users found' not in r2.text and '"spam":true' not in r2.text:
+            print(f"   Response: {r2.text[:300]}")
+            
+            if r2.status_code == 200 and 'No users found' not in r2.text and '"spam":true' not in r2.text:
                 try:
-                    target_id = str(r2.json()['user_id'])
+                    response_json = r2.json()
+                    target_id = str(response_json['user_id'])
                     print(f"   ✅ Found target ID via API: {target_id}")
-                except KeyError:
-                    print(f"   ❌ KeyError in API response")
+                except (KeyError, ValueError) as e:
+                    print(f"   ❌ KeyError/ValueError in API response: {e}")
+                    print(f"   Response keys: {list(response_json.keys()) if 'response_json' in locals() else 'N/A'}")
+            else:
+                print(f"   ❌ User not found or spam flag in response")
         except Exception as e:
             print(f"   ❌ Method 1 failed: {str(e)[:100]}")
         
@@ -1070,17 +1076,24 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 )
                 
                 print(f"   Status: {adv_search.status_code}")
-                patterns = [
-                    r'"profile_id":"(.*?)"',
-                    r'"page_id":"profilePage_(.*?)"'
-                ]
                 
-                for pattern in patterns:
-                    match = re.findall(pattern, adv_search.text)
-                    if match:
-                        target_id = match[0]
-                        print(f"   ✅ Found target ID via scraping: {target_id}")
-                        break
+                if adv_search.status_code == 200:
+                    patterns = [
+                        r'"profile_id":"(.*?)"',
+                        r'"page_id":"profilePage_(.*?)"'
+                    ]
+                    
+                    for pattern in patterns:
+                        match = re.findall(pattern, adv_search.text)
+                        if match:
+                            target_id = match[0]
+                            print(f"   ✅ Found target ID via scraping (pattern: {pattern}): {target_id}")
+                            break
+                    
+                    if not target_id:
+                        print(f"   ❌ No pattern matched in HTML response")
+                else:
+                    print(f"   ❌ Non-200 status code")
             except Exception as e:
                 print(f"   ❌ Method 2 failed: {str(e)[:100]}")
         
@@ -1101,8 +1114,14 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 )
                 
                 print(f"   Status: {adv_search2.status_code}")
-                target_id = str(adv_search2.json()['data']['user']['id'])
-                print(f"   ✅ Found target ID via web API: {target_id}")
+                
+                if adv_search2.status_code == 200:
+                    response_json = adv_search2.json()
+                    target_id = str(response_json['data']['user']['id'])
+                    print(f"   ✅ Found target ID via web API: {target_id}")
+                else:
+                    print(f"   ❌ Non-200 status code")
+                    print(f"   Response: {adv_search2.text[:300]}")
             except Exception as e:
                 print(f"   ❌ Method 3 failed: {str(e)[:100]}")
         
