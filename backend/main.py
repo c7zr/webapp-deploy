@@ -1083,21 +1083,19 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     
             except Exception as e:
                 print(f"   ❌ Method 3 failed: {str(e)[:100]}")
-            except Exception as e:
-                print(f"   ❌ Method 3 failed: {str(e)[:100]}")
         
         if not target_id:
             success = False
             error_msg = "Failed to get target username. Target may not exist or be private."
             print(f"❌ All methods failed to find @{report.target}")
         else:
-            # Send report using EXACT d3s.py logic
+            # Send report using EXACT swatnfobest.py logic
             print(f"📤 Sending report to Instagram")
             print(f"   Target ID: {target_id}")
             print(f"   Reason ID: {method_details['reason_id']}")
             
             try:
-                # Use EXACT headers and format from d3s.py
+                # EXACT headers and data from swatnfobest.py
                 r3 = requests.post(
                     f"https://i.instagram.com/users/{target_id}/flag/",
                     headers={
@@ -1107,32 +1105,37 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                         "X-CSRFToken": cred["csrfToken"],
                         "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
                     },
-                    data=f'source_name=&reason_id={method_details["reason_id"]}&frx_context=',
+                    data=f'source_name=&reason_id={method_details["reason_id"]}&frx_context={method_details.get("extra_data", "")}',
                     allow_redirects=False,
                     timeout=30
                 )
                 
                 print(f"   📨 Response Status: {r3.status_code}")
                 
-                # Handle response EXACTLY as d3s.py does
+                # Handle response EXACTLY as swatnfobest.py does
                 if r3.status_code == 429:
                     success = False
-                    error_msg = f"Ban with status code [ {r3.status_code} ]"
+                    error_msg = "Rate limited! Please wait before sending more reports."
                     print(f"❌ Rate limited")
                 elif r3.status_code == 500:
                     success = False
-                    error_msg = f"Target Not Found with status code [ {r3.status_code} ]"
+                    error_msg = "Target not found!"
                     print(f"❌ Target not found (500)")
-                else:
+                elif r3.status_code in [200, 302]:
                     success = True
                     error_msg = None
-                    print(f"✅ Report Done with status code [ {r3.status_code} ]")
+                    print(f"✅ Report sent successfully")
+                else:
+                    # swatnfobest.py treats other status codes as success too
+                    success = True
+                    error_msg = None
+                    print(f"✅ Report sent (status: {r3.status_code})")
                     
             except requests.exceptions.TooManyRedirects:
-                # d3s.py treats this as success
+                # swatnfobest.py treats this as success
                 success = True
                 error_msg = None
-                print(f"✅ Report Done (redirect)")
+                print(f"✅ Report sent (redirect)")
             except Exception as e:
                 success = False
                 error_msg = f"Report Failed: {str(e)}"
