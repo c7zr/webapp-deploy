@@ -885,9 +885,12 @@ async def test_credentials(token_data: dict = Depends(verify_token)):
 
 # Helper function: Get target ID (EXACT from swatnfobest.py)
 def get_target_id(target_username: str, sessionid: str, csrftoken: str) -> str:
-    """Get Instagram user ID from username - EXACT swatnfobest.py logic"""
+    """Get Instagram user ID from username - EXACT swatnfobest.py logic with proxy support"""
+    proxy = get_random_proxy()
+    
     try:
         # Method 1: API lookup
+        print(f"   🔍 Method 1: API lookup via proxy")
         r2 = requests.post(
             'https://i.instagram.com:443/api/v1/users/lookup/',
             headers={
@@ -902,25 +905,37 @@ def get_target_id(target_username: str, sessionid: str, csrftoken: str) -> str:
             },
             data={
                 "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{target_username}"}}'
-            }
+            },
+            proxies=proxy,
+            timeout=10
         )
         
+        print(f"   Method 1 Status: {r2.status_code}")
         if 'No users found' not in r2.text and '"spam":true' not in r2.text:
             try:
-                return str(r2.json()['user_id'])
+                target_id = str(r2.json()['user_id'])
+                print(f"   ✅ Method 1 success: {target_id}")
+                return target_id
             except KeyError:
+                print(f"   ❌ Method 1 KeyError")
                 pass
+        else:
+            print(f"   ❌ Method 1: No users found or spam")
         
         # Method 2: Web scraping
+        print(f"   🔍 Method 2: Web scraping via proxy")
         adv_search = requests.get(
             f'https://www.instagram.com/{target_username}',
             headers={
                 'Host': 'www.instagram.com',
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
                 'Cookie': f'csrftoken={csrftoken}',
-            }
+            },
+            proxies=proxy,
+            timeout=10
         )
         
+        print(f"   Method 2 Status: {adv_search.status_code}")
         import re
         patterns = [
             r'"profile_id":"(.*?)"',
@@ -930,9 +945,13 @@ def get_target_id(target_username: str, sessionid: str, csrftoken: str) -> str:
         for pattern in patterns:
             match = re.findall(pattern, adv_search.text)
             if match:
+                print(f"   ✅ Method 2 success: {match[0]}")
                 return match[0]
         
+        print(f"   ❌ Method 2: No pattern match")
+        
         # Method 3: Web API
+        print(f"   🔍 Method 3: Web API via proxy")
         adv_search2 = requests.get(
             f'https://www.instagram.com/api/v1/users/web_profile_info/?username={target_username}',
             headers={
@@ -941,18 +960,31 @@ def get_target_id(target_username: str, sessionid: str, csrftoken: str) -> str:
                 'X-CSRFToken': csrftoken,
                 'X-IG-App-ID': '936619743392459',
                 'Cookie': f'sessionid={sessionid}'
-            }
+            },
+            proxies=proxy,
+            timeout=10
         )
         
-        return adv_search2.json()['data']['user']['id']
+        print(f"   Method 3 Status: {adv_search2.status_code}")
+        if adv_search2.status_code == 200:
+            target_id = adv_search2.json()['data']['user']['id']
+            print(f"   ✅ Method 3 success: {target_id}")
+            return target_id
+        else:
+            print(f"   ❌ Method 3: Status {adv_search2.status_code}")
+            print(f"   Response: {adv_search2.text[:200]}")
         
     except Exception as e:
-        print(f"Error getting target ID: {str(e)}")
+        print(f"   ❌ Error getting target ID: {str(e)}")
         return None
+    
+    return None
 
 # Helper function: Send single report (EXACT from swatnfobest.py)
 def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method: str = "spam") -> bool:
-    """Send a single report to Instagram - EXACT swatnfobest.py logic"""
+    """Send a single report to Instagram - EXACT swatnfobest.py logic with proxy support"""
+    proxy = get_random_proxy()
+    
     try:
         # Map method names to reason_id and additional data (from swatnfobest.py)
         method_config = {
@@ -983,13 +1015,17 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
         
         data = f'source_name=&reason_id={reason_id}&frx_context={extra_data}'
         
+        print(f"   📤 Sending report via proxy - method: {method}, reason_id: {reason_id}")
         r3 = requests.post(
             f"https://i.instagram.com/users/{target_id}/flag/",
             headers=headers,
             data=data,
-            allow_redirects=False
+            allow_redirects=False,
+            proxies=proxy,
+            timeout=10
         )
         
+        print(f"   Report Status: {r3.status_code}")
         if r3.status_code == 429:
             print("[ERROR] Rate limited")
             return False
@@ -997,14 +1033,17 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
             print("[ERROR] Target not found")
             return False
         elif r3.status_code in [200, 302]:
+            print(f"   ✅ Report sent successfully")
             return True
         else:
+            print(f"   ⚠️  Unexpected status but treating as success: {r3.status_code}")
             return True  # Sometimes reports work even with unexpected status codes
             
     except requests.exceptions.TooManyRedirects:
+        print(f"   ✅ Too many redirects (treated as success)")
         return True
     except Exception as e:
-        print(f"Error sending report: {str(e)}")
+        print(f"   ❌ Error sending report: {str(e)}")
         return False
 
 # Reporting Routes
