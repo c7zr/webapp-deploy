@@ -32,33 +32,77 @@ PASSWORD_MIN_LENGTH = 8
 TOKEN_EXPIRY_DAYS = 7
 
 # Proxy Configuration
-PROXY_FILE = "proxies.txt"
+PROXY_FILE = os.path.join(os.path.dirname(__file__), "..", "..", "proxies.txt")
 proxies = []
+proxy_index = 0  # For round-robin rotation
 
 def load_proxies():
     """Load proxies from the proxy file"""
+    global proxies
     try:
-        with open(PROXY_FILE, "r") as f:
-            for line in f:
-                if line.strip():
-                    host, port, username, password = line.strip().split(":")
-                    proxies.append({
-                        "http": f"http://{username}:{password}@{host}:{port}",
-                        "https": f"http://{username}:{password}@{host}:{port}"
-                    })
-        print(f"✅ Loaded {len(proxies)} proxies")
+        # Try multiple possible locations
+        possible_paths = [
+            PROXY_FILE,
+            os.path.join(os.path.dirname(__file__), "..", "..", "proxies.txt"),
+            "/home/ubuntu/webapp-deploy/proxies.txt",
+            "proxies.txt"
+        ]
+        
+        loaded = False
+        for path in possible_paths:
+            try:
+                if os.path.exists(path):
+                    with open(path, "r") as f:
+                        proxies = []
+                        for line in f:
+                            line = line.strip()
+                            if line and not line.startswith("#"):
+                                try:
+                                    parts = line.split(":")
+                                    if len(parts) == 4:
+                                        host, port, username, password = parts
+                                        proxies.append({
+                                            "http": f"http://{username}:{password}@{host}:{port}",
+                                            "https": f"http://{username}:{password}@{host}:{port}"
+                                        })
+                                except Exception as e:
+                                    print(f"⚠️ Skipping invalid proxy line: {line[:50]}... - {e}")
+                                    continue
+                    print(f"✅ Loaded {len(proxies)} proxies from {path}")
+                    loaded = True
+                    break
+            except Exception as e:
+                continue
+        
+        if not loaded:
+            print(f"⚠️ Failed to load proxies from any location")
+            print(f"   Tried: {possible_paths}")
     except Exception as e:
-        print(f"⚠️ Failed to load proxies: {e}")
+        print(f"❌ Error loading proxies: {e}")
 
 def get_random_proxy(exclude_list=None):
     """Return a random proxy from the pool, excluding any failed proxies"""
+    global proxy_index
+    
     if not proxies:
         load_proxies()
     if not proxies:
+        print("⚠️ No proxies available!")
         return None
-        
-    available_proxies = [p for p in proxies if p not in (exclude_list or [])]
-    return random.choice(available_proxies) if available_proxies else None
+    
+    # Filter out excluded proxies
+    if exclude_list:
+        available_proxies = [p for p in proxies if p not in exclude_list]
+    else:
+        available_proxies = proxies
+    
+    if not available_proxies:
+        print("⚠️ All proxies have been excluded!")
+        return None
+    
+    # Use round-robin for better distribution across 40 users
+    proxy_index = (proxy_index + 1) % len(available_proxies)
+    return available_proxies[proxy_index]
 
 # Instagram User Agents Pool (for rotation to avoid detection)
 INSTAGRAM_USER_AGENTS = [
@@ -866,7 +910,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     success = False
     error_msg = None
     failed_proxies = []
-    max_retries = 3
+    max_retries = 5  # Increased from 3 to 5 for better success rate with 1k proxies
     
     try:
         # Method 1: API lookup (from swatnfobest.py)
@@ -878,7 +922,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 break
                 
             try:
-                print(f"   Attempt {attempt + 1} with proxy {list(proxy.values())[0]}")
+                print(f"   Attempt {attempt + 1}/{max_retries} with proxy {list(proxy.values())[0][:50]}...")
                 r2 = requests.post(
                     'https://i.instagram.com:443/api/v1/users/lookup/',
                     headers={
@@ -895,7 +939,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                         "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
                     },
                     proxies=proxy,
-                    timeout=10
+                    timeout=15  # Increased timeout for better reliability
                 )
                 print(f"   Status: {r2.status_code}")
                 if 'No users found' not in r2.text and '"spam":true' not in r2.text:
@@ -906,8 +950,16 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     except KeyError:
                         print(f"   ❌ KeyError in mobile API response")
                         failed_proxies.append(proxy)
+            except requests.exceptions.Timeout:
+                print(f"   ⏱️ Timeout with proxy - trying another")
+                failed_proxies.append(proxy)
+                continue
+            except requests.exceptions.ProxyError:
+                print(f"   🚫 Proxy connection error - trying another")
+                failed_proxies.append(proxy)
+                continue
             except Exception as e:
-                print(f"   ❌ Request failed: {str(e)}")
+                print(f"   ❌ Request failed: {str(e)[:100]}")
                 failed_proxies.append(proxy)
                 continue
         
@@ -992,14 +1044,15 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 extra_data = method_details.get("extra_data", "")
                 data = f'source_name=&reason_id={method_details["reason_id"]}&frx_context={extra_data}'
                 
-                print(f"   Report attempt {report_attempt + 1} of {max_retries}")
+                print(f"   Report attempt {report_attempt + 1}/{max_retries}")
                 
                 proxy = get_random_proxy(exclude_list=failed_proxies)
                 if not proxy:
                     print("   ⚠️ No more proxies available")
+                    error_msg = "All proxies failed or unavailable"
                     break
                     
-                print(f"   Using proxy: {list(proxy.values())[0]}")
+                print(f"   Using proxy: {list(proxy.values())[0][:50]}...")
                 
                 try:
                     r3 = requests.post(
@@ -1008,18 +1061,21 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                         data=data,
                         proxies=proxy,
                         allow_redirects=False,
-                        timeout=10
+                        timeout=15  # Increased timeout
                     )
+                    
+                    print(f"   📨 Response Status: {r3.status_code}")
                     
                     if r3.status_code in [200, 302]:
                         success = True
+                        print(f"   ✅ Report successful!")
                         break
                     elif r3.status_code == 429:
-                        print(f"   ⚠️ Rate limited on proxy - trying another")
+                        print(f"   ⏱️ Rate limited on proxy - trying another")
                         failed_proxies.append(proxy)
                         continue
                     elif r3.status_code == 500:
-                        print(f"   ⚠️ Server error on proxy - trying another")
+                        print(f"   🔴 Server error on proxy - trying another")
                         failed_proxies.append(proxy)
                         continue
                     else:
@@ -1027,8 +1083,16 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                         print(f"   ⚠️ Unexpected status {r3.status_code} - marking as success")
                         success = True
                         break
+                except requests.exceptions.Timeout:
+                    print(f"   ⏱️ Request timeout - trying another proxy")
+                    failed_proxies.append(proxy)
+                    continue
+                except requests.exceptions.ProxyError:
+                    print(f"   🚫 Proxy connection error - trying another proxy")
+                    failed_proxies.append(proxy)
+                    continue
                 except requests.exceptions.RequestException as e:
-                    print(f"   ⚠️ Request failed with proxy: {e}")
+                    print(f"   ❌ Request failed: {str(e)[:100]}")
                     failed_proxies.append(proxy)
                     continue
             
