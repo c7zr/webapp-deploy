@@ -122,6 +122,7 @@ def get_random_proxy(exclude_list=None):
 
 # Instagram User Agents Pool (for rotation to avoid detection)
 INSTAGRAM_USER_AGENTS = [
+    # Android Instagram App User Agents
     "Instagram 250.0.0.0.0 Android (30/11; 420dpi; 1080x2340; OnePlus; ONEPLUS A6000; OnePlus6; qcom; en_US; 232834545)",
     "Instagram 248.0.0.0.0 Android (29/10; 480dpi; 1080x2220; samsung; SM-G973F; beyond1; exynos9820; en_US; 229968015)",
     "Instagram 251.0.0.0.0 Android (31/12; 560dpi; 1440x3040; samsung; SM-G998B; p3s; exynos2100; en_US; 235678901)",
@@ -131,12 +132,51 @@ INSTAGRAM_USER_AGENTS = [
     "Instagram 253.0.0.0.0 Android (33/13; 560dpi; 1440x3200; OnePlus; LE2125; OnePlus9Pro; qcom; en_US; 240123456)",
     "Instagram 246.0.0.0.0 Android (29/10; 420dpi; 1080x2400; vivo; V2145; PD2145F; qcom; en_US; 227456789)",
     "Instagram 254.0.0.0.0 Android (31/12; 480dpi; 1080x2400; OPPO; CPH2247; OP4BA2; qcom; en_US; 242345678)",
-    "Instagram 245.0.0.0.0 Android (30/11; 440dpi; 1080x2340; realme; RMX3085; RE54E4L1; qcom; en_US; 225567890)"
+    "Instagram 245.0.0.0.0 Android (30/11; 440dpi; 1080x2340; realme; RMX3085; RE54E4L1; qcom; en_US; 225567890)",
+    "Instagram 255.0.0.0.0 Android (32/12; 560dpi; 1440x3120; samsung; SM-G991B; o1s; exynos2100; en_US; 243456789)",
+    "Instagram 256.0.0.0.0 Android (33/13; 420dpi; 1080x2400; Xiaomi; 2201123G; lisa; qcom; en_US; 244567890)",
+    "Instagram 257.0.0.0.0 Android (31/12; 480dpi; 1080x2340; OnePlus; DN2103; denniz; qcom; en_US; 245678901)",
+    "Instagram 258.0.0.0.0 Android (32/12; 440dpi; 1080x2400; OPPO; CPH2473; OP4EC1; qcom; en_US; 246789012)",
+    "Instagram 259.0.0.0.0 Android (33/13; 560dpi; 1440x3200; samsung; SM-S908B; b0s; exynos2200; en_US; 247890123)",
+    "Instagram 260.0.0.0.0 Android (31/12; 420dpi; 1080x2340; Google; Pixel 7; panther; google; en_US; 248901234)",
+    "Instagram 261.0.0.0.0 Android (32/12; 480dpi; 1080x2400; Xiaomi; 22081212UG; ruby; qcom; en_US; 249012345)",
+    "Instagram 262.0.0.0.0 Android (33/13; 440dpi; 1080x2400; vivo; V2219; PD2219; qcom; en_US; 250123456)",
+    "Instagram 263.0.0.0.0 Android (31/12; 560dpi; 1440x3120; OnePlus; CPH2449; OP535DL1; qcom; en_US; 251234567)",
+    "Instagram 264.0.0.0.0 Android (32/12; 420dpi; 1080x2340; realme; RMX3516; RE58B2L1; qcom; en_US; 252345678)",
+    # iOS Instagram App User Agents
+    "Instagram 265.0.0.0.0 (iPhone14,2; iOS 16_0; en_US; en; scale=3.00; 1170x2532; 253456789)",
+    "Instagram 266.0.0.0.0 (iPhone13,4; iOS 15_5; en_US; en; scale=3.00; 1284x2778; 254567890)",
+    "Instagram 267.0.0.0.0 (iPhone14,5; iOS 16_1; en_US; en; scale=3.00; 1170x2532; 255678901)",
+    "Instagram 268.0.0.0.0 (iPhone13,2; iOS 15_6; en_US; en; scale=3.00; 1170x2532; 256789012)",
+    "Instagram 269.0.0.0.0 (iPhone14,3; iOS 16_2; en_US; en; scale=3.00; 1284x2778; 257890123)",
+    "Instagram 270.0.0.0.0 (iPhone13,3; iOS 15_7; en_US; en; scale=3.00; 1284x2778; 258901234)",
+    "Instagram 271.0.0.0.0 (iPhone14,4; iOS 16_3; en_US; en; scale=3.00; 1125x2436; 259012345)",
+    "Instagram 272.0.0.0.0 (iPhone14,6; iOS 16_4; en_US; en; scale=3.00; 1170x2532; 260123456)",
+    "Instagram 273.0.0.0.0 (iPhone13,1; iOS 15_8; en_US; en; scale=3.00; 1125x2436; 261234567)",
+    "Instagram 274.0.0.0.0 (iPhone14,7; iOS 16_5; en_US; en; scale=3.00; 1284x2778; 262345678)"
+]
+
+# Web Browser User Agents for scraping
+WEB_USER_AGENTS = [
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
 ]
 
 def get_random_user_agent():
     """Return a random Instagram user agent from the pool"""
     return random.choice(INSTAGRAM_USER_AGENTS)
+
+def get_random_web_user_agent():
+    """Return a random web browser user agent"""
+    return random.choice(WEB_USER_AGENTS)
 
 # Instagram API Configuration
 INSTAGRAM_API_BASE = "https://www.instagram.com/api/v1"
@@ -973,7 +1013,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     max_retries = 5  # Increased from 3 to 5 for better success rate with 1k proxies
     
     try:
-        # Method 1: API lookup (from swatnfobest.py)
+        # Method 1: API lookup with advanced bypasses
         print(f"🔍 Method 1: Trying mobile API lookup for @{report.target}")
         for attempt in range(max_retries):
             proxy = get_random_proxy(exclude_list=failed_proxies)
@@ -982,24 +1022,49 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 break
                 
             try:
+                # Generate unique device identifiers for each attempt
+                device_id = f"android-{random.randint(1000000000000000, 9999999999999999)}"
+                session_id = ''.join(random.choices('0123456789abcdef', k=32))
+                user_agent = get_random_user_agent()
+                
                 print(f"   Attempt {attempt + 1}/{max_retries} with proxy {list(proxy.values())[0][:50]}...")
+                
+                # Advanced headers to mimic real Instagram app
+                headers = {
+                    "User-Agent": user_agent,
+                    "Connection": "keep-alive",
+                    "X-IG-Connection-Type": "WIFI",
+                    "X-IG-App-ID": "567067343352427",
+                    "X-IG-Device-ID": device_id,
+                    "X-IG-Android-ID": device_id,
+                    "X-Ads-Opt-Out": "0",
+                    "X-CM-Bandwidth-KBPS": str(random.randint(2000, 10000)),
+                    "X-CM-Latency": str(random.randint(10, 100)),
+                    "X-IG-Capabilities": "3brTvw==",
+                    "X-IG-App-Locale": "en_US",
+                    "X-IG-Device-Locale": "en_US",
+                    "X-Pigeon-Session-Id": session_id,
+                    "X-Pigeon-Rawclienttime": str(int(time.time())),
+                    "X-IG-Connection-Speed": f"{random.randint(1000, 5000)}kbps",
+                    "X-IG-Bandwidth-Speed-KBPS": str(random.randint(2000, 10000)),
+                    "X-IG-Bandwidth-TotalBytes-B": str(random.randint(5000000, 20000000)),
+                    "X-IG-Bandwidth-TotalTime-MS": str(random.randint(100, 1000)),
+                    "X-FB-HTTP-Engine": "Liger",
+                    "Accept-Language": "en-US",
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Accept": "*/*"
+                }
+                
                 r2 = requests.post(
                     'https://i.instagram.com:443/api/v1/users/lookup/',
-                    headers={
-                        "Connection": "close",
-                        "X-IG-Connection-Type": "WIFI",
-                        "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
-                        "X-IG-Capabilities": "3R4=",
-                        "Accept-Language": "en-US",
-                        "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                        "User-Agent": "Instagram 99.4.0",
-                        "Accept-Encoding": "gzip, deflate"
-                    },
+                    headers=headers,
                     data={
                         "signed_body": f'35a2d547d3b6ff400f713948cdffe0b789a903f86117eb6e2f3e573079b2f038.{{"q":"{report.target}"}}'
                     },
                     proxies=proxy,
-                    timeout=15  # Increased timeout for better reliability
+                    timeout=20,  # Increased timeout
+                    verify=True
                 )
                 print(f"   Status: {r2.status_code}")
                 if 'No users found' not in r2.text and '"spam":true' not in r2.text:
@@ -1011,18 +1076,24 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                         print(f"   ❌ KeyError in mobile API response")
                         failed_proxies.append(proxy)
                 
-                # Add delay between attempts to avoid rate limiting
+                # Add randomized delay between attempts
                 if attempt < max_retries - 1:
-                    time.sleep(4)
+                    time.sleep(4 + random.uniform(1, 3))
                     
             except requests.exceptions.Timeout:
                 print(f"   ⏱️ Timeout with proxy - trying another")
                 failed_proxies.append(proxy)
                 if attempt < max_retries - 1:
-                    time.sleep(4)
+                    time.sleep(5)
                 continue
             except requests.exceptions.ProxyError:
                 print(f"   🚫 Proxy connection error - trying another")
+                failed_proxies.append(proxy)
+                if attempt < max_retries - 1:
+                    time.sleep(3)
+                continue
+            except requests.exceptions.SSLError:
+                print(f"   🔒 SSL error - trying another proxy")
                 failed_proxies.append(proxy)
                 if attempt < max_retries - 1:
                     time.sleep(4)
@@ -1034,20 +1105,34 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     time.sleep(4)
                 continue
         
-        # Method 2: Web scraping (from swatnfobest.py)
+        # Method 2: Web scraping with advanced browser emulation
         if not target_id:
             print(f"🔍 Method 2: Trying web scraping for @{report.target}")
             import re
             proxy = get_random_proxy()
+            web_user_agent = get_random_web_user_agent()
+            
             adv_search = requests.get(
                 f'https://www.instagram.com/{report.target}',
                 headers={
                     'Host': 'www.instagram.com',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                    'User-Agent': web_user_agent,
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                    'Sec-Fetch-Dest': 'document',
+                    'Sec-Fetch-Mode': 'navigate',
+                    'Sec-Fetch-Site': 'none',
+                    'Sec-Fetch-User': '?1',
+                    'Cache-Control': 'max-age=0',
                     'Cookie': f'csrftoken={cred["csrfToken"]}',
                 },
                 proxies=proxy,
-                timeout=10
+                timeout=15,
+                verify=True
             )
             
             print(f"   Status: {adv_search.status_code}")
@@ -1063,21 +1148,35 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     print(f"   ✅ Found target ID via scraping: {target_id}")
                     break
         
-        # Method 3: Web API (from swatnfobest.py)
+        # Method 3: Web API with better headers
         if not target_id:
             print(f"🔍 Method 3: Trying web_profile_info API for @{report.target}")
             proxy = get_random_proxy()
+            web_user_agent = get_random_web_user_agent()
+            
             adv_search2 = requests.get(
                 f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
                 headers={
                     'Host': 'www.instagram.com',
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
+                    'User-Agent': web_user_agent,
+                    'Accept': '*/*',
+                    'Accept-Language': 'en-US,en;q=0.9',
+                    'Accept-Encoding': 'gzip, deflate, br',
                     'X-CSRFToken': cred["csrfToken"],
                     'X-IG-App-ID': '936619743392459',
-                    'Cookie': f'sessionid={cred["sessionId"]}'
+                    'X-IG-WWW-Claim': '0',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'DNT': '1',
+                    'Connection': 'keep-alive',
+                    'Referer': f'https://www.instagram.com/{report.target}/',
+                    'Sec-Fetch-Dest': 'empty',
+                    'Sec-Fetch-Mode': 'cors',
+                    'Sec-Fetch-Site': 'same-origin',
+                    'Cookie': f'sessionid={cred["sessionId"]}; csrftoken={cred["csrfToken"]}'
                 },
                 proxies=proxy,
-                timeout=10
+                timeout=15,
+                verify=True
             )
             
             print(f"   Status: {adv_search2.status_code}")
@@ -1092,7 +1191,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             error_msg = "Target user not found - please check the username"
             print(f"❌ All methods failed to find @{report.target}")
         else:
-            # Send report using exact logic from swatnfobest.py
+            # Send report with advanced bypasses
             print(f"📤 Sending report to Instagram")
             print(f"   Target ID: {target_id}")
             print(f"   Reason ID: {method_details['reason_id']}")
@@ -1102,16 +1201,45 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             success = False
             
             for report_attempt in range(max_retries):
-                # Use exact headers from swatnfobest.py
+                # Generate unique identifiers for each attempt
+                device_id = f"android-{random.randint(1000000000000000, 9999999999999999)}"
+                session_id = ''.join(random.choices('0123456789abcdef', k=32))
+                user_agent = get_random_user_agent()
+                
+                # Advanced headers with more Instagram app fingerprints
                 headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
+                    "User-Agent": user_agent,
                     "Host": "i.instagram.com",
-                    'cookie': f"sessionid={cred['sessionId']}",
+                    "Accept": "*/*",
+                    "Accept-Language": "en-US",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
                     "X-CSRFToken": cred["csrfToken"],
-                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                    "X-IG-App-ID": "567067343352427",
+                    "X-IG-Device-ID": device_id,
+                    "X-IG-Android-ID": device_id,
+                    "X-Ads-Opt-Out": "0",
+                    "X-CM-Bandwidth-KBPS": str(random.randint(2000, 10000)),
+                    "X-CM-Latency": str(random.randint(10, 100)),
+                    "X-IG-Connection-Type": "WIFI",
+                    "X-IG-Capabilities": "3brTvw==",
+                    "X-IG-App-Locale": "en_US",
+                    "X-IG-Device-Locale": "en_US",
+                    "X-Pigeon-Session-Id": session_id,
+                    "X-Pigeon-Rawclienttime": str(int(time.time())),
+                    "X-IG-Connection-Speed": f"{random.randint(1000, 5000)}kbps",
+                    "X-IG-Bandwidth-Speed-KBPS": str(random.randint(2000, 10000)),
+                    "X-IG-Bandwidth-TotalBytes-B": str(random.randint(5000000, 20000000)),
+                    "X-IG-Bandwidth-TotalTime-MS": str(random.randint(100, 1000)),
+                    "X-FB-HTTP-Engine": "Liger",
+                    "X-FB-Client-IP": "True",
+                    "X-FB-Server-Cluster": "True",
+                    "DNT": "1",
+                    "Connection": "keep-alive",
+                    "Cookie": f"sessionid={cred['sessionId']}; csrftoken={cred['csrfToken']}"
                 }
                 
-                # Build data exactly as swatnfobest.py does
+                # Build data exactly as needed
                 extra_data = method_details.get("extra_data", "")
                 data = f'source_name=&reason_id={method_details["reason_id"]}&frx_context={extra_data}'
                 
@@ -1132,7 +1260,8 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                         data=data,
                         proxies=proxy,
                         allow_redirects=False,
-                        timeout=15  # Increased timeout
+                        timeout=20,  # Increased timeout
+                        verify=True
                     )
                     
                     print(f"   📨 Response Status: {r3.status_code}")
@@ -1144,10 +1273,12 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     elif r3.status_code == 429:
                         print(f"   ⏱️ Rate limited on proxy - trying another")
                         failed_proxies.append(proxy)
+                        time.sleep(6 + random.uniform(1, 3))
                         continue
                     elif r3.status_code == 500:
                         print(f"   🔴 Server error on proxy - trying another")
                         failed_proxies.append(proxy)
+                        time.sleep(4 + random.uniform(0.5, 2))
                         continue
                     else:
                         # Unexpected status but might be success
@@ -1158,10 +1289,16 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     print(f"   ⏱️ Request timeout - trying another proxy")
                     failed_proxies.append(proxy)
                     if report_attempt < max_retries - 1:
-                        time.sleep(4)
+                        time.sleep(5)
                     continue
                 except requests.exceptions.ProxyError:
                     print(f"   🚫 Proxy connection error - trying another proxy")
+                    failed_proxies.append(proxy)
+                    if report_attempt < max_retries - 1:
+                        time.sleep(3)
+                    continue
+                except requests.exceptions.SSLError:
+                    print(f"   🔒 SSL error - trying another proxy")
                     failed_proxies.append(proxy)
                     if report_attempt < max_retries - 1:
                         time.sleep(4)
