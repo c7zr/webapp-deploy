@@ -50,11 +50,15 @@ def load_proxies():
     except Exception as e:
         print(f"⚠️ Failed to load proxies: {e}")
 
-def get_random_proxy():
-    """Return a random proxy from the pool"""
+def get_random_proxy(exclude_list=None):
+    """Return a random proxy from the pool, excluding any failed proxies"""
     if not proxies:
         load_proxies()
-    return random.choice(proxies) if proxies else None
+    if not proxies:
+        return None
+        
+    available_proxies = [p for p in proxies if p not in (exclude_list or [])]
+    return random.choice(available_proxies) if available_proxies else None
 
 # Instagram User Agents Pool (for rotation to avoid detection)
 INSTAGRAM_USER_AGENTS = [
@@ -434,10 +438,10 @@ async def register(user: UserRegister):
                 content={"message": "Username can only contain letters, numbers, and underscores", "error": True}
             )
         
-        if len(user.username) < 3 or len(user.username) > 20:
+        if len(user.username) < 1 or len(user.username) > 20:
             return JSONResponse(
                 status_code=400,
-                content={"message": "Username must be between 3 and 20 characters", "error": True}
+                content={"message": "Username must be between 1 and 20 characters", "error": True}
             )
         
         conn = get_db()
@@ -846,16 +850,37 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     
     method_details = INSTAGRAM_REPORT_METHODS[report.method]
     
+    # Check if this user has already been reported twice by the current user today
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    cursor.execute(
+        "SELECT COUNT(*) as count FROM reports WHERE userId = ? AND target = ? AND timestamp >= ?",
+        (token_data["user_id"], report.target, today)
+    )
+    daily_target_count = cursor.fetchone()["count"]
+    
+    if daily_target_count >= 2:
+        conn.close()
+        raise HTTPException(status_code=429, detail="You can only report the same user 2 times per day")
+
     # Get target user ID from Instagram using exact logic from swatnfobest.py
     target_id = None
     success = False
     error_msg = None
+    failed_proxies = []
+    max_retries = 3
     
     try:
         # Method 1: API lookup (from swatnfobest.py)
         print(f"🔍 Method 1: Trying mobile API lookup for @{report.target}")
-        proxy = get_random_proxy()
-        r2 = requests.post(
+        for attempt in range(max_retries):
+            proxy = get_random_proxy(exclude_list=failed_proxies)
+            if not proxy:
+                print(f"⚠️ No more proxies available after {attempt} attempts")
+                break
+                
+            try:
+                print(f"   Attempt {attempt + 1} with proxy {list(proxy.values())[0]}")
+                r2 = requests.post(
                 'https://i.instagram.com:443/api/v1/users/lookup/',
                 headers={
                     "Connection": "close",
@@ -944,30 +969,63 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             print(f"   Target ID: {target_id}")
             print(f"   Reason ID: {method_details['reason_id']}")
             
-            # Use exact headers from swatnfobest.py
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
-                "Host": "i.instagram.com",
-                'cookie': f"sessionid={cred['sessionId']}",
-                "X-CSRFToken": cred["csrfToken"],
-                "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
-            }
+            # Reset proxy failure list for report sending
+            failed_proxies = []
+            success = False
             
-            # Build data exactly as swatnfobest.py does
-            extra_data = method_details.get("extra_data", "")
-            data = f'source_name=&reason_id={method_details["reason_id"]}&frx_context={extra_data}'
-            
-            print(f"   Data: {data}")
-            
-            proxy = get_random_proxy()
-            r3 = requests.post(
-                f"https://i.instagram.com/users/{target_id}/flag/",
-                headers=headers,
-                data=data,
-                proxies=proxy,
-                allow_redirects=False,
-                timeout=10
-            )
+            for report_attempt in range(max_retries):
+                # Use exact headers from swatnfobest.py
+                headers = {
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
+                    "Host": "i.instagram.com",
+                    'cookie': f"sessionid={cred['sessionId']}",
+                    "X-CSRFToken": cred["csrfToken"],
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+                }
+                
+                # Build data exactly as swatnfobest.py does
+                extra_data = method_details.get("extra_data", "")
+                data = f'source_name=&reason_id={method_details["reason_id"]}&frx_context={extra_data}'
+                
+                print(f"   Report attempt {report_attempt + 1} of {max_retries}")
+                
+                proxy = get_random_proxy(exclude_list=failed_proxies)
+                if not proxy:
+                    print("   ⚠️ No more proxies available")
+                    break
+                    
+                print(f"   Using proxy: {list(proxy.values())[0]}")
+                
+                try:
+                    r3 = requests.post(
+                        f"https://i.instagram.com/users/{target_id}/flag/",
+                        headers=headers,
+                        data=data,
+                        proxies=proxy,
+                        allow_redirects=False,
+                        timeout=10
+                    )
+                    
+                    if r3.status_code in [200, 302]:
+                        success = True
+                        break
+                    elif r3.status_code == 429:
+                        print(f"   ⚠️ Rate limited on proxy - trying another")
+                        failed_proxies.append(proxy)
+                        continue
+                    elif r3.status_code == 500:
+                        print(f"   ⚠️ Server error on proxy - trying another")
+                        failed_proxies.append(proxy)
+                        continue
+                    else:
+                        # Unexpected status but might be success
+                        print(f"   ⚠️ Unexpected status {r3.status_code} - marking as success")
+                        success = True
+                        break
+                except requests.exceptions.RequestException as e:
+                    print(f"   ⚠️ Request failed with proxy: {e}")
+                    failed_proxies.append(proxy)
+                    continue
             
             print(f"📨 Instagram Response:")
             print(f"   Status Code: {r3.status_code}")
