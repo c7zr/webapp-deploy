@@ -854,8 +854,8 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     try:
         # Method 1: API lookup (from swatnfobest.py)
         print(f"🔍 Method 1: Trying mobile API lookup for @{report.target}")
-            proxy = get_random_proxy()
-            r2 = requests.post(
+        proxy = get_random_proxy()
+        r2 = requests.post(
                 'https://i.instagram.com:443/api/v1/users/lookup/',
                 headers={
                     "Connection": "close",
