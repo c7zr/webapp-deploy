@@ -222,7 +222,32 @@ async function startBulkReport() {
     const targetsText = document.getElementById('bulkTargets').value.trim();
     
     if (!targetsText) {
-        showError('Please enter target usernames');
+        alert('Please enter at least one username');
+        return;
+    }
+    
+    // Check user role first
+    try {
+        const profileResponse = await apiCall('/v2/user/profile', { method: 'GET' });
+        if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            const userRole = profileData.role;
+            
+            // Only allow premium, admin, and owner roles
+            if (!['premium', 'admin', 'owner'].includes(userRole)) {
+                alert('❌ Bulk Reporting is a Premium Feature!\n\n' +
+                      'Bulk reporting is exclusive to Premium users.\n\n' +
+                      'Upgrade to Premium to:\n' +
+                      '• Report up to 500 accounts at once\n' +
+                      '• Unlimited daily reports\n' +
+                      '• Priority support\n\n' +
+                      'Contact SWATNFO or Xefi for payment to upgrade your account.');
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking user role:', error);
+        alert('Error verifying account status. Please try again.');
         return;
     }
     
