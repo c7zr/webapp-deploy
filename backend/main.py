@@ -825,66 +825,33 @@ async def get_credentials(token_data: dict = Depends(verify_token)):
 
 @app.post("/v2/credentials")
 async def save_credentials(creds: Credentials, token_data: dict = Depends(verify_token)):
-    print(f"🔐 Credential save attempt for user {token_data['user_id']}")
-    print(f"   SessionId: {creds.sessionId[:20]}... (truncated)")
-    print(f"   CsrfToken: {creds.csrfToken[:20]}... (truncated)")
+    print(f"🔐 Saving credentials for user {token_data['user_id']}")
     
     conn = get_db()
     cursor = conn.cursor()
-    
-    # First, test if the credentials are valid
-    try:
-        print(f"🧪 Testing credentials with Instagram API...")
-        test_headers = {
-            "User-Agent": get_random_user_agent(),
-            "Cookie": f"sessionid={creds.sessionId}; csrftoken={creds.csrfToken}",
-            "X-CSRFToken": creds.csrfToken
-        }
-        
-        # Test with a simple profile info request
-        test_response = requests.get(
-            "https://www.instagram.com/api/v1/web/accounts/web_create_ajax/attempt/",
-            headers=test_headers,
-            timeout=10
-        )
-        
-        print(f"   Test Response Status: {test_response.status_code}")
-        
-        # If we get 403 or 200, credentials are being accepted (logged in)
-        # If we get 401, credentials are invalid
-        if test_response.status_code == 401:
-            conn.close()
-            print(f"❌ Credentials rejected by Instagram (401)")
-            raise HTTPException(status_code=400, detail="Invalid Instagram credentials - please log in again and get fresh sessionid/csrftoken")
-        
-        print(f"✅ Credentials validated successfully")
-            
-    except requests.exceptions.RequestException as e:
-        # Network error, but save anyway
-        print(f"⚠️ Network error during validation: {e}")
-        pass
     
     cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
     existing = cursor.fetchone()
     
     if existing:
-        print(f"📝 Updating existing credentials for user {token_data['user_id']}")
+        print(f"📝 Updating existing credentials")
         cursor.execute('''
             UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?
             WHERE userId = ?
         ''', (creds.sessionId, creds.csrfToken, datetime.now(timezone.utc).isoformat(), token_data["user_id"]))
     else:
-        print(f"📝 Inserting new credentials for user {token_data['user_id']}")
+        print(f"➕ Creating new credentials")
         cursor.execute('''
-            INSERT INTO credentials (userId, sessionId, csrfToken, updatedAt)
-            VALUES (?, ?, ?, ?)
-        ''', (token_data["user_id"], creds.sessionId, creds.csrfToken, datetime.now(timezone.utc).isoformat()))
+            INSERT INTO credentials (id, userId, sessionId, csrfToken, createdAt, updatedAt)
+            VALUES (?, ?, ?, ?, ?, ?)
+        ''', (str(uuid.uuid4()), token_data["user_id"], creds.sessionId, creds.csrfToken,
+              datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
     
     conn.commit()
-    print(f"💾 Credentials saved to database successfully")
     conn.close()
     
-    return {"message": "Credentials saved and verified successfully", "success": True}
+    print(f"✅ Credentials saved successfully")
+    return {"success": True, "message": "Credentials saved successfully"}
 
 @app.post("/v2/credentials/test")
 async def test_credentials(token_data: dict = Depends(verify_token)):
