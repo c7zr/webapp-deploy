@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8000';
+const API_BASE = window.location.origin;
 let ws = null;
 let reconnectInterval = null;
 let currentUser = null;
@@ -7,6 +7,7 @@ let currentUser = null;
 const token = localStorage.getItem('token');
 if (!token) {
     window.location.href = '/login';
+    throw new Error('No token found');
 }
 
 // Verify token and get user info
@@ -19,8 +20,8 @@ async function init() {
         });
 
         if (!response.ok) {
-            localStorage.removeItem('token');
-            window.location.href = '/login';
+            console.error('Profile fetch failed:', response.status);
+            // Don't redirect immediately, could be a temporary error
             return;
         }
 
@@ -38,46 +39,52 @@ async function init() {
         
     } catch (error) {
         console.error('Error initializing chat:', error);
-        localStorage.removeItem('token');
+        // Don't remove token on network errors
         window.location.href = '/login';
     }
 }
 
 function connectWebSocket() {
-    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${wsProtocol}//${window.location.hostname}:8000/ws/chat?token=${token}`;
-    
-    ws = new WebSocket(wsUrl);
-    
-    ws.onopen = () => {
-        console.log('Connected to chat');
-        updateConnectionStatus(true);
-        if (reconnectInterval) {
-            clearInterval(reconnectInterval);
-            reconnectInterval = null;
-        }
-    };
-    
-    ws.onclose = () => {
-        console.log('Disconnected from chat');
-        updateConnectionStatus(false);
-        // Attempt to reconnect
-        if (!reconnectInterval) {
-            reconnectInterval = setInterval(() => {
-                console.log('Attempting to reconnect...');
-                connectWebSocket();
-            }, 5000);
-        }
-    };
-    
-    ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-    };
-    
-    ws.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        handleMessage(data);
-    };
+    try {
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsHost = window.location.host; // Use host instead of hostname:port
+        const wsUrl = `${wsProtocol}//${wsHost}/ws/chat?token=${encodeURIComponent(token)}`;
+        
+        console.log('Connecting to WebSocket:', wsUrl.replace(token, '***'));
+        ws = new WebSocket(wsUrl);
+        
+        ws.onopen = () => {
+            console.log('✅ Connected to chat');
+            updateConnectionStatus(true);
+            if (reconnectInterval) {
+                clearInterval(reconnectInterval);
+                reconnectInterval = null;
+            }
+        };
+        
+        ws.onclose = (event) => {
+            console.log('Disconnected from chat', event.code, event.reason);
+            updateConnectionStatus(false);
+            // Only reconnect if not a clean close
+            if (event.code !== 1000 && !reconnectInterval) {
+                reconnectInterval = setInterval(() => {
+                    console.log('Attempting to reconnect...');
+                    connectWebSocket();
+                }, 5000);
+            }
+        };
+        
+        ws.onerror = (error) => {
+            console.error('WebSocket error:', error);
+        };
+        
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            handleMessage(data);
+        };
+    } catch (error) {
+        console.error('Error creating WebSocket:', error);
+    }
 }
 
 function handleMessage(data) {

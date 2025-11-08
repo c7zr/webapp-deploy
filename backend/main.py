@@ -963,7 +963,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         
         if existing_reports > 0:
             conn.close()
-            raise HTTPException(status_code=429, detail=f"You have already reported @{report.target}. Each user can only be reported once.")
+            raise HTTPException(status_code=400, detail=f"You have already reported @{report.target}. Each user can only be reported once.")
 
     # Get target user ID from Instagram using exact logic from swatnfobest.py
     target_id = None
