@@ -170,15 +170,15 @@ def init_db():
     ''')
     
     # Initialize default settings
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maintenanceMode', 'false', ?)", (datetime.utcnow().isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.utcnow().isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxReportsPerUser', '1000', ?)", (datetime.utcnow().isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxBulkTargets', '200', ?)", (datetime.utcnow().isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxPremiumBulkTargets', '500', ?)", (datetime.utcnow().isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('dailyReportLimit', '100', ?)", (datetime.utcnow().isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('apiTimeout', '30', ?)", (datetime.utcnow().isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('rateLimitPerMinute', '60', ?)", (datetime.utcnow().isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('requireApproval', 'true', ?)", (datetime.utcnow().isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maintenanceMode', 'false', ?)", (datetime.now(datetime.UTC).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.now(datetime.UTC).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxReportsPerUser', '1000', ?)", (datetime.now(datetime.UTC).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxBulkTargets', '200', ?)", (datetime.now(datetime.UTC).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxPremiumBulkTargets', '500', ?)", (datetime.now(datetime.UTC).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('dailyReportLimit', '100', ?)", (datetime.now(datetime.UTC).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('apiTimeout', '30', ?)", (datetime.now(datetime.UTC).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('rateLimitPerMinute', '60', ?)", (datetime.now(datetime.UTC).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('requireApproval', 'true', ?)", (datetime.now(datetime.UTC).isoformat(),))
     
     conn.commit()
     
@@ -190,7 +190,7 @@ def init_db():
         cursor.execute('''
             INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (owner_id, "sw4t", "owner@swatnfo.com", hashed_pw, "owner", 1, 1, 1, "system", datetime.utcnow().isoformat(), datetime.utcnow().isoformat(), 0))
+        ''', (owner_id, "sw4t", "owner@swatnfo.com", hashed_pw, "owner", 1, 1, 1, "system", datetime.now(datetime.UTC).isoformat(), datetime.now(datetime.UTC).isoformat(), 0))
         conn.commit()
         print("✅ Owner account created: sw4t")
     
@@ -232,7 +232,7 @@ rate_limit_storage = {}
 
 def check_rate_limit(identifier: str, max_requests: int = 10, window_seconds: int = 60) -> bool:
     """Simple rate limiter - blocks excessive requests"""
-    now = datetime.utcnow()
+    now = datetime.now(datetime.UTC)
     
     if identifier not in rate_limit_storage:
         rate_limit_storage[identifier] = []
@@ -264,8 +264,8 @@ def create_token(user_id: str, username: str, role: str, remember: bool = False)
         "user_id": user_id,
         "username": username,
         "role": role,
-        "exp": datetime.utcnow() + expiry,
-        "iat": datetime.utcnow(),
+        "exp": datetime.now(datetime.UTC) + expiry,
+        "iat": datetime.now(datetime.UTC),
         "jti": str(uuid.uuid4())  # Unique token ID
     }
     return jwt.encode(payload, SECRET_KEY, algorithm="HS256")
@@ -422,12 +422,12 @@ async def register(user: UserRegister):
     # Set isApproved based on settings
     is_approved = 0 if require_approval else 1
     approved_by = None if require_approval else "auto"
-    approved_at = None if require_approval else datetime.utcnow().isoformat()
+    approved_at = None if require_approval else datetime.now(datetime.UTC).isoformat()
     
     cursor.execute('''
         INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts, lastFailedLogin, accountLockedUntil)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (user_id, user.username, email, hashed_pw, "user", 1, 0, is_approved, approved_by, approved_at, datetime.utcnow().isoformat(), 0, 0, None, None))
+    ''', (user_id, user.username, email, hashed_pw, "user", 1, 0, is_approved, approved_by, approved_at, datetime.now(datetime.UTC).isoformat(), 0, 0, None, None))
     
     conn.commit()
     conn.close()
@@ -457,7 +457,7 @@ async def login(credentials: UserLogin):
     # Check if account is locked
     if user["accountLockedUntil"]:
         locked_until = datetime.fromisoformat(user["accountLockedUntil"])
-        if datetime.utcnow() < locked_until:
+        if datetime.now(datetime.UTC) < locked_until:
             conn.close()
             raise HTTPException(status_code=403, detail=f"Account locked due to too many failed login attempts. Try again later.")
         else:
@@ -472,10 +472,10 @@ async def login(credentials: UserLogin):
         
         if failed_attempts >= MAX_LOGIN_ATTEMPTS:
             # Lock account
-            locked_until = datetime.utcnow() + timedelta(seconds=LOGIN_TIMEOUT)
+            locked_until = datetime.now(datetime.UTC) + timedelta(seconds=LOGIN_TIMEOUT)
             cursor.execute(
                 "UPDATE users SET failedLoginAttempts = ?, lastFailedLogin = ?, accountLockedUntil = ? WHERE id = ?",
-                (failed_attempts, datetime.utcnow().isoformat(), locked_until.isoformat(), user["id"])
+                (failed_attempts, datetime.now(datetime.UTC).isoformat(), locked_until.isoformat(), user["id"])
             )
             conn.commit()
             conn.close()
@@ -484,7 +484,7 @@ async def login(credentials: UserLogin):
             # Update failed attempts
             cursor.execute(
                 "UPDATE users SET failedLoginAttempts = ?, lastFailedLogin = ? WHERE id = ?",
-                (failed_attempts, datetime.utcnow().isoformat(), user["id"])
+                (failed_attempts, datetime.now(datetime.UTC).isoformat(), user["id"])
             )
             conn.commit()
             conn.close()
@@ -666,13 +666,13 @@ async def save_credentials(creds: Credentials, token_data: dict = Depends(verify
         cursor.execute('''
             UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?
             WHERE userId = ?
-        ''', (creds.sessionId, creds.csrfToken, datetime.utcnow().isoformat(), token_data["user_id"]))
+        ''', (creds.sessionId, creds.csrfToken, datetime.now(datetime.UTC).isoformat(), token_data["user_id"]))
     else:
         print(f"📝 Inserting new credentials for user {token_data['user_id']}")
         cursor.execute('''
             INSERT INTO credentials (userId, sessionId, csrfToken, updatedAt)
             VALUES (?, ?, ?, ?)
-        ''', (token_data["user_id"], creds.sessionId, creds.csrfToken, datetime.utcnow().isoformat()))
+        ''', (token_data["user_id"], creds.sessionId, creds.csrfToken, datetime.now(datetime.UTC).isoformat()))
     
     conn.commit()
     print(f"💾 Credentials saved to database successfully")
@@ -744,7 +744,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     # Check daily report limit for regular users (100 reports per day)
     if user_role == "user":
         # Get today's date at midnight
-        today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+        today = datetime.now(datetime.UTC).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
         cursor.execute(
             "SELECT COUNT(*) as count FROM reports WHERE userId = ? AND timestamp >= ?",
             (token_data["user_id"], today)
@@ -945,7 +945,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     ''', (report_id, token_data["user_id"], token_data["username"], report.target, 
           target_id if target_id else "unknown", report.method, 
           "success" if success else "failed", "single", 
-          datetime.utcnow().isoformat()))
+          datetime.now(datetime.UTC).isoformat()))
     
     if success:
         cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
@@ -981,7 +981,7 @@ async def get_stats(token_data: dict = Depends(verify_token)):
     targets = cursor.fetchone()["targets"]
     
     # Get today's report count for daily limit
-    today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    today = datetime.now(datetime.UTC).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     cursor.execute(
         "SELECT COUNT(*) as count FROM reports WHERE userId = ? AND timestamp >= ?",
         (token_data["user_id"], today)
@@ -1171,7 +1171,7 @@ async def admin_create_user(user_data: dict, token_data: dict = Depends(verify_a
     cursor.execute('''
         INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts)
         VALUES (?, ?, ?, ?, ?, 1, 0, 1, ?, ?, ?, 0, 0)
-    ''', (user_id, username, email, hashed_password, role, token_data["username"], datetime.utcnow().isoformat(), datetime.utcnow().isoformat()))
+    ''', (user_id, username, email, hashed_password, role, token_data["username"], datetime.now(datetime.UTC).isoformat(), datetime.now(datetime.UTC).isoformat()))
     
     conn.commit()
     conn.close()
@@ -1297,7 +1297,7 @@ async def admin_update_config(config_data: dict, token_data: dict = Depends(veri
         cursor.execute("""
             INSERT OR REPLACE INTO settings (key, value, updated_at)
             VALUES (?, ?, ?)
-        """, (key, value, datetime.utcnow().isoformat()))
+        """, (key, value, datetime.now(datetime.UTC).isoformat()))
     
     conn.commit()
     conn.close()
@@ -1343,7 +1343,7 @@ async def approve_account(user_id: str, token_data: dict = Depends(verify_admin)
         UPDATE users 
         SET isApproved = 1, approvedBy = ?, approvedAt = ?
         WHERE id = ?
-    ''', (token_data["username"], datetime.utcnow().isoformat(), user_id))
+    ''', (token_data["username"], datetime.now(datetime.UTC).isoformat(), user_id))
     
     conn.commit()
     conn.close()
@@ -1453,7 +1453,7 @@ async def add_to_blacklist(data: dict, token_data: dict = Depends(verify_admin))
     cursor.execute('''
         INSERT INTO blacklist (username, reason, notes, added_by, blocked_attempts, created_at)
         VALUES (?, ?, ?, ?, 0, ?)
-    ''', (username, reason, notes, token_data["username"], datetime.utcnow().isoformat()))
+    ''', (username, reason, notes, token_data["username"], datetime.now(datetime.UTC).isoformat()))
     
     conn.commit()
     conn.close()
@@ -1486,3 +1486,4 @@ if __name__ == "__main__":
     import uvicorn
     print("🚀 Starting SWATNFO Backend...")
     uvicorn.run(app, host="0.0.0.0", port=8000)
+
