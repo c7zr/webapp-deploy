@@ -27,7 +27,7 @@ async function loadCredentials() {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     
     try {
-        const response = await fetch('http://api.swatnfo.com/v2/credentials', {
+        const response = await fetch(`${window.location.origin}/v2/credentials`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -98,7 +98,7 @@ async function updateAccount() {
     const email = document.getElementById('accountEmail').value.trim();
     
     try {
-        const response = await fetch('http://api.swatnfo.com/v2/user/update', {
+        const response = await fetch(`${window.location.origin}/v2/user/update`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -131,7 +131,7 @@ async function saveCredentials() {
     }
     
     try {
-        const response = await fetch('http://api.swatnfo.com/v2/credentials', {
+        const response = await fetch(`${window.location.origin}/v2/credentials`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -161,7 +161,7 @@ async function testCredentials() {
     showMessage('Testing credentials...', 'info');
     
     try {
-        const response = await fetch('http://api.swatnfo.com/v2/credentials/test', {
+        const response = await fetch(`${window.location.origin}/v2/credentials/test`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -201,7 +201,7 @@ async function changePassword() {
     }
     
     try {
-        const response = await fetch('http://api.swatnfo.com/v2/user/password', {
+        const response = await fetch(`${window.location.origin}/v2/user/password`, {
             method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -230,7 +230,7 @@ async function clearHistory() {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     
     try {
-        const response = await fetch('http://api.swatnfo.com/v2/reports/clear', {
+        const response = await fetch(`${window.location.origin}/v2/reports/clear`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -253,7 +253,7 @@ async function deleteAccount() {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
     
     try {
-        const response = await fetch('http://api.swatnfo.com/v2/user/delete', {
+        const response = await fetch(`${window.location.origin}/v2/user/delete`, {
             method: 'DELETE',
             headers: {
                 'Authorization': `Bearer ${token}`,
