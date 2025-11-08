@@ -872,7 +872,8 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 },
                 proxies=proxy,
                 timeout=10
-            )        print(f"   Status: {r2.status_code}")
+            )
+        print(f"   Status: {r2.status_code}")
         if 'No users found' not in r2.text and '"spam":true' not in r2.text:
             try:
                 target_id = str(r2.json()['user_id'])
