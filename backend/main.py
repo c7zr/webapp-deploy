@@ -178,7 +178,7 @@ def init_db():
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('dailyReportLimit', '100', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('apiTimeout', '30', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('rateLimitPerMinute', '60', ?)", (datetime.now(timezone.utc).isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('requireApproval', 'true', ?)", (datetime.now(timezone.utc).isoformat(),))
+    cursor.execute("UPDATE settings SET value = 'false', updated_at = ? WHERE key = 'requireApproval'", (datetime.now(timezone.utc).isoformat(),))
     
     conn.commit()
     
@@ -1192,46 +1192,49 @@ async def admin_create_user(user_data: dict, token_data: dict = Depends(verify_a
     """Admin endpoint to create new user"""
     conn = get_db()
     cursor = conn.cursor()
-    
-    username = user_data.get("username", "").strip()
-    email = user_data.get("email", "").strip()
-    password = user_data.get("password", "")
-    role = user_data.get("role", "user")
-    
-    if not username or not email or not password:
+    try:
+        username = user_data.get("username", "").strip()
+        email = user_data.get("email", "").strip()
+        password = user_data.get("password", "")
+        role = user_data.get("role", "user")
+
+        if not username or not email or not password:
+            conn.close()
+            return JSONResponse(status_code=400, content={"message": "Username, email, and password are required", "error": True})
+
+        if len(password) < PASSWORD_MIN_LENGTH:
+            conn.close()
+            return JSONResponse(status_code=400, content={"message": f"Password must be at least {PASSWORD_MIN_LENGTH} characters", "error": True})
+
+        # Check if username exists
+        cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
+        if cursor.fetchone():
+            conn.close()
+            return JSONResponse(status_code=400, content={"message": "Username already exists", "error": True})
+
+        # Check if email exists
+        cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
+        if cursor.fetchone():
+            conn.close()
+            return JSONResponse(status_code=400, content={"message": "Email already exists", "error": True})
+
+        # Hash password
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
+        user_id = str(uuid.uuid4())
+
+        # Admin-created users are auto-approved
+        cursor.execute('''
+            INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts)
+            VALUES (?, ?, ?, ?, ?, 1, 0, 1, ?, ?, ?, 0, 0)
+        ''', (user_id, username, email, hashed_password, role, token_data["username"], datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
+
+        conn.commit()
         conn.close()
-        raise HTTPException(status_code=400, detail="Username, email, and password are required")
-    
-    if len(password) < PASSWORD_MIN_LENGTH:
-        conn.close()
-        raise HTTPException(status_code=400, detail=f"Password must be at least {PASSWORD_MIN_LENGTH} characters")
-    
-    # Check if username exists
-    cursor.execute("SELECT * FROM users WHERE username = ?", (username,))
-    if cursor.fetchone():
-        conn.close()
-        raise HTTPException(status_code=400, detail="Username already exists")
-    
-    # Check if email exists
-    cursor.execute("SELECT * FROM users WHERE email = ?", (email,))
-    if cursor.fetchone():
-        conn.close()
-        raise HTTPException(status_code=400, detail="Email already exists")
-    
-    # Hash password
-    hashed_password = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
-    user_id = str(uuid.uuid4())
-    
-    # Admin-created users are auto-approved
-    cursor.execute('''
-        INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts)
-        VALUES (?, ?, ?, ?, ?, 1, 0, 1, ?, ?, ?, 0, 0)
-    ''', (user_id, username, email, hashed_password, role, token_data["username"], datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
-    
-    conn.commit()
-    conn.close()
-    
-    return {"message": f"User {username} created successfully", "userId": user_id}
+        return JSONResponse(status_code=200, content={"message": f"User {username} created successfully", "userId": user_id, "success": True})
+    except Exception as e:
+        if conn:
+            conn.close()
+        return JSONResponse(status_code=500, content={"message": f"Internal server error: {str(e)}", "error": True})
 
 @app.put("/v2/admin/users/{user_id}")
 async def admin_update_user(user_id: str, user_data: dict, token_data: dict = Depends(verify_admin)):
