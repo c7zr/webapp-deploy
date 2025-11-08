@@ -850,7 +850,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     
     method_details = INSTAGRAM_REPORT_METHODS[report.method]
     
-    # Check if this user has already been reported twice by the current user today
+    # Track how many reports have been made to this user today (for rate limiting purposes)
     today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
     cursor.execute(
         "SELECT COUNT(*) as count FROM reports WHERE userId = ? AND target = ? AND timestamp >= ?",
@@ -859,8 +859,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     daily_target_count = cursor.fetchone()["count"]
     
     if daily_target_count >= 2:
-        conn.close()
-        raise HTTPException(status_code=429, detail="You can only report the same user 2 times per day")
+        print(f"⚠️ User has already reported this target {daily_target_count} times today - continuing anyway")
 
     # Get target user ID from Instagram using exact logic from swatnfobest.py
     target_id = None
