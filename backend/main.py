@@ -984,13 +984,13 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 detail=f"Please wait {minutes_remaining}m {secs_remaining}s before reporting @{report.target} again. Upgrade to Premium for unlimited bulk reporting."
             )
 
-    # Get target user ID using EXACT d3s.py logic
+    # Get target user ID using EXACT swatnfobest.py logic
     target_id = None
     success = False
     error_msg = None
     
     try:
-        # Method 1: API lookup (EXACT from d3s.py)
+        # Method 1: API lookup (EXACT from swatnfobest.py)
         print(f"🔍 Method 1: API lookup for @{report.target}")
         try:
             r2 = requests.post(
@@ -1000,9 +1000,9 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     "X-IG-Connection-Type": "WIFI",
                     "mid": "XOSINgABAAG1IDmaral3noOozrK0rrNSbPuSbzHq",
                     "X-IG-Capabilities": "3R4=",
-                    "Accept-Language": "ar-sa",
+                    "Accept-Language": "en-US",
                     "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-                    "User-Agent": "Instagram 99.4.0 TweakPY_vv1ck (TweakPY_vv1ck)",
+                    "User-Agent": "Instagram 99.4.0",
                     "Accept-Encoding": "gzip, deflate"
                 },
                 data={
@@ -1013,7 +1013,6 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             
             print(f"   Status: {r2.status_code}")
             
-            # Check if NOT "No users found" (d3s.py uses 'if' instead of 'not in')
             if 'No users found' not in r2.text and '"spam":true' not in r2.text:
                 try:
                     target_id = str(r2.json()['user_id'])
@@ -1025,7 +1024,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         except Exception as e:
             print(f"   ❌ Method 1 failed: {str(e)[:100]}")
         
-        # Method 2: Web scraping (EXACT from d3s.py) - Try if Method 1 fails
+        # Method 2: Web scraping (EXACT from swatnfobest.py) - Only 2 patterns
         if not target_id:
             print(f"🔍 Method 2: Web scraping for @{report.target}")
             try:
@@ -1035,99 +1034,55 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                     headers={
                         'Host': 'www.instagram.com',
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
-                        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
-                        'Accept-Language': 'ar,en-US;q=0.7,en;q=0.3',
-                        'Accept-Encoding': 'gzip, deflate, br',
-                        'Connection': 'keep-alive',
                         'Cookie': f'csrftoken={cred["csrfToken"]}',
-                        'Upgrade-Insecure-Requests': '1',
-                        'Sec-Fetch-Dest': 'document',
-                        'Sec-Fetch-Mode': 'navigate',
-                        'Sec-Fetch-Site': 'none',
-                        'Sec-Fetch-User': '?1',
-                        'TE': 'trailers'
                     },
                     timeout=30
                 )
                 
                 print(f"   Status: {adv_search.status_code}")
                 
-                # Try multiple patterns (Instagram keeps changing their HTML)
+                # ONLY the 2 patterns from swatnfobest.py
                 patterns = [
                     r'"profile_id":"(.*?)"',
-                    r'"page_id":"profilePage_(.*?)"',
-                    r'"profilePage_(.*?)"',
-                    r'"owner":{"id":"(.*?)"',
-                    r'"user_id":"(.*?)"',
-                    r'"id":"(\d+)","username":"' + report.target + '"'
+                    r'"page_id":"profilePage_(.*?)"'
                 ]
                 
-                # Try first pattern
-                found = False
                 for pattern in patterns:
-                    try:
-                        matches = re.findall(pattern, adv_search.text)
-                        if matches:
-                            target_id = matches[0]
-                            print(f"   ✅ Found target ID via scraping (pattern: {pattern[:30]}...): {target_id}")
-                            found = True
-                            break
-                    except (IndexError, Exception) as e:
-                        continue
+                    match = re.findall(pattern, adv_search.text)
+                    if match:
+                        target_id = match[0]
+                        print(f"   ✅ Found target ID via scraping: {target_id}")
+                        break
                 
-                if not found:
+                if not target_id:
                     print(f"   ❌ No pattern matched in scraping")
-                    print(f"   Response preview: {adv_search.text[:500]}")
                         
             except Exception as e:
                 print(f"   ❌ Method 2 failed: {str(e)[:100]}")
         
-        # Method 3: Web API (EXACT from d3s.py) - Last resort
+        # Method 3: Web API (EXACT from swatnfobest.py)
         if not target_id:
             print(f"🔍 Method 3: Web API for @{report.target}")
             try:
-                print(f"   Using sessionid: {cred['sessionId'][:20]}... (truncated)")
-                print(f"   Using csrftoken: {cred['csrfToken'][:20]}... (truncated)")
-                
                 adv_search2 = requests.get(
                     f'https://www.instagram.com/api/v1/users/web_profile_info/?username={report.target}',
                     headers={
                         'Host': 'www.instagram.com',
                         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
-                        'Accept': '*/*',
-                        'Accept-Language': 'ar,en-US;q=0.7,en;q=0.3',
-                        'Accept-Encoding': 'gzip, deflate, br',
                         'X-CSRFToken': cred["csrfToken"],
                         'X-IG-App-ID': '936619743392459',
-                        'X-ASBD-ID': '198387',
-                        'X-IG-WWW-Claim': 'hmac.AR3KPEPoXkWYhwtoCUKyUHK80GsE1g2PJI1uPtDlCyo4PHKn',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Alt-Used': 'www.instagram.com',
-                        'Connection': 'keep-alive',
-                        'Referer': f'https://www.instagram.com/{report.target}/',
-                        'Cookie': f'sessionid={cred["sessionId"]}; csrftoken={cred["csrfToken"]}',
-                        'Sec-Fetch-Dest': 'empty',
-                        'Sec-Fetch-Mode': 'cors',
-                        'Sec-Fetch-Site': 'same-origin',
-                        'TE': 'trailers'
+                        'Cookie': f'sessionid={cred["sessionId"]}'
                     },
                     timeout=30
                 )
                 
                 print(f"   Status: {adv_search2.status_code}")
-                print(f"   Response preview: {adv_search2.text[:300]}")
                 
-                if adv_search2.status_code == 200:
-                    response_json = adv_search2.json()
-                    target_id = str(response_json['data']['user']['id'])
-                    print(f"   ✅ Found target ID via web API: {target_id}")
-                elif adv_search2.status_code == 401:
-                    print(f"   ❌ 401 Unauthorized - credentials may be expired or invalid")
-                    print(f"   Please re-save your Instagram credentials in Settings")
-                else:
-                    print(f"   ❌ Unexpected status code: {adv_search2.status_code}")
-            except KeyError as e:
-                print(f"   ❌ Method 3 failed - KeyError: {e}")
+                target_id = adv_search2.json()['data']['user']['id']
+                print(f"   ✅ Found target ID via web API: {target_id}")
+                    
+            except Exception as e:
+                print(f"   ❌ Method 3 failed: {str(e)[:100]}")
             except Exception as e:
                 print(f"   ❌ Method 3 failed: {str(e)[:100]}")
         
