@@ -826,6 +826,10 @@ async def get_credentials(token_data: dict = Depends(verify_token)):
 @app.post("/v2/credentials")
 async def save_credentials(creds: Credentials, token_data: dict = Depends(verify_token)):
     """Save Instagram cookies (sessionid and csrftoken) - EXACT swatnfobest.py approach"""
+    print(f"💾 Saving credentials for user {token_data['user_id']}")
+    print(f"   SessionId: {creds.sessionId[:20]}... (length: {len(creds.sessionId)})")
+    print(f"   CsrfToken: {creds.csrfToken[:20]}... (length: {len(creds.csrfToken)})")
+    
     conn = get_db()
     cursor = conn.cursor()
     
@@ -833,11 +837,13 @@ async def save_credentials(creds: Credentials, token_data: dict = Depends(verify
     existing = cursor.fetchone()
     
     if existing:
+        print(f"   📝 Updating existing credentials")
         cursor.execute('''
             UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?
             WHERE userId = ?
         ''', (creds.sessionId, creds.csrfToken, datetime.now(timezone.utc).isoformat(), token_data["user_id"]))
     else:
+        print(f"   ➕ Creating new credentials")
         cursor.execute('''
             INSERT INTO credentials (id, userId, sessionId, csrfToken, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?)
@@ -845,6 +851,13 @@ async def save_credentials(creds: Credentials, token_data: dict = Depends(verify
               datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
     
     conn.commit()
+    
+    # Verify the save
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    saved = cursor.fetchone()
+    if saved:
+        print(f"   ✅ Verified saved - SessionId: {saved['sessionId'][:20]}...")
+    
     conn.close()
     
     return {"success": True, "message": "Credentials saved successfully"}
@@ -1040,6 +1053,10 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     if not cred:
         conn.close()
         raise HTTPException(status_code=400, detail="Please configure Instagram credentials first")
+    
+    print(f"📤 Reporting @{report.target} using method: {report.method}")
+    print(f"   Using SessionId: {cred['sessionId'][:20]}... (length: {len(cred['sessionId'])})")
+    print(f"   Using CsrfToken: {cred['csrfToken'][:20]}... (length: {len(cred['csrfToken'])})")
     
     # Check 3-minute cooldown for free users on same target
     if not is_bulk and user_role == "user":
