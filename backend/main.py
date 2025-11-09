@@ -501,6 +501,22 @@ def hash_password(password: str) -> str:
 def verify_password(password: str, hashed: str) -> bool:
     return bcrypt.checkpw(password.encode(), hashed.encode())
 
+def is_premium_active(user_data: dict) -> bool:
+    """Check if user has active premium (including trial period)"""
+    if not user_data.get("isPremium"):
+        return False
+    
+    # If no expiration date, premium is permanent (for manually upgraded users)
+    if not user_data.get("premiumExpiresAt"):
+        return True
+    
+    # Check if premium trial/subscription hasn't expired yet
+    try:
+        expires_at = datetime.fromisoformat(user_data["premiumExpiresAt"])
+        return datetime.now(timezone.utc) < expires_at
+    except:
+        return False
+
 def create_token(user_id: str, username: str, role: str, remember: bool = False) -> str:
     expiry = timedelta(days=TOKEN_EXPIRY_DAYS) if remember else timedelta(hours=12)
     payload = {
@@ -1156,21 +1172,24 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     # Validate count (1-20)
     report_count = min(max(report.count, 1), 20)
     
-    # Get user info to check role
-    cursor.execute("SELECT role FROM users WHERE id = ?", (token_data["user_id"],))
+    # Get user info to check role and premium status
+    cursor.execute("SELECT role, isPremium, premiumExpiresAt FROM users WHERE id = ?", (token_data["user_id"],))
     user = cursor.fetchone()
     user_role = user["role"] if user else "user"
     
-    # Check if bulk reporting is allowed
-    if is_bulk and user_role not in ["premium", "admin", "owner"]:
+    # Check if user has active premium (including trial)
+    has_active_premium = is_premium_active(user) if user else False
+    
+    # Check if bulk reporting is allowed (premium users, active premium trial, or admin/owner)
+    if is_bulk and user_role not in ["admin", "owner"] and not has_active_premium:
         conn.close()
         raise HTTPException(
             status_code=403, 
             detail="Bulk reporting is exclusive to Premium users. Contact SWATNFO or Xefi for payment to upgrade your account."
         )
     
-    # Check daily report limit for regular users (100 reports per day)
-    if user_role == "user":
+    # Check daily report limit for regular users without active premium (100 reports per day)
+    if user_role == "user" and not has_active_premium:
         today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
         cursor.execute(
             "SELECT COUNT(*) as count FROM reports WHERE userId = ? AND timestamp >= ?",
@@ -1303,13 +1322,16 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
     conn = get_db()
     cursor = conn.cursor()
     
-    # Get user info to check role
-    cursor.execute("SELECT role FROM users WHERE id = ?", (token_data["user_id"],))
+    # Get user info to check role and premium status
+    cursor.execute("SELECT role, isPremium, premiumExpiresAt FROM users WHERE id = ?", (token_data["user_id"],))
     user = cursor.fetchone()
     user_role = user["role"] if user else "user"
     
-    # Check if bulk reporting is allowed
-    if user_role not in ["premium", "admin", "owner"]:
+    # Check if user has active premium (including trial)
+    has_active_premium = is_premium_active(user) if user else False
+    
+    # Check if bulk reporting is allowed (premium users, active premium trial, or admin/owner)
+    if user_role not in ["admin", "owner"] and not has_active_premium:
         conn.close()
         raise HTTPException(
             status_code=403, 
