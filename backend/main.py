@@ -1162,6 +1162,160 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
     else:
         return {"success": False, "message": "Report failed"}
 
+@app.post("/v2/reports/bulk")
+async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_token)):
+    """Send bulk Instagram reports with 4-second delay between each target"""
+    targets = bulk_data.get("targets", [])
+    method = bulk_data.get("method", "spam")
+    
+    if not targets:
+        raise HTTPException(status_code=400, detail="No targets provided")
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Get user info to check role
+    cursor.execute("SELECT role FROM users WHERE id = ?", (token_data["user_id"],))
+    user = cursor.fetchone()
+    user_role = user["role"] if user else "user"
+    
+    # Check if bulk reporting is allowed
+    if user_role not in ["premium", "admin", "owner"]:
+        conn.close()
+        raise HTTPException(
+            status_code=403, 
+            detail="Bulk reporting is exclusive to Premium users. Contact SWATNFO or Xefi for payment to upgrade your account."
+        )
+    
+    # Check bulk target limits
+    max_bulk = 500 if user_role in ["admin", "owner"] else 200
+    if len(targets) > max_bulk:
+        conn.close()
+        raise HTTPException(status_code=400, detail=f"Maximum {max_bulk} targets allowed per bulk report")
+    
+    # Get credentials
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    cred = cursor.fetchone()
+    
+    if not cred:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Please configure Instagram credentials first")
+    
+    print(f"📦 BULK REPORT: {len(targets)} targets, method: {method}")
+    print(f"   User: {token_data['username']} ({user_role})")
+    print(f"   4-second delay between each target")
+    
+    results = {
+        "total": len(targets),
+        "successful": 0,
+        "failed": 0,
+        "blacklisted": 0,
+        "details": []
+    }
+    
+    for idx, target in enumerate(targets, 1):
+        target = target.strip().replace("@", "")
+        
+        if not target:
+            continue
+        
+        print(f"\n   [{idx}/{len(targets)}] Processing @{target}")
+        
+        # Check if target is blacklisted
+        cursor.execute("SELECT * FROM blacklist WHERE username = ?", (target.lower(),))
+        blacklisted = cursor.fetchone()
+        
+        if blacklisted:
+            print(f"   ⛔ @{target} is blacklisted")
+            cursor.execute("UPDATE blacklist SET blocked_attempts = blocked_attempts + 1 WHERE username = ?", (target.lower(),))
+            conn.commit()
+            results["blacklisted"] += 1
+            results["details"].append({
+                "target": target,
+                "status": "blacklisted",
+                "message": "Target is blacklisted"
+            })
+            
+            # 4-second delay even for blacklisted targets
+            if idx < len(targets):
+                print(f"   ⏱️  Waiting 4 seconds before next target...")
+                time.sleep(4)
+            continue
+        
+        # Get target ID
+        target_id = get_target_id(target, cred["sessionId"], cred["csrfToken"])
+        
+        if not target_id:
+            print(f"   ❌ @{target} not found")
+            results["failed"] += 1
+            results["details"].append({
+                "target": target,
+                "status": "failed",
+                "message": "User not found or private"
+            })
+            
+            # Log failed report
+            report_id = str(uuid.uuid4())
+            cursor.execute('''
+                INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (report_id, token_data["user_id"], token_data["username"], target, 
+                  None, method, "failed", "bulk", datetime.now(timezone.utc).isoformat()))
+            conn.commit()
+            
+            # 4-second delay before next target
+            if idx < len(targets):
+                print(f"   ⏱️  Waiting 4 seconds before next target...")
+                time.sleep(4)
+            continue
+        
+        # Send report
+        success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method)
+        
+        # Log report
+        report_id = str(uuid.uuid4())
+        cursor.execute('''
+            INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (report_id, token_data["user_id"], token_data["username"], target, 
+              target_id, method, "success" if success else "failed", "bulk", 
+              datetime.now(timezone.utc).isoformat()))
+        
+        if success:
+            cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+            results["successful"] += 1
+            results["details"].append({
+                "target": target,
+                "status": "success",
+                "message": "Report sent successfully"
+            })
+            print(f"   ✅ @{target} reported successfully")
+        else:
+            results["failed"] += 1
+            results["details"].append({
+                "target": target,
+                "status": "failed",
+                "message": "Report failed"
+            })
+            print(f"   ❌ @{target} report failed")
+        
+        conn.commit()
+        
+        # 4-second delay before next target (except for last target)
+        if idx < len(targets):
+            print(f"   ⏱️  Waiting 4 seconds before next target...")
+            time.sleep(4)
+    
+    conn.close()
+    
+    print(f"\n✅ BULK REPORT COMPLETE: {results['successful']}/{results['total']} successful")
+    
+    return {
+        "success": True,
+        "message": f"Bulk report completed: {results['successful']}/{results['total']} successful",
+        "results": results
+    }
+
 @app.get("/v2/reports/stats")
 async def get_stats(token_data: dict = Depends(verify_token)):
     conn = get_db()
