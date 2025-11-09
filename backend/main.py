@@ -2016,6 +2016,52 @@ async def remove_from_blacklist(username: str, token_data: dict = Depends(verify
 async def admin_clear_logs(token_data: dict = Depends(verify_admin)):
     return {"message": "Logs cleared successfully"}
 
+# Frontend Routes - Serve HTML pages
+@app.get("/")
+async def root():
+    """Redirect root to login page"""
+    return RedirectResponse(url="/login.html")
+
+@app.get("/login.html", response_class=HTMLResponse)
+async def login_page():
+    """Serve login page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "login.html"))
+
+@app.get("/register.html", response_class=HTMLResponse)
+async def register_page():
+    """Serve register page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "register.html"))
+
+@app.get("/dashboard.html", response_class=HTMLResponse)
+async def dashboard_page():
+    """Serve dashboard page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "dashboard.html"))
+
+@app.get("/reporting.html", response_class=HTMLResponse)
+async def reporting_page():
+    """Serve reporting page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "reporting.html"))
+
+@app.get("/history.html", response_class=HTMLResponse)
+async def history_page():
+    """Serve history page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "history.html"))
+
+@app.get("/settings.html", response_class=HTMLResponse)
+async def settings_page():
+    """Serve settings page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "settings.html"))
+
+@app.get("/about.html", response_class=HTMLResponse)
+async def about_page():
+    """Serve about page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "about.html"))
+
+@app.get("/admin.html", response_class=HTMLResponse)
+async def admin_page():
+    """Serve admin page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "admin.html"))
+
 # Chat Routes
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_page():
