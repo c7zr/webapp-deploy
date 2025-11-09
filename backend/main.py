@@ -342,6 +342,28 @@ def init_db():
     
     conn.close()
 
+# Database Migration - Add missing columns to existing databases
+def migrate_db():
+    """Add any missing columns to existing tables"""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    
+    try:
+        # Check if lastLoginAt column exists in users table
+        cursor.execute("PRAGMA table_info(users)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'lastLoginAt' not in columns:
+            print("🔧 Adding lastLoginAt column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN lastLoginAt TEXT")
+            conn.commit()
+            print("✅ lastLoginAt column added successfully")
+        
+    except Exception as e:
+        print(f"⚠️ Migration warning: {e}")
+    finally:
+        conn.close()
+
 # Lifespan
 # Background task to clear chat messages every hour
 def clear_chat_hourly():
@@ -362,6 +384,7 @@ def clear_chat_hourly():
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    migrate_db()  # Run database migrations
     
     # Start hourly chat cleanup thread
     chat_cleanup_thread = threading.Thread(target=clear_chat_hourly, daemon=True)
