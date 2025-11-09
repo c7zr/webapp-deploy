@@ -269,7 +269,7 @@ async function startBulkReport() {
     reportingAborted = false;
     
     addLogEntry(`🚀 Starting bulk report for ${targets.length} targets with method: ${method}`, 'info');
-    addLogEntry(`⏱️  4-second delay between each target`, 'info');
+    addLogEntry(`⏱️  2-second delay between each target`, 'info');
     
     try {
         // Call the bulk reporting endpoint

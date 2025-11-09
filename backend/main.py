@@ -1265,10 +1265,10 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
                   None, method, "failed", "bulk", datetime.now(timezone.utc).isoformat()))
             conn.commit()
             
-            # 4-second delay before next target
+            # 2-second delay before next target
             if idx < len(targets):
-                print(f"   ⏱️  Waiting 4 seconds before next target...")
-                time.sleep(4)
+                print(f"   ⏱️  Waiting 2 seconds before next target...")
+                time.sleep(2)
             continue
         
         # Send report
@@ -1303,10 +1303,10 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
         
         conn.commit()
         
-        # 4-second delay before next target (except for last target)
+        # 2-second delay before next target (except for last target)
         if idx < len(targets):
-            print(f"   ⏱️  Waiting 4 seconds before next target...")
-            time.sleep(4)
+            print(f"   ⏱️  Waiting 2 seconds before next target...")
+            time.sleep(2)
     
     conn.close()
     
