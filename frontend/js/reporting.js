@@ -251,15 +251,16 @@ async function startBulkReport() {
         return;
     }
     
-    const targets = targetsText.split('\n').filter(t => t.trim()).map(t => t.trim());
+    const targets = targetsText.split('\n').filter(t => t.trim()).map(t => t.trim().replace('@', ''));
     
     if (targets.length === 0) {
         showError('No valid targets found');
         return;
     }
     
-    if (targets.length > 200) {
-        showError('Maximum 200 targets allowed');
+    const maxTargets = ['admin', 'owner'].includes(userRole) ? 500 : 200;
+    if (targets.length > maxTargets) {
+        showError(`Maximum ${maxTargets} targets allowed`);
         return;
     }
     
@@ -267,34 +268,51 @@ async function startBulkReport() {
     reportingActive = true;
     reportingAborted = false;
     
-    let totalSuccess = 0;
-    let totalFailed = 0;
-    let totalReports = targets.length;
+    addLogEntry(`🚀 Starting bulk report for ${targets.length} targets with method: ${method}`, 'info');
+    addLogEntry(`⏱️  4-second delay between each target`, 'info');
     
-    for (let i = 0; i < targets.length; i++) {
-        if (reportingAborted) break;
+    try {
+        // Call the bulk reporting endpoint
+        const response = await apiCall('/v2/reports/bulk', {
+            method: 'POST',
+            body: JSON.stringify({
+                targets: targets,
+                method: method
+            })
+        });
         
-        const target = targets[i];
-        updateProgress(target, i + 1, totalReports, totalSuccess, totalFailed);
-        
-        const result = await sendReport(target, method);
-        
-        if (result.success) {
-            totalSuccess++;
-            addLogEntry(`✅ ${target} - Report successful`, 'success');
-        } else {
-            totalFailed++;
-            addLogEntry(`❌ ${target} - Report failed: ${result.error}`, 'error');
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Bulk report failed');
         }
         
-        updateProgress(target, i + 1, totalReports, totalSuccess, totalFailed);
+        const data = await response.json();
+        const results = data.results;
         
-        // Small delay between targets
-        await sleep(800);
+        // Display results
+        addLogEntry(`✅ Bulk report completed!`, 'success');
+        addLogEntry(`📊 Total: ${results.total} | Success: ${results.successful} | Failed: ${results.failed} | Blacklisted: ${results.blacklisted}`, 'info');
+        
+        // Show individual results
+        results.details.forEach((detail, index) => {
+            if (detail.status === 'success') {
+                addLogEntry(`✅ [${index + 1}/${results.total}] ${detail.target} - ${detail.message}`, 'success');
+            } else if (detail.status === 'blacklisted') {
+                addLogEntry(`⛔ [${index + 1}/${results.total}] ${detail.target} - ${detail.message}`, 'warning');
+            } else {
+                addLogEntry(`❌ [${index + 1}/${results.total}] ${detail.target} - ${detail.message}`, 'error');
+            }
+        });
+        
+        showResults(results.total, results.successful, results.failed);
+        
+    } catch (error) {
+        console.error('Bulk report error:', error);
+        addLogEntry(`❌ Bulk report failed: ${error.message}`, 'error');
+        alert(`Bulk report failed: ${error.message}`);
     }
     
     reportingActive = false;
-    showResults(totalReports, totalSuccess, totalFailed);
 }
 
 async function sendReport(target, method) {
