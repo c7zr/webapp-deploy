@@ -317,7 +317,7 @@ def init_db():
     
     # Initialize default settings
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maintenanceMode', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxReportsPerUser', '5', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxBulkTargets', '200', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxPremiumBulkTargets', '500', ?)", (datetime.now(timezone.utc).isoformat(),))
