@@ -10,6 +10,7 @@ from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
+from urllib.parse import unquote
 import jwt
 import bcrypt
 import requests
@@ -827,8 +828,6 @@ async def get_credentials(token_data: dict = Depends(verify_token)):
 async def save_credentials(creds: Credentials, token_data: dict = Depends(verify_token)):
     """Save Instagram cookies (sessionid and csrftoken) - EXACT swatnfobest.py approach"""
     try:
-        from urllib.parse import unquote
-        
         # URL decode the credentials in case they were copied encoded
         decoded_session = unquote(creds.sessionId)
         decoded_csrf = unquote(creds.csrfToken)
