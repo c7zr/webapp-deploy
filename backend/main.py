@@ -1132,11 +1132,13 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             )
     
     # Get target ID using swatnfobest.py logic
+    print(f"🔍 Looking up target ID for @{report.target}")
     target_id = get_target_id(report.target, cred["sessionId"], cred["csrfToken"])
     
     if not target_id:
+        print(f"❌ Failed to get target ID for @{report.target} - all 3 methods failed")
         conn.close()
-        raise HTTPException(status_code=404, detail="Target user not found or private")
+        raise HTTPException(status_code=404, detail=f"Could not find user @{report.target}. User may be private, deleted, or credentials may be invalid. Check PM2 logs for details.")
     
     # Send report using swatnfobest.py logic
     success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method)
