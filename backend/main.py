@@ -710,16 +710,9 @@ async def register(user: UserRegister, request: Request):
         approved_by = "auto"
         approved_at = datetime.now(timezone.utc).isoformat()
         
-        # Check if this IP has already received free premium trial
-        cursor.execute("SELECT COUNT(*) FROM users WHERE registrationIP = ?", (client_ip,))
-        ip_count = cursor.fetchone()[0]
-        
-        # Grant 2-hour free premium trial if IP hasn't been used before
+        # No free premium trial - all new users start as regular users
         is_premium = 0
         premium_expires_at = None
-        if ip_count == 0:
-            is_premium = 1
-            premium_expires_at = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
         
         cursor.execute('''
             INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts, lastFailedLogin, accountLockedUntil, isPremium, premiumExpiresAt, registrationIP)
@@ -732,10 +725,9 @@ async def register(user: UserRegister, request: Request):
         return JSONResponse(
             status_code=200,
             content={
-                "message": "Account created successfully" + (" - You received 2 hours of free premium access!" if is_premium else ""),
+                "message": "Account created successfully",
                 "success": True,
-                "requiresApproval": False,
-                "freePremium": is_premium
+                "requiresApproval": False
             }
         )
             
