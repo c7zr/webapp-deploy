@@ -19,6 +19,10 @@ function initializeReporting() {
         switchMode('bulk');
     });
     
+    document.getElementById('massModeBtn').addEventListener('click', () => {
+        switchMode('mass');
+    });
+    
     // Input method switching
     document.getElementById('manualInputBtn').addEventListener('click', () => {
         switchInputMethod('manual');
@@ -35,6 +39,7 @@ function initializeReporting() {
     // Start reporting buttons
     document.getElementById('startSingleReport').addEventListener('click', startSingleReport);
     document.getElementById('startBulkReport').addEventListener('click', startBulkReport);
+    document.getElementById('startMassReport').addEventListener('click', startMassReport);
     
     // Control buttons
     document.getElementById('stopReport').addEventListener('click', stopReporting);
@@ -132,16 +137,26 @@ function updateCredentialsStatus(isValid, message) {
 }
 
 function switchMode(mode) {
+    // Hide all sections
+    document.getElementById('singleReportSection').style.display = 'none';
+    document.getElementById('bulkReportSection').style.display = 'none';
+    document.getElementById('massReportSection').style.display = 'none';
+    
+    // Remove all active states
+    document.getElementById('singleModeBtn').classList.remove('active');
+    document.getElementById('bulkModeBtn').classList.remove('active');
+    document.getElementById('massModeBtn').classList.remove('active');
+    
+    // Show selected mode
     if (mode === 'single') {
         document.getElementById('singleModeBtn').classList.add('active');
-        document.getElementById('bulkModeBtn').classList.remove('active');
         document.getElementById('singleReportSection').style.display = 'block';
-        document.getElementById('bulkReportSection').style.display = 'none';
-    } else {
-        document.getElementById('singleModeBtn').classList.remove('active');
+    } else if (mode === 'bulk') {
         document.getElementById('bulkModeBtn').classList.add('active');
-        document.getElementById('singleReportSection').style.display = 'none';
         document.getElementById('bulkReportSection').style.display = 'block';
+    } else if (mode === 'mass') {
+        document.getElementById('massModeBtn').classList.add('active');
+        document.getElementById('massReportSection').style.display = 'block';
     }
 }
 
@@ -299,6 +314,105 @@ async function startBulkReport() {
         console.error('Bulk report error:', error);
         addLogEntry(`❌ Bulk report failed: ${error.message}`, 'error');
         alert(`Bulk report failed: ${error.message}`);
+    }
+    
+    reportingActive = false;
+}
+
+async function startMassReport() {
+    const target = document.getElementById('massTarget').value.trim().replace('@', '');
+    const count = parseInt(document.getElementById('massCount').value);
+    const method = document.getElementById('massMethod').value;
+    
+    if (!target) {
+        alert('Please enter a target username');
+        return;
+    }
+    
+    if (count < 1 || count > 200) {
+        alert('Number of reports must be between 1 and 200');
+        return;
+    }
+    
+    // Check user role first - PREMIUM ONLY
+    try {
+        const profileResponse = await apiCall('/v2/user/profile', { method: 'GET' });
+        if (profileResponse.ok) {
+            const profileData = await profileResponse.json();
+            const userRole = profileData.role;
+            
+            // Only allow premium, admin, and owner roles
+            if (!['premium', 'admin', 'owner'].includes(userRole)) {
+                alert('❌ Mass Reporting is a Premium Feature!\n\n' +
+                      'Mass reporting is exclusive to Premium users.\n\n' +
+                      'Upgrade to Premium to:\n' +
+                      '⚡ Report same user up to 200 times\n' +
+                      '⚡ Multi-threaded ultra-fast reporting\n' +
+                      '⚡ Unlimited daily reports\n' +
+                      '⚡ Priority support\n\n' +
+                      'Contact SWATNFO or Xefi for payment to upgrade your account.');
+                return;
+            }
+        }
+    } catch (error) {
+        console.error('Error checking user role:', error);
+        alert('Error verifying account status. Please try again.');
+        return;
+    }
+    
+    if (!confirm(`⚡ Mass Report Confirmation\n\nThis will send ${count} reports to @${target} using multi-threading.\n\nAll reports will be sent in parallel for maximum speed.\n\nContinue?`)) {
+        return;
+    }
+    
+    showProgressSection();
+    reportingActive = true;
+    reportingAborted = false;
+    
+    document.getElementById('currentTarget').textContent = `@${target}`;
+    document.getElementById('progressText').textContent = `0/${count}`;
+    document.getElementById('successCount').textContent = '0';
+    document.getElementById('failCount').textContent = '0';
+    
+    addLogEntry(`🚀 Starting mass report for @${target} x${count} times`, 'info');
+    addLogEntry(`⚡ Using multi-threading with 10 concurrent workers`, 'info');
+    addLogEntry(`📤 Sending all ${count} reports in parallel...`, 'info');
+    
+    try {
+        // Call the mass reporting endpoint
+        const response = await apiCall('/v2/reports/mass', {
+            method: 'POST',
+            body: JSON.stringify({
+                target: target,
+                count: count,
+                method: method
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Mass report failed');
+        }
+        
+        const data = await response.json();
+        
+        // Display results
+        addLogEntry(`✅ Mass report completed!`, 'success');
+        addLogEntry(`📊 Total: ${data.total} | Success: ${data.successful} | Failed: ${data.failed}`, 'info');
+        addLogEntry(`⚡ All reports sent in parallel using multi-threading!`, 'success');
+        
+        document.getElementById('progressText').textContent = `${data.total}/${data.total}`;
+        document.getElementById('successCount').textContent = data.successful;
+        document.getElementById('failCount').textContent = data.failed;
+        
+        const progressPercent = 100;
+        document.getElementById('progressBar').style.width = progressPercent + '%';
+        
+        showResults(data.total, data.successful, data.failed);
+        
+    } catch (error) {
+        console.error('Mass report error:', error);
+        addLogEntry(`❌ Mass report failed: ${error.message}`, 'error');
+        alert(`Mass report failed: ${error.message}`);
     }
     
     reportingActive = false;

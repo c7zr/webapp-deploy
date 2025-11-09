@@ -11,6 +11,8 @@ from typing import Optional, List
 from datetime import datetime, timedelta, timezone
 from contextlib import asynccontextmanager
 from urllib.parse import unquote
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import threading
 import jwt
 import bcrypt
 import requests
@@ -340,9 +342,31 @@ def init_db():
     conn.close()
 
 # Lifespan
+# Background task to clear chat messages every hour
+def clear_chat_hourly():
+    """Clears all chat messages every hour"""
+    while True:
+        time.sleep(3600)  # Sleep for 1 hour
+        try:
+            conn = get_db()
+            cursor = conn.cursor()
+            cursor.execute("DELETE FROM messages")
+            deleted_count = cursor.rowcount
+            conn.commit()
+            conn.close()
+            print(f"🧹 Hourly chat clear: Deleted {deleted_count} messages")
+        except Exception as e:
+            print(f"❌ Error clearing chat: {e}")
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
+    
+    # Start hourly chat cleanup thread
+    chat_cleanup_thread = threading.Thread(target=clear_chat_hourly, daemon=True)
+    chat_cleanup_thread.start()
+    print("✅ Hourly chat cleanup thread started")
+    
     print("=" * 50)
     print("✅ SWATNFO Backend Started!")
     print("✅ Database: SQLite (no MongoDB needed)")
@@ -1168,9 +1192,9 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         else:
             failed_reports += 1
         
-        # 1 second delay between reports
+        # 1.5 second delay between reports
         if i < report_count - 1:
-            time.sleep(1)
+            time.sleep(1.5)
     
     conn.commit()
     conn.close()
@@ -1344,6 +1368,125 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
         "success": True,
         "message": f"Bulk report completed: {results['successful']}/{results['total']} successful",
         "results": results
+    }
+
+@app.post("/v2/reports/mass")
+async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_token)):
+    """Mass report feature: Report same target up to 200 times with multi-threading (PREMIUM ONLY)"""
+    target = mass_data.get("target", "").strip().replace("@", "")
+    count = mass_data.get("count", 1)
+    method = mass_data.get("method", "spam")
+    
+    if not target:
+        raise HTTPException(status_code=400, detail="No target provided")
+    
+    # Validate count (1-200)
+    count = min(max(count, 1), 200)
+    
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Get user info - PREMIUM ONLY
+    cursor.execute("SELECT role FROM users WHERE id = ?", (token_data["user_id"],))
+    user = cursor.fetchone()
+    user_role = user["role"] if user else "user"
+    
+    # Check if premium/admin/owner
+    if user_role not in ["premium", "admin", "owner"]:
+        conn.close()
+        raise HTTPException(
+            status_code=403, 
+            detail="Mass reporting is exclusive to Premium users. Contact SWATNFO or Xefi for payment to upgrade your account."
+        )
+    
+    # Check if target is blacklisted
+    cursor.execute("SELECT * FROM blacklist WHERE username = ?", (target.lower(),))
+    blacklisted = cursor.fetchone()
+    
+    if blacklisted:
+        cursor.execute("UPDATE blacklist SET blocked_attempts = blocked_attempts + 1 WHERE username = ?", (target.lower(),))
+        conn.commit()
+        conn.close()
+        raise HTTPException(status_code=403, detail=f"Target @{target} is blacklisted and cannot be reported")
+    
+    # Get credentials
+    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+    cred = cursor.fetchone()
+    
+    if not cred:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Please configure Instagram credentials first")
+    
+    print(f"🚀 MASS REPORT: @{target} x{count} times using method: {method}")
+    print(f"   User: {token_data['username']} ({user_role})")
+    print(f"   Using multi-threading for speed")
+    
+    # Get target ID
+    target_id = get_target_id(target, cred["sessionId"], cred["csrfToken"])
+    
+    if not target_id:
+        print(f"❌ Failed to get target ID for @{target}")
+        conn.close()
+        raise HTTPException(status_code=404, detail=f"Could not find user @{target}. User may be private, deleted, or credentials may be invalid.")
+    
+    # Worker function for threading
+    def send_single_mass_report(report_num: int) -> dict:
+        """Send a single report (runs in thread)"""
+        try:
+            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method)
+            
+            # Log to database
+            report_id = str(uuid.uuid4())
+            temp_conn = get_db()
+            temp_cursor = temp_conn.cursor()
+            temp_cursor.execute('''
+                INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (report_id, token_data["user_id"], token_data["username"], target, 
+                  target_id, method, "success" if success else "failed", "mass", 
+                  datetime.now(timezone.utc).isoformat()))
+            
+            if success:
+                temp_cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+            
+            temp_conn.commit()
+            temp_conn.close()
+            
+            return {"report_num": report_num, "success": success}
+        except Exception as e:
+            print(f"   ❌ Thread {report_num} error: {e}")
+            return {"report_num": report_num, "success": False, "error": str(e)}
+    
+    # Use ThreadPoolExecutor for parallel reporting
+    max_workers = 10  # 10 concurrent threads
+    successful = 0
+    failed = 0
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Submit all tasks
+        futures = {executor.submit(send_single_mass_report, i): i for i in range(1, count + 1)}
+        
+        # Process results as they complete
+        for future in as_completed(futures):
+            result = future.result()
+            if result["success"]:
+                successful += 1
+                print(f"   ✅ Report {result['report_num']}/{count} sent")
+            else:
+                failed += 1
+                print(f"   ❌ Report {result['report_num']}/{count} failed")
+    
+    conn.close()
+    
+    print(f"\n🎯 MASS REPORT COMPLETE: {successful}/{count} successful")
+    
+    return {
+        "success": True,
+        "message": f"Mass report completed: {successful}/{count} reports sent successfully",
+        "target": target,
+        "total": count,
+        "successful": successful,
+        "failed": failed
     }
 
 @app.get("/v2/reports/stats")

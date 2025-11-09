@@ -11,11 +11,11 @@
         <div class="nav-container">
             <div class="nav-brand">SWATNFO</div>
             <ul class="nav-menu">
-                <li><a href="/dashboard">Dashboard</a></li>
-                <li><a href="/reporting" class="active">Report</a></li>
-                <li><a href="/history">History</a></li>
-                <li><a href="/chat">Chat</a></li>
-                <li><a href="/about">About</a></li>
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="reporting.html" class="active">Report</a></li>
+                <li><a href="history.html">History</a></li>
+                <li><a href="chat.html">Chat</a></li>
+                <li><a href="about.html">About</a></li>
             </ul>
             <div class="profile-dropdown" id="profileDropdown">
                 <div class="profile-button" id="profileButton">
@@ -94,6 +94,7 @@
             <div class="report-mode-selector">
                 <button id="singleModeBtn" class="mode-btn active">Single Report</button>
                 <button id="bulkModeBtn" class="mode-btn">Bulk Report</button>
+                <button id="massModeBtn" class="mode-btn">Mass Report <span class="premium-badge">PREMIUM</span></button>
             </div>
             
             <!-- Single Report Mode -->
@@ -177,6 +178,45 @@
                     </div>
                     
                     <button id="startBulkReport" class="btn btn-primary btn-large">Start Bulk Report</button>
+                </div>
+            </div>
+            
+            <!-- Mass Report Mode (PREMIUM ONLY) -->
+            <div id="massReportSection" class="report-section" style="display: none;">
+                <div class="report-box">
+                    <h2>Mass Report <span class="premium-badge">PREMIUM ONLY</span></h2>
+                    <p class="help-text" style="color: #888; margin-bottom: 20px;">
+                        ⚡ Report the same target up to 200 times using multi-threading for ultra-fast reporting (hundreds of reports in seconds)
+                    </p>
+                    
+                    <div class="form-group">
+                        <label for="massTarget">Target Username</label>
+                        <input type="text" id="massTarget" placeholder="Enter Instagram username">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="massMethod">Report Method</label>
+                        <select id="massMethod" class="select-input">
+                            <option value="spam">1. Spam</option>
+                            <option value="self_injury">2. Self Injury</option>
+                            <option value="violent_threat">3. Violent Threat</option>
+                            <option value="hate_speech">4. Hate Speech</option>
+                            <option value="nudity">5. Nudity</option>
+                            <option value="bullying">6. Bullying</option>
+                            <option value="impersonation_me">7. Impersonation (Me)</option>
+                            <option value="sale_illegal">8. Sale of Illegal Goods</option>
+                            <option value="violence">9. Violence</option>
+                            <option value="intellectual_property">10. Intellectual Property</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="massCount">Number of Reports (1-200)</label>
+                        <input type="number" id="massCount" value="50" min="1" max="200">
+                        <small style="color: #888; display: block; margin-top: 5px;">⚡ Uses 10 concurrent threads for maximum speed</small>
+                    </div>
+                    
+                    <button id="startMassReport" class="btn btn-primary btn-large">Start Mass Report</button>
                 </div>
             </div>
             
