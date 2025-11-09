@@ -852,10 +852,9 @@ async def save_credentials(creds: Credentials, token_data: dict = Depends(verify
         else:
             print(f"   ➕ Creating new credentials")
             cursor.execute('''
-                INSERT INTO credentials (id, userId, sessionId, csrfToken, createdAt, updatedAt)
-                VALUES (?, ?, ?, ?, ?, ?)
-            ''', (str(uuid.uuid4()), token_data["user_id"], decoded_session, decoded_csrf,
-                  datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
+                INSERT INTO credentials (userId, sessionId, csrfToken, updatedAt)
+                VALUES (?, ?, ?, ?)
+            ''', (token_data["user_id"], decoded_session, decoded_csrf, datetime.now(timezone.utc).isoformat()))
         
         conn.commit()
         
