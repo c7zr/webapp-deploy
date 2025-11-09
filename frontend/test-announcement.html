@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Announcement Modal</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body style="background: #0f0f1e; padding: 40px;">
+    <div style="max-width: 800px; margin: 0 auto; background: #1a1a2e; padding: 30px; border-radius: 12px; border: 1px solid #a855f7;">
+        <h1 style="color: white; margin-bottom: 20px;">🧪 Announcement Modal Test</h1>
+        
+        <div style="background: rgba(168, 85, 247, 0.1); padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+            <p style="color: #ccc; margin: 0;">
+                Current view count: <strong id="currentCount" style="color: #a855f7;">0</strong> / 2
+            </p>
+        </div>
+        
+        <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="resetAndShow()" style="
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: 600;
+            ">
+                🔄 Reset & Show Announcement
+            </button>
+            
+            <button onclick="showAnnouncementNow()" style="
+                background: #2ecc71;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: 600;
+            ">
+                ▶️ Show Announcement (No Reset)
+            </button>
+            
+            <button onclick="resetCounter()" style="
+                background: #e74c3c;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: 600;
+            ">
+                🗑️ Reset Counter Only
+            </button>
+            
+            <button onclick="updateDisplay()" style="
+                background: #3498db;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: 600;
+            ">
+                🔍 Check Current Count
+            </button>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 20px; background: rgba(255, 255, 255, 0.05); border-radius: 8px;">
+            <h3 style="color: white; margin-top: 0;">📝 Instructions:</h3>
+            <ul style="color: #ccc; line-height: 1.8;">
+                <li><strong>Reset & Show:</strong> Resets the view counter to 0 and shows the announcement</li>
+                <li><strong>Show Announcement:</strong> Shows the announcement without resetting (won't work if already viewed 2x)</li>
+                <li><strong>Reset Counter:</strong> Only resets the counter without showing the modal</li>
+                <li><strong>Check Count:</strong> Updates the display with current view count</li>
+            </ul>
+            
+            <div style="margin-top: 20px; padding: 15px; background: rgba(231, 76, 60, 0.1); border-left: 3px solid #e74c3c; border-radius: 4px;">
+                <p style="color: #e74c3c; margin: 0; font-size: 14px;">
+                    <strong>Note:</strong> The announcement normally only shows twice per user, then hides forever. Use the reset button to test it multiple times.
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/announcement.js"></script>
+    <script>
+        function updateDisplay() {
+            const count = parseInt(localStorage.getItem('announcementViews') || '0');
+            document.getElementById('currentCount').textContent = count;
+        }
+        
+        function resetCounter() {
+            localStorage.setItem('announcementViews', '0');
+            updateDisplay();
+            alert('✅ Counter reset to 0!');
+        }
+        
+        function resetAndShow() {
+            resetCounter();
+            setTimeout(() => {
+                showAnnouncement();
+            }, 100);
+        }
+        
+        function showAnnouncementNow() {
+            showAnnouncement();
+        }
+        
+        // Update display on load
+        window.addEventListener('load', () => {
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>

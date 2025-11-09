@@ -369,13 +369,24 @@ async function startMassReport() {
     reportingAborted = false;
     
     document.getElementById('currentTarget').textContent = `@${target}`;
-    document.getElementById('progressText').textContent = `0/${count}`;
+    document.getElementById('progressText').textContent = `Processing...`;
     document.getElementById('successCount').textContent = '0';
     document.getElementById('failCount').textContent = '0';
     
     addLogEntry(`🚀 Starting mass report for @${target} x${count} times`, 'info');
     addLogEntry(`⚡ Using multi-threading with 10 concurrent workers`, 'info');
     addLogEntry(`📤 Sending all ${count} reports in parallel...`, 'info');
+    addLogEntry(`⏳ Please wait while reports are processed on the server...`, 'warning');
+    
+    // Show animated progress bar
+    let progress = 0;
+    const progressInterval = setInterval(() => {
+        progress += 2;
+        if (progress <= 90) {
+            document.getElementById('progressBar').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `Processing ${Math.floor(progress)}%...`;
+        }
+    }, 100);
     
     try {
         // Call the mass reporting endpoint
@@ -388,6 +399,8 @@ async function startMassReport() {
             })
         });
         
+        clearInterval(progressInterval);
+        
         if (!response.ok) {
             const errorData = await response.json();
             throw new Error(errorData.detail || 'Mass report failed');
@@ -398,7 +411,11 @@ async function startMassReport() {
         // Display results
         addLogEntry(`✅ Mass report completed!`, 'success');
         addLogEntry(`📊 Total: ${data.total} | Success: ${data.successful} | Failed: ${data.failed}`, 'info');
-        addLogEntry(`⚡ All reports sent in parallel using multi-threading!`, 'success');
+        addLogEntry(`⚡ All ${data.successful} reports sent successfully using parallel processing!`, 'success');
+        
+        if (data.failed > 0) {
+            addLogEntry(`⚠️ ${data.failed} reports failed - check server logs for details`, 'warning');
+        }
         
         document.getElementById('progressText').textContent = `${data.total}/${data.total}`;
         document.getElementById('successCount').textContent = data.successful;
@@ -410,6 +427,7 @@ async function startMassReport() {
         showResults(data.total, data.successful, data.failed);
         
     } catch (error) {
+        clearInterval(progressInterval);
         console.error('Mass report error:', error);
         addLogEntry(`❌ Mass report failed: ${error.message}`, 'error');
         alert(`Mass report failed: ${error.message}`);

@@ -100,123 +100,192 @@
             <!-- Single Report Mode -->
             <div id="singleReportSection" class="report-section">
                 <div class="report-box">
-                    <h2>Single Target Report</h2>
+                    <div class="report-header">
+                        <h2>📊 Single Target Report</h2>
+                        <p class="report-description">Report one target up to 20 times with 1.5 second delays</p>
+                    </div>
                     
-                    <div class="form-group">
-                        <label for="singleTarget">Target Username</label>
-                        <input type="text" id="singleTarget" placeholder="Enter Instagram username">
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="singleTarget">
+                                <span class="label-icon">👤</span>
+                                Target Username
+                            </label>
+                            <input type="text" id="singleTarget" placeholder="username" class="input-modern">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="reportCount">
+                                <span class="label-icon">🔢</span>
+                                Report Count
+                            </label>
+                            <input type="number" id="reportCount" value="1" min="1" max="20" class="input-modern">
+                            <small class="input-hint">1-20 reports per target</small>
+                        </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="reportMethod">Report Method</label>
-                        <select id="reportMethod" class="select-input">
-                            <option value="spam">1. Spam</option>
-                            <option value="self_injury">2. Self Injury</option>
-                            <option value="violent_threat">3. Violent Threat</option>
-                            <option value="hate_speech">4. Hate Speech</option>
-                            <option value="nudity">5. Nudity</option>
-                            <option value="bullying">6. Bullying</option>
-                            <option value="impersonation_me">7. Impersonation (Me)</option>
-                            <option value="sale_illegal">8. Sale of Illegal Goods</option>
-                            <option value="violence">9. Violence</option>
-                            <option value="intellectual_property">10. Intellectual Property</option>
+                        <label for="reportMethod">
+                            <span class="label-icon">⚠️</span>
+                            Report Method
+                        </label>
+                        <select id="reportMethod" class="select-modern">
+                            <option value="spam">💬 Spam</option>
+                            <option value="self_injury">🩹 Self Injury</option>
+                            <option value="violent_threat">⚔️ Violent Threat</option>
+                            <option value="hate_speech">🚫 Hate Speech</option>
+                            <option value="nudity">🔞 Nudity</option>
+                            <option value="bullying">😢 Bullying</option>
+                            <option value="impersonation_me">🎭 Impersonation (Me)</option>
+                            <option value="sale_illegal">💊 Sale of Illegal Goods</option>
+                            <option value="violence">🔪 Violence</option>
+                            <option value="intellectual_property">©️ Intellectual Property</option>
                         </select>
                     </div>
                     
-                    <div class="form-group">
-                        <label for="reportCount">Number of Reports (1-20)</label>
-                        <input type="number" id="reportCount" value="1" min="1" max="20">
-                        <small style="color: #888; display: block; margin-top: 5px;">Report the same user up to 20 times</small>
-                    </div>
-                    
-                    <button id="startSingleReport" class="btn btn-primary btn-large">Start Reporting</button>
+                    <button id="startSingleReport" class="btn btn-primary btn-large btn-modern">
+                        <span class="btn-icon">🚀</span>
+                        Start Single Report
+                    </button>
                 </div>
             </div>
             
             <!-- Bulk Report Mode -->
             <div id="bulkReportSection" class="report-section" style="display: none;">
                 <div class="report-box">
-                    <h2>Bulk Target Report (Max 200)</h2>
+                    <div class="report-header">
+                        <h2>📦 Bulk Target Report</h2>
+                        <p class="report-description">Report multiple targets (max 200) with 2 second delays between each</p>
+                    </div>
                     
                     <div class="form-group">
-                        <label for="bulkMethod">Report Method (All Targets)</label>
-                        <select id="bulkMethod" class="select-input">
-                            <option value="spam">1. Spam</option>
-                            <option value="self_injury">2. Self Injury</option>
-                            <option value="violent_threat">3. Violent Threat</option>
-                            <option value="hate_speech">4. Hate Speech</option>
-                            <option value="nudity">5. Nudity</option>
-                            <option value="bullying">6. Bullying</option>
-                            <option value="impersonation_me">7. Impersonation (Me)</option>
-                            <option value="sale_illegal">8. Sale of Illegal Goods</option>
-                            <option value="violence">9. Violence</option>
-                            <option value="intellectual_property">10. Intellectual Property</option>
+                        <label for="bulkMethod">
+                            <span class="label-icon">⚠️</span>
+                            Report Method (All Targets)
+                        </label>
+                        <select id="bulkMethod" class="select-modern">
+                            <option value="spam">💬 Spam</option>
+                            <option value="self_injury">🩹 Self Injury</option>
+                            <option value="violent_threat">⚔️ Violent Threat</option>
+                            <option value="hate_speech">🚫 Hate Speech</option>
+                            <option value="nudity">🔞 Nudity</option>
+                            <option value="bullying">😢 Bullying</option>
+                            <option value="impersonation_me">🎭 Impersonation (Me)</option>
+                            <option value="sale_illegal">💊 Sale of Illegal Goods</option>
+                            <option value="violence">🔪 Violence</option>
+                            <option value="intellectual_property">©️ Intellectual Property</option>
                         </select>
                     </div>
                     
                     <div class="form-group">
-                        <label>Input Method</label>
+                        <label>
+                            <span class="label-icon">📝</span>
+                            Input Method
+                        </label>
                         <div class="toggle-buttons">
-                            <button id="manualInputBtn" class="toggle-btn active">Manual Input</button>
-                            <button id="fileUploadBtn" class="toggle-btn">File Upload</button>
+                            <button id="manualInputBtn" class="toggle-btn active">
+                                <span>✍️</span> Manual Input
+                            </button>
+                            <button id="fileUploadBtn" class="toggle-btn">
+                                <span>📄</span> File Upload
+                            </button>
                         </div>
                     </div>
                     
                     <div id="manualInputSection">
                         <div class="form-group">
-                            <label for="bulkTargets">Target Usernames (one per line)</label>
-                            <textarea id="bulkTargets" rows="10" placeholder="username1&#10;username2&#10;username3&#10;..."></textarea>
+                            <label for="bulkTargets">
+                                <span class="label-icon">📋</span>
+                                Target Usernames
+                            </label>
+                            <textarea id="bulkTargets" rows="10" placeholder="username1&#10;username2&#10;username3&#10;..." class="textarea-modern"></textarea>
+                            <small class="input-hint">One username per line</small>
                         </div>
                     </div>
                     
                     <div id="fileUploadSection" style="display: none;">
                         <div class="form-group">
-                            <label for="targetsFile">Upload Targets File (.txt)</label>
-                            <input type="file" id="targetsFile" accept=".txt">
-                            <p class="help-text">Format: One username per line</p>
+                            <label for="targetsFile">
+                                <span class="label-icon">📁</span>
+                                Upload Targets File
+                            </label>
+                            <input type="file" id="targetsFile" accept=".txt" class="file-input-modern">
+                            <p class="input-hint">Upload .txt file with one username per line</p>
                         </div>
                     </div>
                     
-                    <button id="startBulkReport" class="btn btn-primary btn-large">Start Bulk Report</button>
+                    <button id="startBulkReport" class="btn btn-primary btn-large btn-modern">
+                        <span class="btn-icon">🚀</span>
+                        Start Bulk Report
+                    </button>
                 </div>
             </div>
             
             <!-- Mass Report Mode (PREMIUM ONLY) -->
             <div id="massReportSection" class="report-section" style="display: none;">
-                <div class="report-box">
-                    <h2>Mass Report <span class="premium-badge">PREMIUM ONLY</span></h2>
-                    <p class="help-text" style="color: #888; margin-bottom: 20px;">
-                        ⚡ Report the same target up to 200 times using multi-threading for ultra-fast reporting (hundreds of reports in seconds)
-                    </p>
+                <div class="report-box premium-box">
+                    <div class="report-header">
+                        <h2>⚡ Mass Report <span class="premium-badge">PREMIUM</span></h2>
+                        <p class="report-description">Ultra-fast multi-threaded reporting - Send up to 200 reports in seconds!</p>
+                    </div>
                     
-                    <div class="form-group">
-                        <label for="massTarget">Target Username</label>
-                        <input type="text" id="massTarget" placeholder="Enter Instagram username">
+                    <div class="premium-features">
+                        <div class="feature-badge">
+                            <span class="feature-icon">⚡</span>
+                            <span>10 Concurrent Threads</span>
+                        </div>
+                        <div class="feature-badge">
+                            <span class="feature-icon">🚀</span>
+                            <span>200 Reports in ~20s</span>
+                        </div>
+                        <div class="feature-badge">
+                            <span class="feature-icon">🎯</span>
+                            <span>Single Target Focus</span>
+                        </div>
                     </div>
                     
                     <div class="form-group">
-                        <label for="massMethod">Report Method</label>
-                        <select id="massMethod" class="select-input">
-                            <option value="spam">1. Spam</option>
-                            <option value="self_injury">2. Self Injury</option>
-                            <option value="violent_threat">3. Violent Threat</option>
-                            <option value="hate_speech">4. Hate Speech</option>
-                            <option value="nudity">5. Nudity</option>
-                            <option value="bullying">6. Bullying</option>
-                            <option value="impersonation_me">7. Impersonation (Me)</option>
-                            <option value="sale_illegal">8. Sale of Illegal Goods</option>
-                            <option value="violence">9. Violence</option>
-                            <option value="intellectual_property">10. Intellectual Property</option>
-                        </select>
+                        <label for="massTarget">
+                            <span class="label-icon">🎯</span>
+                            Target Username
+                        </label>
+                        <input type="text" id="massTarget" placeholder="username" class="input-modern input-premium">
                     </div>
                     
-                    <div class="form-group">
-                        <label for="massCount">Number of Reports (1-200)</label>
-                        <input type="number" id="massCount" value="50" min="1" max="200">
-                        <small style="color: #888; display: block; margin-top: 5px;">⚡ Uses 10 concurrent threads for maximum speed</small>
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="massCount">
+                                <span class="label-icon">🔢</span>
+                                Number of Reports
+                            </label>
+                            <input type="number" id="massCount" value="50" min="1" max="200" class="input-modern input-premium">
+                            <small class="input-hint">⚡ 1-200 reports (parallel execution)</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="massMethod">
+                                <span class="label-icon">⚠️</span>
+                                Report Method
+                            </label>
+                            <select id="massMethod" class="select-modern select-premium">
+                                <option value="spam">💬 Spam</option>
+                                <option value="self_injury">🩹 Self Injury</option>
+                                <option value="violent_threat">⚔️ Violent Threat</option>
+                                <option value="hate_speech">🚫 Hate Speech</option>
+                                <option value="nudity">🔞 Nudity</option>
+                                <option value="bullying">😢 Bullying</option>
+                                <option value="impersonation_me">🎭 Impersonation (Me)</option>
+                                <option value="sale_illegal">💊 Sale of Illegal Goods</option>
+                                <option value="violence">🔪 Violence</option>
+                                <option value="intellectual_property">©️ Intellectual Property</option>
+                            </select>
+                        </div>
                     </div>
                     
-                    <button id="startMassReport" class="btn btn-primary btn-large">Start Mass Report</button>
+                    <button id="startMassReport" class="btn btn-primary btn-large btn-modern btn-premium">
+                        <span class="btn-icon">⚡</span>
+                        Start Mass Report
+                    </button>
                 </div>
             </div>
             
@@ -282,6 +351,7 @@
     </div>
     
     <script src="js/config.js"></script>
+    <script src="js/announcement.js"></script>
     <script src="js/reporting.js"></script>
 </body>
 </html>
