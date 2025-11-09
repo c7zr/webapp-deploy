@@ -220,6 +220,7 @@ class Credentials(BaseModel):
 class ReportRequest(BaseModel):
     target: str
     method: str
+    count: Optional[int] = 1  # Number of times to report (1-20)
 
 # Database Helper
 def get_db():
@@ -1054,9 +1055,12 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
 # Reporting Routes
 @app.post("/v2/reports/send")
 async def send_report(report: ReportRequest, token_data: dict = Depends(verify_token), is_bulk: bool = False):
-    """Send Instagram report - Uses EXACT swatnfobest.py logic"""
+    """Send Instagram report - Now supports 1-20 reports per target"""
     conn = get_db()
     cursor = conn.cursor()
+    
+    # Validate count (1-20)
+    report_count = min(max(report.count, 1), 20)
     
     # Get user info to check role
     cursor.execute("SELECT role FROM users WHERE id = ?", (token_data["user_id"],))
@@ -1105,31 +1109,31 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         conn.close()
         raise HTTPException(status_code=400, detail="Please configure Instagram credentials first")
     
-    print(f"📤 Reporting @{report.target} using method: {report.method}")
+    print(f"📤 Reporting @{report.target} {report_count}x using method: {report.method}")
     print(f"   Using SessionId: {cred['sessionId'][:20]}... (length: {len(cred['sessionId'])})")
     print(f"   Using CsrfToken: {cred['csrfToken'][:20]}... (length: {len(cred['csrfToken'])})")
     
-    # Check 3-minute cooldown for free users on same target
-    if not is_bulk and user_role == "user":
-        three_minutes_ago = (datetime.now(timezone.utc) - timedelta(minutes=3)).isoformat()
-        cursor.execute(
-            "SELECT timestamp FROM reports WHERE userId = ? AND target = ? AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1",
-            (token_data["user_id"], report.target, three_minutes_ago)
-        )
-        recent_report = cursor.fetchone()
-        
-        if recent_report:
-            last_report_time = datetime.fromisoformat(recent_report["timestamp"])
-            time_diff = datetime.now(timezone.utc) - last_report_time
-            seconds_remaining = 180 - int(time_diff.total_seconds())
-            minutes_remaining = seconds_remaining // 60
-            secs_remaining = seconds_remaining % 60
-            
-            conn.close()
-            raise HTTPException(
-                status_code=400, 
-                detail=f"Please wait {minutes_remaining}m {secs_remaining}s before reporting @{report.target} again. Upgrade to Premium for unlimited bulk reporting."
-            )
+    # Check 3-minute cooldown for free users on same target (removed - now they can report 20x)
+    # if not is_bulk and user_role == "user":
+    #     three_minutes_ago = (datetime.now(timezone.utc) - timedelta(minutes=3)).isoformat()
+    #     cursor.execute(
+    #         "SELECT timestamp FROM reports WHERE userId = ? AND target = ? AND timestamp >= ? ORDER BY timestamp DESC LIMIT 1",
+    #         (token_data["user_id"], report.target, three_minutes_ago)
+    #     )
+    #     recent_report = cursor.fetchone()
+    #     
+    #     if recent_report:
+    #         last_report_time = datetime.fromisoformat(recent_report["timestamp"])
+    #         time_diff = datetime.now(timezone.utc) - last_report_time
+    #         seconds_remaining = 180 - int(time_diff.total_seconds())
+    #         minutes_remaining = seconds_remaining // 60
+    #         secs_remaining = seconds_remaining % 60
+    #         
+    #         conn.close()
+    #         raise HTTPException(
+    #             status_code=400, 
+    #             detail=f"Please wait {minutes_remaining}m {secs_remaining}s before reporting @{report.target} again. Upgrade to Premium for unlimited bulk reporting."
+    #         )
     
     # Get target ID using swatnfobest.py logic
     print(f"🔍 Looking up target ID for @{report.target}")
@@ -1140,29 +1144,53 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         conn.close()
         raise HTTPException(status_code=404, detail=f"Could not find user @{report.target}. User may be private, deleted, or credentials may be invalid. Check PM2 logs for details.")
     
-    # Send report using swatnfobest.py logic
-    success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method)
+    # Send reports multiple times (1-20)
+    successful_reports = 0
+    failed_reports = 0
     
-    # Log report
-    report_id = str(uuid.uuid4())
-    cursor.execute('''
-        INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (report_id, token_data["user_id"], token_data["username"], report.target, 
-          target_id, report.method, 
-          "success" if success else "failed", "single", 
-          datetime.now(timezone.utc).isoformat()))
-    
-    if success:
-        cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+    for i in range(report_count):
+        print(f"   📤 Sending report {i+1}/{report_count}")
+        success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method)
+        
+        # Log each report
+        report_id = str(uuid.uuid4())
+        cursor.execute('''
+            INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (report_id, token_data["user_id"], token_data["username"], report.target, 
+              target_id, report.method, 
+              "success" if success else "failed", "single", 
+              datetime.now(timezone.utc).isoformat()))
+        
+        if success:
+            successful_reports += 1
+            cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+        else:
+            failed_reports += 1
+        
+        # 1 second delay between reports
+        if i < report_count - 1:
+            time.sleep(1)
     
     conn.commit()
     conn.close()
     
-    if success:
-        return {"success": True, "message": "Report sent successfully"}
+    print(f"✅ Completed: {successful_reports}/{report_count} successful")
+    
+    if successful_reports > 0:
+        return {
+            "success": True, 
+            "message": f"{successful_reports}/{report_count} reports sent successfully",
+            "successful": successful_reports,
+            "failed": failed_reports
+        }
     else:
-        return {"success": False, "message": "Report failed"}
+        return {
+            "success": False, 
+            "message": "All reports failed",
+            "successful": 0,
+            "failed": failed_reports
+        }
 
 @app.post("/v2/reports/bulk")
 async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_token)):

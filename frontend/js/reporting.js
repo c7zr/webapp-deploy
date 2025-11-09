@@ -173,15 +173,15 @@ function handleFileUpload(e) {
 async function startSingleReport() {
     const target = document.getElementById('singleTarget').value.trim();
     const method = document.getElementById('reportMethod').value;
-    const count = parseInt(document.getElementById('reportCount').value);
+    const count = parseInt(document.getElementById('reportCount').value) || 1;
     
     if (!target) {
         showError('Please enter a target username');
         return;
     }
     
-    if (count < 1 || count > 1000) {
-        showError('Report count must be between 1 and 1000');
+    if (count < 1 || count > 20) {
+        showError('Report count must be between 1 and 20');
         return;
     }
     
@@ -189,32 +189,21 @@ async function startSingleReport() {
     reportingActive = true;
     reportingAborted = false;
     
-    let success = 0;
-    let failed = 0;
+    addLogEntry(`🚀 Starting ${count} report(s) for @${target} with method: ${method}`, 'info');
     
-    for (let i = 0; i < count; i++) {
-        if (reportingAborted) break;
-        
-        updateProgress(target, i + 1, count, success, failed);
-        
-        const result = await sendReport(target, method);
-        
-        if (result.success) {
-            success++;
-            addLogEntry(`✅ Report ${i + 1}/${count} successful`, 'success');
-        } else {
-            failed++;
-            addLogEntry(`❌ Report ${i + 1}/${count} failed: ${result.error}`, 'error');
-        }
-        
-        updateProgress(target, i + 1, count, success, failed);
-        
-        // Small delay between reports
-        await sleep(500);
+    // Send all reports at once to backend
+    const result = await sendReport(target, method, count);
+    
+    if (result.success) {
+        const { successful, failed } = result.data;
+        addLogEntry(`✅ Completed: ${successful}/${count} successful, ${failed}/${count} failed`, 'success');
+        showResults(count, successful, failed);
+    } else {
+        addLogEntry(`❌ Report failed: ${result.error}`, 'error');
+        showResults(count, 0, count);
     }
     
     reportingActive = false;
-    showResults(count, success, failed);
 }
 
 async function startBulkReport() {
@@ -315,20 +304,21 @@ async function startBulkReport() {
     reportingActive = false;
 }
 
-async function sendReport(target, method) {
+async function sendReport(target, method, count = 1) {
     try {
         const response = await apiCall('/v2/reports/send', {
             method: 'POST',
             body: JSON.stringify({
                 target: target,
-                method: method
+                method: method,
+                count: count
             })
         });
         
         const data = await response.json();
         
         if (response.ok && data.success) {
-            return { success: true };
+            return { success: true, data: data };
         } else {
             // Log the full error for debugging
             console.error('Report failed:', {
