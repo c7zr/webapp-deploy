@@ -1,7 +1,7 @@
 # SWATNFO Instagram Report Bot - Backend API (SQLite Version)
 # Made by SWATNFO - d3sapiv2
 
-from fastapi import FastAPI, HTTPException, Depends, status, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, HTTPException, Depends, status, WebSocket, WebSocketDisconnect, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
@@ -253,7 +253,10 @@ def init_db():
             reportCount INTEGER DEFAULT 0,
             failedLoginAttempts INTEGER DEFAULT 0,
             lastFailedLogin TEXT,
-            accountLockedUntil TEXT
+            accountLockedUntil TEXT,
+            isPremium INTEGER DEFAULT 0,
+            premiumExpiresAt TEXT,
+            registrationIP TEXT
         )
     ''')
     
@@ -349,7 +352,7 @@ def migrate_db():
     cursor = conn.cursor()
     
     try:
-        # Check if lastLoginAt column exists in users table
+        # Check if columns exist in users table
         cursor.execute("PRAGMA table_info(users)")
         columns = [column[1] for column in cursor.fetchall()]
         
@@ -358,6 +361,24 @@ def migrate_db():
             cursor.execute("ALTER TABLE users ADD COLUMN lastLoginAt TEXT")
             conn.commit()
             print("✅ lastLoginAt column added successfully")
+        
+        if 'isPremium' not in columns:
+            print("🔧 Adding isPremium column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN isPremium INTEGER DEFAULT 0")
+            conn.commit()
+            print("✅ isPremium column added successfully")
+        
+        if 'premiumExpiresAt' not in columns:
+            print("🔧 Adding premiumExpiresAt column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN premiumExpiresAt TEXT")
+            conn.commit()
+            print("✅ premiumExpiresAt column added successfully")
+        
+        if 'registrationIP' not in columns:
+            print("🔧 Adding registrationIP column to users table...")
+            cursor.execute("ALTER TABLE users ADD COLUMN registrationIP TEXT")
+            conn.commit()
+            print("✅ registrationIP column added successfully")
         
     except Exception as e:
         print(f"⚠️ Migration warning: {e}")
@@ -589,9 +610,12 @@ async def api_info():
 
 # Auth Routes
 @app.post("/v2/auth/register")
-async def register(user: UserRegister):
+async def register(user: UserRegister, request: Request):
     conn = None
     try:
+        # Get client IP
+        client_ip = request.client.host
+        
         # Rate limiting for registration
         rate_limit_key = f"register_{user.email if user.email else user.username}"
         if not check_rate_limit(rate_limit_key, max_requests=3, window_seconds=300):
@@ -670,10 +694,21 @@ async def register(user: UserRegister):
         approved_by = "auto"
         approved_at = datetime.now(timezone.utc).isoformat()
         
+        # Check if this IP has already received free premium trial
+        cursor.execute("SELECT COUNT(*) FROM users WHERE registrationIP = ?", (client_ip,))
+        ip_count = cursor.fetchone()[0]
+        
+        # Grant 2-hour free premium trial if IP hasn't been used before
+        is_premium = 0
+        premium_expires_at = None
+        if ip_count == 0:
+            is_premium = 1
+            premium_expires_at = (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat()
+        
         cursor.execute('''
-            INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts, lastFailedLogin, accountLockedUntil)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (user_id, user.username, email, hashed_pw, "user", 1, 0, is_approved, approved_by, approved_at, datetime.now(timezone.utc).isoformat(), 0, 0, None, None))
+            INSERT INTO users (id, username, email, password, role, isActive, isProtected, isApproved, approvedBy, approvedAt, createdAt, reportCount, failedLoginAttempts, lastFailedLogin, accountLockedUntil, isPremium, premiumExpiresAt, registrationIP)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (user_id, user.username, email, hashed_pw, "user", 1, 0, is_approved, approved_by, approved_at, datetime.now(timezone.utc).isoformat(), 0, 0, None, None, is_premium, premium_expires_at, client_ip))
         
         conn.commit()
         conn.close()
@@ -681,9 +716,10 @@ async def register(user: UserRegister):
         return JSONResponse(
             status_code=200,
             content={
-                "message": "Account created successfully",
+                "message": "Account created successfully" + (" - You received 2 hours of free premium access!" if is_premium else ""),
                 "success": True,
-                "requiresApproval": False
+                "requiresApproval": False,
+                "freePremium": is_premium
             }
         )
             
