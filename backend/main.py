@@ -760,10 +760,17 @@ async def login(credentials: UserLogin):
     # Approval system removed - all users are auto-approved
     
     # Reset failed login attempts and update last login on successful login
-    cursor.execute(
-        "UPDATE users SET failedLoginAttempts = 0, lastFailedLogin = NULL, accountLockedUntil = NULL, lastLoginAt = ? WHERE id = ?", 
-        (datetime.now(timezone.utc).isoformat(), user["id"])
-    )
+    try:
+        cursor.execute(
+            "UPDATE users SET failedLoginAttempts = 0, lastFailedLogin = NULL, accountLockedUntil = NULL, lastLoginAt = ? WHERE id = ?", 
+            (datetime.now(timezone.utc).isoformat(), user["id"])
+        )
+    except sqlite3.OperationalError:
+        # Fallback if lastLoginAt column doesn't exist yet
+        cursor.execute(
+            "UPDATE users SET failedLoginAttempts = 0, lastFailedLogin = NULL, accountLockedUntil = NULL WHERE id = ?", 
+            (user["id"],)
+        )
     conn.commit()
     conn.close()
     
