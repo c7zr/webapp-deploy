@@ -826,48 +826,55 @@ async def get_credentials(token_data: dict = Depends(verify_token)):
 @app.post("/v2/credentials")
 async def save_credentials(creds: Credentials, token_data: dict = Depends(verify_token)):
     """Save Instagram cookies (sessionid and csrftoken) - EXACT swatnfobest.py approach"""
-    from urllib.parse import unquote
-    
-    # URL decode the credentials in case they were copied encoded
-    decoded_session = unquote(creds.sessionId)
-    decoded_csrf = unquote(creds.csrfToken)
-    
-    print(f"💾 Saving credentials for user {token_data['user_id']}")
-    print(f"   SessionId (raw): {creds.sessionId[:20]}... (length: {len(creds.sessionId)})")
-    print(f"   SessionId (decoded): {decoded_session[:20]}... (length: {len(decoded_session)})")
-    print(f"   CsrfToken: {decoded_csrf[:20]}... (length: {len(decoded_csrf)})")
-    
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
-    existing = cursor.fetchone()
-    
-    if existing:
-        print(f"   📝 Updating existing credentials")
-        cursor.execute('''
-            UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?
-            WHERE userId = ?
-        ''', (decoded_session, decoded_csrf, datetime.now(timezone.utc).isoformat(), token_data["user_id"]))
-    else:
-        print(f"   ➕ Creating new credentials")
-        cursor.execute('''
-            INSERT INTO credentials (id, userId, sessionId, csrfToken, createdAt, updatedAt)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (str(uuid.uuid4()), token_data["user_id"], decoded_session, decoded_csrf,
-              datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
-    
-    conn.commit()
-    
-    # Verify the save
-    cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
-    saved = cursor.fetchone()
-    if saved:
-        print(f"   ✅ Verified saved - SessionId: {saved['sessionId'][:20]}...")
-    
-    conn.close()
-    
-    return {"success": True, "message": "Credentials saved successfully"}
+    try:
+        from urllib.parse import unquote
+        
+        # URL decode the credentials in case they were copied encoded
+        decoded_session = unquote(creds.sessionId)
+        decoded_csrf = unquote(creds.csrfToken)
+        
+        print(f"💾 Saving credentials for user {token_data['user_id']}")
+        print(f"   SessionId (raw): {creds.sessionId[:20]}... (length: {len(creds.sessionId)})")
+        print(f"   SessionId (decoded): {decoded_session[:20]}... (length: {len(decoded_session)})")
+        print(f"   CsrfToken: {decoded_csrf[:20]}... (length: {len(decoded_csrf)})")
+        
+        conn = get_db()
+        cursor = conn.cursor()
+        
+        cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+        existing = cursor.fetchone()
+        
+        if existing:
+            print(f"   📝 Updating existing credentials")
+            cursor.execute('''
+                UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?
+                WHERE userId = ?
+            ''', (decoded_session, decoded_csrf, datetime.now(timezone.utc).isoformat(), token_data["user_id"]))
+        else:
+            print(f"   ➕ Creating new credentials")
+            cursor.execute('''
+                INSERT INTO credentials (id, userId, sessionId, csrfToken, createdAt, updatedAt)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ''', (str(uuid.uuid4()), token_data["user_id"], decoded_session, decoded_csrf,
+                  datetime.now(timezone.utc).isoformat(), datetime.now(timezone.utc).isoformat()))
+        
+        conn.commit()
+        
+        # Verify the save
+        cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
+        saved = cursor.fetchone()
+        if saved:
+            print(f"   ✅ Verified saved - SessionId: {saved['sessionId'][:20]}...")
+        
+        conn.close()
+        
+        return {"success": True, "message": "Credentials saved successfully"}
+        
+    except Exception as e:
+        print(f"❌ Error saving credentials: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Error saving credentials: {str(e)}")
 
 @app.post("/v2/credentials/test")
 async def test_credentials(token_data: dict = Depends(verify_token)):
