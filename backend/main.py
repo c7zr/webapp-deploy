@@ -503,16 +503,27 @@ def verify_password(password: str, hashed: str) -> bool:
 
 def is_premium_active(user_data: dict) -> bool:
     """Check if user has active premium (including trial period)"""
-    if not user_data.get("isPremium"):
+    # Handle sqlite3.Row objects
+    try:
+        is_premium = user_data["isPremium"] if "isPremium" in user_data.keys() else 0
+    except (KeyError, AttributeError):
+        return False
+    
+    if not is_premium:
         return False
     
     # If no expiration date, premium is permanent (for manually upgraded users)
-    if not user_data.get("premiumExpiresAt"):
+    try:
+        premium_expires_at = user_data["premiumExpiresAt"] if "premiumExpiresAt" in user_data.keys() else None
+    except (KeyError, AttributeError):
+        return True
+    
+    if not premium_expires_at:
         return True
     
     # Check if premium trial/subscription hasn't expired yet
     try:
-        expires_at = datetime.fromisoformat(user_data["premiumExpiresAt"])
+        expires_at = datetime.fromisoformat(premium_expires_at)
         return datetime.now(timezone.utc) < expires_at
     except:
         return False
