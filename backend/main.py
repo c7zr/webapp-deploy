@@ -249,6 +249,7 @@ def init_db():
             approvedBy TEXT,
             approvedAt TEXT,
             createdAt TEXT,
+            lastLoginAt TEXT,
             reportCount INTEGER DEFAULT 0,
             failedLoginAttempts INTEGER DEFAULT 0,
             lastFailedLogin TEXT,
@@ -316,7 +317,7 @@ def init_db():
     
     # Initialize default settings
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maintenanceMode', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
-    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.now(timezone.utc).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxReportsPerUser', '5', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxBulkTargets', '200', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maxPremiumBulkTargets', '500', ?)", (datetime.now(timezone.utc).isoformat(),))
@@ -735,8 +736,11 @@ async def login(credentials: UserLogin):
     
     # Approval system removed - all users are auto-approved
     
-    # Reset failed login attempts on successful login
-    cursor.execute("UPDATE users SET failedLoginAttempts = 0, lastFailedLogin = NULL, accountLockedUntil = NULL WHERE id = ?", (user["id"],))
+    # Reset failed login attempts and update last login on successful login
+    cursor.execute(
+        "UPDATE users SET failedLoginAttempts = 0, lastFailedLogin = NULL, accountLockedUntil = NULL, lastLoginAt = ? WHERE id = ?", 
+        (datetime.now(timezone.utc).isoformat(), user["id"])
+    )
     conn.commit()
     conn.close()
     
@@ -1632,13 +1636,18 @@ async def admin_stats(token_data: dict = Depends(verify_admin)):
     
     success_rate = (successful / total_reports * 100) if total_reports > 0 else 0
     
+    # Count users who logged in today
+    today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).isoformat()
+    cursor.execute("SELECT COUNT(*) as active FROM users WHERE lastLoginAt >= ?", (today,))
+    active_today = cursor.fetchone()["active"]
+    
     conn.close()
     
     return {
         "totalUsers": total_users,
         "totalReports": total_reports,
         "successRate": round(success_rate, 1),
-        "activeToday": 0
+        "activeToday": active_today
     }
 
 @app.get("/v2/admin/users")
@@ -2016,56 +2025,260 @@ async def remove_from_blacklist(username: str, token_data: dict = Depends(verify
 async def admin_clear_logs(token_data: dict = Depends(verify_admin)):
     return {"message": "Logs cleared successfully"}
 
+# Maintenance Mode Checker
+def is_maintenance_mode() -> bool:
+    """Check if maintenance mode is enabled"""
+    try:
+        conn = get_db()
+        cursor = conn.cursor()
+        cursor.execute("SELECT value FROM settings WHERE key = 'maintenanceMode'")
+        result = cursor.fetchone()
+        conn.close()
+        return result and result["value"] == "true"
+    except:
+        return False
+
+def get_maintenance_page() -> HTMLResponse:
+    """Return beautiful maintenance page"""
+    html = """
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Under Maintenance - SWATNFO</title>
+        <style>
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
+                color: white;
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow: hidden;
+                position: relative;
+            }
+            
+            .stars {
+                position: absolute;
+                width: 100%;
+                height: 100%;
+                overflow: hidden;
+            }
+            
+            .star {
+                position: absolute;
+                background: white;
+                border-radius: 50%;
+                animation: twinkle 3s infinite;
+            }
+            
+            @keyframes twinkle {
+                0%, 100% { opacity: 0.3; }
+                50% { opacity: 1; }
+            }
+            
+            .container {
+                text-align: center;
+                z-index: 10;
+                max-width: 600px;
+                padding: 40px;
+                background: rgba(26, 26, 46, 0.8);
+                border-radius: 20px;
+                border: 2px solid rgba(168, 85, 247, 0.3);
+                box-shadow: 0 20px 60px rgba(168, 85, 247, 0.2);
+                backdrop-filter: blur(10px);
+            }
+            
+            .logo {
+                font-size: 80px;
+                margin-bottom: 20px;
+                animation: pulse 2s ease-in-out infinite;
+            }
+            
+            @keyframes pulse {
+                0%, 100% { transform: scale(1); }
+                50% { transform: scale(1.1); }
+            }
+            
+            h1 {
+                font-size: 2.5em;
+                margin-bottom: 20px;
+                background: linear-gradient(135deg, #a855f7 0%, #e879f9 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            
+            .subtitle {
+                font-size: 1.2em;
+                color: #999;
+                margin-bottom: 30px;
+            }
+            
+            .features {
+                margin: 30px 0;
+                padding: 20px;
+                background: rgba(168, 85, 247, 0.1);
+                border-radius: 12px;
+                border: 1px solid rgba(168, 85, 247, 0.2);
+            }
+            
+            .feature-item {
+                padding: 10px;
+                color: #e879f9;
+                font-size: 1.1em;
+            }
+            
+            .spinner {
+                margin: 30px auto;
+                width: 60px;
+                height: 60px;
+                border: 4px solid rgba(168, 85, 247, 0.2);
+                border-top: 4px solid #a855f7;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+            }
+            
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            .message {
+                font-size: 1.1em;
+                color: #ccc;
+                line-height: 1.6;
+            }
+            
+            .brand {
+                margin-top: 40px;
+                font-size: 0.9em;
+                color: #666;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="stars" id="stars"></div>
+        
+        <div class="container">
+            <div class="logo">🔧</div>
+            <h1>Under Maintenance</h1>
+            <p class="subtitle">We're making things better!</p>
+            
+            <div class="features">
+                <div class="feature-item">✨ New Features Coming</div>
+                <div class="feature-item">⚡ Performance Improvements</div>
+                <div class="feature-item">🔒 Security Enhancements</div>
+            </div>
+            
+            <div class="spinner"></div>
+            
+            <p class="message">
+                We're currently performing scheduled maintenance to bring you<br>
+                exciting new updates and improvements.<br><br>
+                We'll be back online shortly. Thank you for your patience!
+            </p>
+            
+            <div class="brand">
+                <strong>SWATNFO</strong> | Instagram Report Bot v2
+            </div>
+        </div>
+        
+        <script>
+            // Create stars
+            const starsContainer = document.getElementById('stars');
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.width = Math.random() * 3 + 'px';
+                star.style.height = star.style.width;
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                starsContainer.appendChild(star);
+            }
+        </script>
+    </body>
+    </html>
+    """
+    return HTMLResponse(content=html)
+
 # Frontend Routes - Serve HTML pages
 @app.get("/")
 async def root():
     """Redirect root to login page"""
+    if is_maintenance_mode():
+        return get_maintenance_page()
     return RedirectResponse(url="/login.html")
 
 @app.get("/login.html", response_class=HTMLResponse)
 async def login_page():
     """Serve login page"""
+    if is_maintenance_mode():
+        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "login.html"))
 
 @app.get("/register.html", response_class=HTMLResponse)
 async def register_page():
     """Serve register page"""
+    if is_maintenance_mode():
+        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "register.html"))
 
 @app.get("/dashboard.html", response_class=HTMLResponse)
 async def dashboard_page():
     """Serve dashboard page"""
+    if is_maintenance_mode():
+        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "dashboard.html"))
 
 @app.get("/reporting.html", response_class=HTMLResponse)
 async def reporting_page():
     """Serve reporting page"""
+    if is_maintenance_mode():
+        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "reporting.html"))
 
 @app.get("/history.html", response_class=HTMLResponse)
 async def history_page():
     """Serve history page"""
+    if is_maintenance_mode():
+        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "history.html"))
 
 @app.get("/settings.html", response_class=HTMLResponse)
 async def settings_page():
     """Serve settings page"""
+    if is_maintenance_mode():
+        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "settings.html"))
 
 @app.get("/about.html", response_class=HTMLResponse)
 async def about_page():
     """Serve about page"""
+    if is_maintenance_mode():
+        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "about.html"))
 
 @app.get("/admin.html", response_class=HTMLResponse)
 async def admin_page():
-    """Serve admin page"""
+    """Serve admin page (bypasses maintenance for admins)"""
     return FileResponse(os.path.join(FRONTEND_DIR, "admin.html"))
 
 # Chat Routes
 @app.get("/chat", response_class=HTMLResponse)
 async def chat_page():
     """Serve chat page"""
+    if is_maintenance_mode():
+        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "chat.html"))
 
 @app.websocket("/ws/chat")
