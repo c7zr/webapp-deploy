@@ -1291,9 +1291,14 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
     """Send bulk Instagram reports with 4-second delay between each target"""
     targets = bulk_data.get("targets", [])
     method = bulk_data.get("method", "spam")
+    count = bulk_data.get("count", 1)  # Number of reports per target (1-15)
     
     if not targets:
         raise HTTPException(status_code=400, detail="No targets provided")
+    
+    # Validate count
+    if count < 1 or count > 15:
+        raise HTTPException(status_code=400, detail="Count must be between 1 and 15")
     
     conn = get_db()
     cursor = conn.cursor()
@@ -1325,9 +1330,9 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
         conn.close()
         raise HTTPException(status_code=400, detail="Please configure Instagram credentials first")
     
-    print(f"📦 BULK REPORT: {len(targets)} targets, method: {method}")
+    print(f"📦 BULK REPORT: {len(targets)} targets x {count} reports each, method: {method}")
     print(f"   User: {token_data['username']} ({user_role})")
-    print(f"   4-second delay between each target")
+    print(f"   1.5-second delay between each report")
     
     results = {
         "total": len(targets),
@@ -1393,35 +1398,49 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
                 time.sleep(2)
             continue
         
-        # Send report
-        success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method)
+        # Send multiple reports for this target (count times)
+        target_success = 0
+        target_failed = 0
         
-        # Log report
-        report_id = str(uuid.uuid4())
-        cursor.execute('''
-            INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (report_id, token_data["user_id"], token_data["username"], target, 
-              target_id, method, "success" if success else "failed", "bulk", 
-              datetime.now(timezone.utc).isoformat()))
+        for report_num in range(count):
+            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method)
+            
+            # Log report
+            report_id = str(uuid.uuid4())
+            cursor.execute('''
+                INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (report_id, token_data["user_id"], token_data["username"], target, 
+                  target_id, method, "success" if success else "failed", "bulk", 
+                  datetime.now(timezone.utc).isoformat()))
+            
+            if success:
+                cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+                target_success += 1
+            else:
+                target_failed += 1
+            
+            # 1.5 second delay between reports for same target (except last report)
+            if report_num < count - 1:
+                time.sleep(1.5)
         
-        if success:
-            cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+        # Update results
+        if target_success > 0:
             results["successful"] += 1
             results["details"].append({
                 "target": target,
                 "status": "success",
-                "message": "Report sent successfully"
+                "message": f"{target_success}/{count} reports sent successfully"
             })
-            print(f"   ✅ @{target} reported successfully")
+            print(f"   ✅ @{target} - {target_success}/{count} reports sent")
         else:
             results["failed"] += 1
             results["details"].append({
                 "target": target,
                 "status": "failed",
-                "message": "Report failed"
+                "message": f"All {count} reports failed"
             })
-            print(f"   ❌ @{target} report failed")
+            print(f"   ❌ @{target} - all {count} reports failed")
         
         conn.commit()
         
