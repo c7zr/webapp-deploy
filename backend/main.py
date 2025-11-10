@@ -898,8 +898,11 @@ async def get_credentials(token_data: dict = Depends(verify_token)):
     is_expired = False
     days_until_expiry = None
     
-    if cred.get("expiresAt"):
-        expires_at = datetime.fromisoformat(cred["expiresAt"])
+    # Convert Row to dict for easier access
+    cred_dict = dict(cred)
+    
+    if cred_dict.get("expiresAt"):
+        expires_at = datetime.fromisoformat(cred_dict["expiresAt"])
         now = datetime.now(timezone.utc)
         
         if now > expires_at:
@@ -909,10 +912,10 @@ async def get_credentials(token_data: dict = Depends(verify_token)):
     
     return {
         "credentials": {
-            "sessionId": cred["sessionId"],
-            "csrfToken": cred["csrfToken"],
+            "sessionId": cred_dict["sessionId"],
+            "csrfToken": cred_dict["csrfToken"],
             "isValid": not is_expired,
-            "expiresAt": cred.get("expiresAt"),
+            "expiresAt": cred_dict.get("expiresAt"),
             "daysUntilExpiry": days_until_expiry
         },
         "configured": True,
