@@ -576,6 +576,19 @@ async def api_info():
 async def register(user: UserRegister, request: Request):
     conn = None
     try:
+        # Check if registration is enabled
+        temp_conn = get_db()
+        temp_cursor = temp_conn.cursor()
+        temp_cursor.execute("SELECT value FROM settings WHERE key = 'registrationEnabled'")
+        reg_setting = temp_cursor.fetchone()
+        temp_conn.close()
+        
+        if reg_setting and reg_setting["value"] == "false":
+            return JSONResponse(
+                status_code=403,
+                content={"message": "Registration is currently disabled by administrators", "error": True}
+            )
+        
         # Get client IP
         client_ip = request.client.host
         

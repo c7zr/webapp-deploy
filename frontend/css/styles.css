@@ -1498,6 +1498,51 @@ textarea:focus {
     overflow-x: auto;
 }
 
+/* Bulk Actions Bar */
+.bulk-actions-bar {
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.2), rgba(123, 104, 238, 0.2));
+    border: 1px solid var(--purple);
+    border-radius: 10px;
+    padding: 15px 20px;
+    margin-bottom: 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bulk-info {
+    color: var(--text-gray);
+    font-weight: 600;
+}
+
+.bulk-info span {
+    color: var(--purple);
+    font-size: 1.2em;
+}
+
+.bulk-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.bulk-buttons .btn {
+    padding: 8px 16px;
+    font-size: 0.9em;
+}
+
 .admin-table {
     width: 100%;
     border-collapse: collapse;

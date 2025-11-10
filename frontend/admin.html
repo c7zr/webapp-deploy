@@ -104,7 +104,22 @@
                     <h2>Users Management</h2>
                     <div class="section-actions">
                         <input type="text" id="userSearch" placeholder="Search users..." class="search-input">
+                        <button id="exportUsersBtn" class="btn btn-secondary">Export CSV</button>
                         <button id="addUserBtn" class="btn btn-primary">Add User</button>
+                    </div>
+                </div>
+                
+                <!-- Bulk Actions -->
+                <div class="bulk-actions-bar" id="bulkActionsBar" style="display: none;">
+                    <div class="bulk-info">
+                        <span id="selectedCount">0</span> users selected
+                    </div>
+                    <div class="bulk-buttons">
+                        <button class="btn btn-secondary" onclick="bulkChangeRole()">Change Role</button>
+                        <button class="btn btn-secondary" onclick="bulkDisable()">Disable</button>
+                        <button class="btn btn-secondary" onclick="bulkEnable()">Enable</button>
+                        <button class="btn btn-danger" onclick="bulkDelete()">Delete</button>
+                        <button class="btn btn-ghost" onclick="clearSelection()">Clear</button>
                     </div>
                 </div>
                 
@@ -112,6 +127,7 @@
                     <table class="admin-table">
                         <thead>
                             <tr>
+                                <th><input type="checkbox" id="selectAllUsers" onchange="toggleSelectAll(this)"></th>
                                 <th>ID</th>
                                 <th>Username</th>
                                 <th>Email</th>

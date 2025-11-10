@@ -38,6 +38,7 @@ function initializeTabs() {
     
     // Initialize forms and buttons
     const addUserBtn = document.getElementById('addUserBtn');
+    const exportUsersBtn = document.getElementById('exportUsersBtn');
     const exportReportsBtn = document.getElementById('exportReports');
     const systemConfigForm = document.getElementById('systemConfigForm');
     const clearLogsBtn = document.getElementById('clearLogs');
@@ -47,6 +48,7 @@ function initializeTabs() {
     const userEditForm = document.getElementById('userEditForm');
     
     if (addUserBtn) addUserBtn.addEventListener('click', showAddUserModal);
+    if (exportUsersBtn) exportUsersBtn.addEventListener('click', exportUsers);
     if (exportReportsBtn) exportReportsBtn.addEventListener('click', exportReports);
     
     // Pagination controls for reports
@@ -177,6 +179,7 @@ function displayUsers(users) {
         
         return `
             <tr>
+                <td><input type="checkbox" class="user-checkbox" value="${user.id}" onchange="updateBulkActions()"></td>
                 <td>${user.id}</td>
                 <td>${user.username}</td>
                 <td>${user.email}</td>
@@ -810,5 +813,184 @@ function filterBlacklist() {
         const text = row.textContent.toLowerCase();
         row.style.display = text.includes(searchTerm) ? '' : 'none';
     });
+}
+
+// Bulk Operations Functions
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateBulkActions();
+}
+
+function updateBulkActions() {
+    const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+    const count = checkboxes.length;
+    const bulkBar = document.getElementById('bulkActionsBar');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (count > 0) {
+        bulkBar.style.display = 'flex';
+        selectedCount.textContent = count;
+    } else {
+        bulkBar.style.display = 'none';
+        document.getElementById('selectAllUsers').checked = false;
+    }
+}
+
+function getSelectedUserIds() {
+    const checkboxes = document.querySelectorAll('.user-checkbox:checked');
+    return Array.from(checkboxes).map(cb => cb.value);
+}
+
+function clearSelection() {
+    const checkboxes = document.querySelectorAll('.user-checkbox');
+    checkboxes.forEach(cb => cb.checked = false);
+    document.getElementById('selectAllUsers').checked = false;
+    updateBulkActions();
+}
+
+async function bulkChangeRole() {
+    const userIds = getSelectedUserIds();
+    if (userIds.length === 0) return;
+    
+    const role = prompt('Enter new role (user/premium/admin):', 'user');
+    if (!role || !['user', 'premium', 'admin'].includes(role)) {
+        alert('Invalid role. Must be: user, premium, or admin');
+        return;
+    }
+    
+    if (!confirm(`Change role to ${role} for ${userIds.length} users?`)) return;
+    
+    try {
+        let successCount = 0;
+        for (const userId of userIds) {
+            const response = await apiCall(`/v2/admin/users/${userId}/role`, {
+                method: 'PUT',
+                body: JSON.stringify({ role: role })
+            });
+            if (response.ok) successCount++;
+        }
+        
+        showNotification(`Updated ${successCount}/${userIds.length} users`, 'success');
+        clearSelection();
+        loadUsers();
+    } catch (error) {
+        showNotification('Error updating users', 'error');
+    }
+}
+
+async function bulkDisable() {
+    const userIds = getSelectedUserIds();
+    if (userIds.length === 0) return;
+    
+    if (!confirm(`Disable ${userIds.length} users?`)) return;
+    
+    try {
+        let successCount = 0;
+        for (const userId of userIds) {
+            const response = await apiCall(`/v2/admin/users/${userId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ isDisabled: true })
+            });
+            if (response.ok) successCount++;
+        }
+        
+        showNotification(`Disabled ${successCount}/${userIds.length} users`, 'success');
+        clearSelection();
+        loadUsers();
+    } catch (error) {
+        showNotification('Error disabling users', 'error');
+    }
+}
+
+async function bulkEnable() {
+    const userIds = getSelectedUserIds();
+    if (userIds.length === 0) return;
+    
+    if (!confirm(`Enable ${userIds.length} users?`)) return;
+    
+    try {
+        let successCount = 0;
+        for (const userId of userIds) {
+            const response = await apiCall(`/v2/admin/users/${userId}`, {
+                method: 'PUT',
+                body: JSON.stringify({ isDisabled: false })
+            });
+            if (response.ok) successCount++;
+        }
+        
+        showNotification(`Enabled ${successCount}/${userIds.length} users`, 'success');
+        clearSelection();
+        loadUsers();
+    } catch (error) {
+        showNotification('Error enabling users', 'error');
+    }
+}
+
+async function bulkDelete() {
+    const userIds = getSelectedUserIds();
+    if (userIds.length === 0) return;
+    
+    if (!confirm(`⚠️ DELETE ${userIds.length} users permanently?\n\nThis action cannot be undone!`)) return;
+    
+    // Second confirmation
+    const confirmation = prompt('Type DELETE to confirm:', '');
+    if (confirmation !== 'DELETE') {
+        alert('Deletion cancelled');
+        return;
+    }
+    
+    try {
+        let successCount = 0;
+        for (const userId of userIds) {
+            const response = await apiCall(`/v2/admin/users/${userId}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) successCount++;
+        }
+        
+        showNotification(`Deleted ${successCount}/${userIds.length} users`, successCount > 0 ? 'success' : 'error');
+        clearSelection();
+        loadUsers();
+    } catch (error) {
+        showNotification('Error deleting users', 'error');
+    }
+}
+
+async function exportUsers() {
+    try {
+        const response = await apiCall('/v2/admin/users', { method: 'GET' });
+        if (!response.ok) throw new Error('Failed to fetch users');
+        
+        const data = await response.json();
+        const users = data.users || [];
+        
+        // Create CSV
+        const headers = ['ID', 'Username', 'Email', 'Role', 'Reports', 'Created', 'Status'];
+        const rows = users.map(u => [
+            u.id,
+            u.username,
+            u.email,
+            u.role,
+            u.reportCount || 0,
+            new Date(u.createdAt).toISOString(),
+            u.isActive ? 'Active' : 'Inactive'
+        ]);
+        
+        const csv = [headers, ...rows].map(row => row.join(',')).join('\n');
+        
+        // Download
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `users_export_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        window.URL.revokeObjectURL(url);
+        
+        showNotification('Users exported successfully', 'success');
+    } catch (error) {
+        showNotification('Error exporting users', 'error');
+    }
 }
 
