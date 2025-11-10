@@ -397,13 +397,18 @@ app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND_DIR, "css")), name
 app.mount("/js", StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")), name="js")
 app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets")), name="assets")
 
-# CORS - Allow all origins in development
+# CORS - Secure production configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins in development
+    allow_origins=[
+        "http://3.135.232.123:8000",
+        "http://3.135.232.123",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000"
+    ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE"],
-    allow_headers=["*"]  # Allow all headers
+    allow_headers=["Authorization", "Content-Type"]
 )
 
 # Rate limiting storage (in-memory, use Redis in production)
@@ -2013,6 +2018,11 @@ async def assign_role(user_id: str, role_data: dict, token_data: dict = Depends(
     if new_role not in ["user", "premium", "admin", "owner"]:
         conn.close()
         raise HTTPException(status_code=400, detail="Invalid role. Must be: user, premium, admin, or owner")
+    
+    # Only owners can assign owner role
+    if new_role == "owner" and token_data["role"] != "owner":
+        conn.close()
+        raise HTTPException(status_code=403, detail="Only owners can assign owner role")
     
     cursor.execute("SELECT * FROM users WHERE id = ?", (user_id,))
     user = cursor.fetchone()
