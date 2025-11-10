@@ -38,12 +38,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (response.ok) {
-                // Store JWT token
-                if (remember) {
-                    localStorage.setItem('token', data.token);
-                } else {
-                    sessionStorage.setItem('token', data.token);
-                }
+                // Store JWT token with expiry tracking
+                setAuthToken(data.token, remember);
                 
                 // Store user data
                 localStorage.setItem('user', JSON.stringify(data.user));

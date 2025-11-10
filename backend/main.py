@@ -1,7 +1,7 @@
 # SWATNFO Instagram Report Bot - Backend API (SQLite Version)
 # Made by SWATNFO - d3sapiv2
 
-from fastapi import FastAPI, HTTPException, Depends, status, WebSocket, WebSocketDisconnect, Request
+from fastapi import FastAPI, HTTPException, Depends, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import HTMLResponse, FileResponse, RedirectResponse, JSONResponse
@@ -306,18 +306,6 @@ def init_db():
         )
     ''')
     
-    # Chat messages table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS chat_messages (
-            id TEXT PRIMARY KEY,
-            userId TEXT NOT NULL,
-            username TEXT NOT NULL,
-            role TEXT NOT NULL,
-            message TEXT NOT NULL,
-            timestamp TEXT NOT NULL
-        )
-    ''')
-    
     # Initialize default settings
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maintenanceMode', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.now(timezone.utc).isoformat(),))
@@ -386,31 +374,10 @@ def migrate_db():
         conn.close()
 
 # Lifespan
-# Background task to clear chat messages every hour
-def clear_chat_hourly():
-    """Clears all chat messages every hour"""
-    while True:
-        time.sleep(3600)  # Sleep for 1 hour
-        try:
-            conn = get_db()
-            cursor = conn.cursor()
-            cursor.execute("DELETE FROM messages")
-            deleted_count = cursor.rowcount
-            conn.commit()
-            conn.close()
-            print(f"🧹 Hourly chat clear: Deleted {deleted_count} messages")
-        except Exception as e:
-            print(f"❌ Error clearing chat: {e}")
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     init_db()
     migrate_db()  # Run database migrations
-    
-    # Start hourly chat cleanup thread
-    chat_cleanup_thread = threading.Thread(target=clear_chat_hourly, daemon=True)
-    chat_cleanup_thread.start()
-    print("✅ Hourly chat cleanup thread started")
     
     print("=" * 50)
     print("✅ SWATNFO Backend Started!")
@@ -438,37 +405,6 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "DELETE"],
     allow_headers=["*"]  # Allow all headers
 )
-
-# WebSocket Connection Manager for Chat
-class ConnectionManager:
-    def __init__(self):
-        self.active_connections: List[dict] = []
-
-    async def connect(self, websocket: WebSocket, user_info: dict):
-        await websocket.accept()
-        self.active_connections.append({"websocket": websocket, "user": user_info})
-        print(f"✅ User {user_info['username']} connected to chat")
-
-    def disconnect(self, websocket: WebSocket):
-        for conn in self.active_connections:
-            if conn["websocket"] == websocket:
-                self.active_connections.remove(conn)
-                print(f"❌ User {conn['user']['username']} disconnected from chat")
-                break
-
-    async def broadcast(self, message: dict):
-        disconnected = []
-        for connection in self.active_connections:
-            try:
-                await connection["websocket"].send_json(message)
-            except:
-                disconnected.append(connection)
-        
-        # Remove disconnected clients
-        for conn in disconnected:
-            self.disconnect(conn["websocket"])
-
-manager = ConnectionManager()
 
 # Rate limiting storage (in-memory, use Redis in production)
 rate_limit_storage = {}
@@ -2383,132 +2319,7 @@ async def admin_page():
     """Serve admin page (bypasses maintenance for admins)"""
     return FileResponse(os.path.join(FRONTEND_DIR, "admin.html"))
 
-# Chat Routes
-@app.get("/chat", response_class=HTMLResponse)
-async def chat_page():
-    """Serve chat page"""
-    if is_maintenance_mode():
-        return get_maintenance_page()
-    return FileResponse(os.path.join(FRONTEND_DIR, "chat.html"))
-
-@app.websocket("/ws/chat")
-async def websocket_endpoint(websocket: WebSocket):
-    """WebSocket endpoint for real-time chat"""
-    # Get token from query params
-    token = websocket.query_params.get("token")
-    if not token:
-        await websocket.close(code=1008)
-        return
-    
-    try:
-        # Verify token
-        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
-        user_info = {
-            "user_id": payload["user_id"],
-            "username": payload["username"],
-            "role": payload["role"]
-        }
-        
-        await manager.connect(websocket, user_info)
-        
-        # Send user joined notification
-        await manager.broadcast({
-            "type": "user_joined",
-            "username": user_info["username"],
-            "role": user_info["role"],
-            "timestamp": datetime.now(timezone.utc).isoformat()
-        })
-        
-        try:
-            while True:
-                # Receive message from client
-                data = await websocket.receive_json()
-                
-                if data.get("type") == "message":
-                    message_text = data.get("message", "").strip()
-                    if message_text:
-                        # Save message to database
-                        conn = get_db()
-                        cursor = conn.cursor()
-                        
-                        message_id = str(uuid.uuid4())
-                        cursor.execute('''
-                            INSERT INTO chat_messages (id, userId, username, role, message, timestamp)
-                            VALUES (?, ?, ?, ?, ?, ?)
-                        ''', (
-                            message_id,
-                            user_info["user_id"],
-                            user_info["username"],
-                            user_info["role"],
-                            message_text,
-                            datetime.now(timezone.utc).isoformat()
-                        ))
-                        conn.commit()
-                        conn.close()
-                        
-                        # Broadcast message to all connected clients
-                        await manager.broadcast({
-                            "type": "message",
-                            "id": message_id,
-                            "username": user_info["username"],
-                            "role": user_info["role"],
-                            "message": message_text,
-                            "timestamp": datetime.now(timezone.utc).isoformat()
-                        })
-        except WebSocketDisconnect:
-            manager.disconnect(websocket)
-            await manager.broadcast({
-                "type": "user_left",
-                "username": user_info["username"],
-                "timestamp": datetime.now(timezone.utc).isoformat()
-            })
-    except jwt.InvalidTokenError:
-        await websocket.close(code=1008)
-
-@app.get("/v2/chat/history")
-async def get_chat_history(limit: int = 50, token_data: dict = Depends(verify_token)):
-    """Get recent chat messages"""
-    conn = get_db()
-    cursor = conn.cursor()
-    
-    cursor.execute('''
-        SELECT id, username, role, message, timestamp
-        FROM chat_messages
-        ORDER BY timestamp DESC
-        LIMIT ?
-    ''', (limit,))
-    
-    messages = [dict(row) for row in cursor.fetchall()]
-    messages.reverse()  # Show oldest first
-    
-    conn.close()
-    
-    return {"messages": messages}
-
-@app.get("/v2/chat/users")
-async def get_online_users(token_data: dict = Depends(verify_token)):
-    """Get list of currently online users"""
-    online_users = [
-        {
-            "username": conn["user"]["username"],
-            "role": conn["user"]["role"]
-        }
-        for conn in manager.active_connections
-    ]
-    
-    return {"users": online_users, "count": len(online_users)}
-
-@app.delete("/v2/admin/chat/clear")
-async def clear_chat_history(token_data: dict = Depends(verify_admin)):
-    """Clear all chat messages (admin only)"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute("DELETE FROM chat_messages")
-    conn.commit()
-    conn.close()
-    
-    return {"message": "Chat history cleared successfully"}
-
+# Run Server
 if __name__ == "__main__":
     import uvicorn
     print("🚀 Starting SWATNFO Backend...")

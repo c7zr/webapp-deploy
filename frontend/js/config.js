@@ -3,7 +3,35 @@ const API_BASE_URL = window.location.origin;
 
 // Helper function to get auth token
 function getAuthToken() {
-    return localStorage.getItem('token') || sessionStorage.getItem('token');
+    // Check localStorage first (remember me)
+    const localToken = localStorage.getItem('token');
+    if (localToken) {
+        // Check if token has expired
+        const tokenExpiry = localStorage.getItem('token_expiry');
+        if (tokenExpiry && new Date().getTime() > parseInt(tokenExpiry)) {
+            // Token expired, clear it
+            localStorage.removeItem('token');
+            localStorage.removeItem('token_expiry');
+            localStorage.removeItem('user');
+            return null;
+        }
+        return localToken;
+    }
+    
+    // Check sessionStorage (don't remember me)
+    return sessionStorage.getItem('token');
+}
+
+// Helper function to set auth token with expiry
+function setAuthToken(token, remember, expiryDays = 7) {
+    if (remember) {
+        localStorage.setItem('token', token);
+        // Set expiry timestamp (7 days from now)
+        const expiryTime = new Date().getTime() + (expiryDays * 24 * 60 * 60 * 1000);
+        localStorage.setItem('token_expiry', expiryTime.toString());
+    } else {
+        sessionStorage.setItem('token', token);
+    }
 }
 
 // Helper function to make authenticated API calls
@@ -66,6 +94,7 @@ async function requireAuth() {
 // Logout function
 function logout() {
     localStorage.removeItem('token');
+    localStorage.removeItem('token_expiry');
     sessionStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/login';
