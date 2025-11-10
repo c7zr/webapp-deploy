@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Background & Announcement</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div class="gradient-background"></div>
+    
+    <div class="container fade-in" style="z-index: 1; position: relative;">
+        <div class="login-box">
+            <div class="header">
+                <h1>Test Page</h1>
+                <p>Check if background and announcement work</p>
+            </div>
+            
+            <div style="padding: 20px;">
+                <h3 style="color: #a855f7; margin-bottom: 16px;">✅ Background Test</h3>
+                <p style="margin-bottom: 20px;">If you see animated gradient orbs and stars, the background is working!</p>
+                
+                <h3 style="color: #a855f7; margin-bottom: 16px;">🎉 Announcement Test</h3>
+                <p style="margin-bottom: 20px;">The announcement should appear automatically. If not, click the button below:</p>
+                
+                <button onclick="testAnnouncement()" class="btn btn-primary" style="margin-bottom: 10px;">
+                    Show Announcement
+                </button>
+                
+                <button onclick="clearAnnouncement()" class="btn" style="background: #e74c3c;">
+                    Clear Announcement Flag
+                </button>
+                
+                <div style="margin-top: 20px; padding: 12px; background: rgba(168, 85, 247, 0.1); border-radius: 8px;">
+                    <p style="font-size: 14px; margin: 0;">
+                        <strong>Status:</strong> <span id="status">Checking...</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/announcement.js"></script>
+    <script>
+        function testAnnouncement() {
+            localStorage.removeItem('announcementSeen');
+            showAnnouncement();
+        }
+        
+        function clearAnnouncement() {
+            localStorage.removeItem('announcementSeen');
+            document.getElementById('status').textContent = 'Announcement flag cleared! Refresh page to see it.';
+            document.getElementById('status').style.color = '#2ecc71';
+        }
+        
+        // Check status
+        window.addEventListener('load', () => {
+            const status = document.getElementById('status');
+            const hasSeenAnnouncement = localStorage.getItem('announcementSeen');
+            
+            if (hasSeenAnnouncement === 'true') {
+                status.textContent = 'Announcement already seen. Click "Clear" to reset.';
+                status.style.color = '#f39c12';
+            } else {
+                status.textContent = 'Ready! Announcement will show automatically.';
+                status.style.color = '#2ecc71';
+            }
+        });
+    </script>
+</body>
+</html>
