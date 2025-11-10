@@ -1,11 +1,14 @@
 // Announcement System
 function showAnnouncement() {
-    const viewCount = parseInt(localStorage.getItem('announcementViews') || '0');
+    const hasSeenAnnouncement = localStorage.getItem('announcementSeen');
     
-    // Only show twice
-    if (viewCount >= 2) {
+    // Only show once
+    if (hasSeenAnnouncement === 'true') {
         return;
     }
+    
+    // Check if mobile device
+    const isMobile = window.innerWidth <= 768;
     
     // Create modal HTML
     const modal = document.createElement('div');
@@ -194,7 +197,7 @@ function showAnnouncement() {
                 font-size: 12px;
                 text-align: center;
                 margin: 16px 0 0 0;
-            ">This message will only show ${2 - viewCount} more time${2 - viewCount === 1 ? '' : 's'}</p>
+            ">${isMobile ? 'Auto-closing in 5 seconds...' : 'This popup will not show again'}</p>
         </div>
     `;
     
@@ -222,8 +225,8 @@ function showAnnouncement() {
             style.remove();
         }, 300);
         
-        // Increment view count
-        localStorage.setItem('announcementViews', (viewCount + 1).toString());
+        // Mark as seen permanently
+        localStorage.setItem('announcementSeen', 'true');
     }
     
     document.getElementById('closeAnnouncement').addEventListener('click', closeModal);
@@ -235,6 +238,11 @@ function showAnnouncement() {
             closeModal();
         }
     });
+    
+    // Auto-close after 5 seconds on mobile
+    if (isMobile) {
+        setTimeout(closeModal, 5000);
+    }
 }
 
 // Show announcement after page loads
