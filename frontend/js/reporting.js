@@ -61,12 +61,106 @@ async function loadCredentials() {
                 document.getElementById('instagramSessionId').value = '••••••••••••';
                 document.getElementById('instagramCsrfToken').value = '••••••••••••';
                 document.getElementById('saveCredentials').checked = true;
-                updateCredentialsStatus(true, 'Credentials saved');
+                
+                // Check if expired
+                if (data.expired) {
+                    updateCredentialsStatus(false, '⚠️ Credentials expired - Please update');
+                    showExpiryAlert('Your Instagram credentials have expired! Please update them to continue reporting.');
+                } else if (data.credentials && data.credentials.daysUntilExpiry !== null) {
+                    if (data.credentials.daysUntilExpiry <= 7) {
+                        updateCredentialsStatus(true, `⚠️ Expires in ${data.credentials.daysUntilExpiry} days`);
+                        showExpiryWarning(`Your credentials will expire in ${data.credentials.daysUntilExpiry} days. Please update them soon.`);
+                    } else {
+                        updateCredentialsStatus(true, `✅ Valid (expires in ${data.credentials.daysUntilExpiry} days)`);
+                    }
+                } else {
+                    updateCredentialsStatus(true, 'Credentials saved');
+                }
             }
         }
     } catch (error) {
         console.error('Error loading credentials:', error);
     }
+}
+
+function showExpiryAlert(message) {
+    const alertBox = document.createElement('div');
+    alertBox.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: linear-gradient(135deg, #f44336, #e53935);
+        color: white;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(244, 67, 54, 0.4);
+        z-index: 9999;
+        max-width: 400px;
+        animation: slideInRight 0.3s ease;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    `;
+    alertBox.innerHTML = `
+        <div style="display: flex; align-items: start; gap: 12px;">
+            <span style="font-size: 24px;">⚠️</span>
+            <div style="flex: 1;">
+                <strong style="display: block; margin-bottom: 4px;">Credentials Expired!</strong>
+                <p style="margin: 0; font-size: 14px; opacity: 0.95;">${message}</p>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" style="
+                background: none;
+                border: none;
+                color: white;
+                font-size: 24px;
+                cursor: pointer;
+                padding: 0;
+                line-height: 1;
+            ">×</button>
+        </div>
+    `;
+    document.body.appendChild(alertBox);
+    
+    // Auto-remove after 10 seconds
+    setTimeout(() => alertBox.remove(), 10000);
+}
+
+function showExpiryWarning(message) {
+    const warningBox = document.createElement('div');
+    warningBox.style.cssText = `
+        position: fixed;
+        top: 80px;
+        right: 20px;
+        background: linear-gradient(135deg, #ff9800, #fb8c00);
+        color: white;
+        padding: 16px 20px;
+        border-radius: 12px;
+        box-shadow: 0 8px 32px rgba(255, 152, 0, 0.4);
+        z-index: 9999;
+        max-width: 400px;
+        animation: slideInRight 0.3s ease;
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    `;
+    warningBox.innerHTML = `
+        <div style="display: flex; align-items: start; gap: 12px;">
+            <span style="font-size: 24px;">⏰</span>
+            <div style="flex: 1;">
+                <strong style="display: block; margin-bottom: 4px;">Expiring Soon</strong>
+                <p style="margin: 0; font-size: 14px; opacity: 0.95;">${message}</p>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" style="
+                background: none;
+                border: none;
+                color: white;
+                font-size: 24px;
+                cursor: pointer;
+                padding: 0;
+                line-height: 1;
+            ">×</button>
+        </div>
+    `;
+    document.body.appendChild(warningBox);
+    
+    // Auto-remove after 8 seconds
+    setTimeout(() => warningBox.remove(), 8000);
 }
 
 async function saveCredentials() {

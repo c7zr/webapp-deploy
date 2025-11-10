@@ -266,7 +266,8 @@ def init_db():
             userId TEXT PRIMARY KEY,
             sessionId TEXT,
             csrfToken TEXT,
-            updatedAt TEXT
+            updatedAt TEXT,
+            expiresAt TEXT
         )
     ''')
     
@@ -881,15 +882,31 @@ async def get_credentials(token_data: dict = Depends(verify_token)):
     conn.close()
     
     if not cred:
-        return {"credentials": None, "configured": False}
+        return {"credentials": None, "configured": False, "expired": False}
+    
+    # Check if credentials are expired
+    is_expired = False
+    days_until_expiry = None
+    
+    if cred.get("expiresAt"):
+        expires_at = datetime.fromisoformat(cred["expiresAt"])
+        now = datetime.now(timezone.utc)
+        
+        if now > expires_at:
+            is_expired = True
+        else:
+            days_until_expiry = (expires_at - now).days
     
     return {
         "credentials": {
             "sessionId": cred["sessionId"],
             "csrfToken": cred["csrfToken"],
-            "isValid": True
+            "isValid": not is_expired,
+            "expiresAt": cred.get("expiresAt"),
+            "daysUntilExpiry": days_until_expiry
         },
-        "configured": True
+        "configured": True,
+        "expired": is_expired
     }
 
 @app.post("/v2/credentials")
@@ -908,21 +925,24 @@ async def save_credentials(creds: Credentials, token_data: dict = Depends(verify
         conn = get_db()
         cursor = conn.cursor()
         
+        # Set expiry to 30 days from now
+        expires_at = (datetime.now(timezone.utc) + timedelta(days=30)).isoformat()
+        
         cursor.execute("SELECT * FROM credentials WHERE userId = ?", (token_data["user_id"],))
         existing = cursor.fetchone()
         
         if existing:
             print(f"   📝 Updating existing credentials")
             cursor.execute('''
-                UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?
+                UPDATE credentials SET sessionId = ?, csrfToken = ?, updatedAt = ?, expiresAt = ?
                 WHERE userId = ?
-            ''', (decoded_session, decoded_csrf, datetime.now(timezone.utc).isoformat(), token_data["user_id"]))
+            ''', (decoded_session, decoded_csrf, datetime.now(timezone.utc).isoformat(), expires_at, token_data["user_id"]))
         else:
             print(f"   ➕ Creating new credentials")
             cursor.execute('''
-                INSERT INTO credentials (userId, sessionId, csrfToken, updatedAt)
-                VALUES (?, ?, ?, ?)
-            ''', (token_data["user_id"], decoded_session, decoded_csrf, datetime.now(timezone.utc).isoformat()))
+                INSERT INTO credentials (userId, sessionId, csrfToken, updatedAt, expiresAt)
+                VALUES (?, ?, ?, ?, ?)
+            ''', (token_data["user_id"], decoded_session, decoded_csrf, datetime.now(timezone.utc).isoformat(), expires_at))
         
         conn.commit()
         

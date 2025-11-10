@@ -1522,6 +1522,17 @@ textarea:focus {
     }
 }
 
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 .bulk-info {
     color: var(--text-gray);
     font-weight: 600;
