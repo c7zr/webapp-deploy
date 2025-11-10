@@ -40,7 +40,7 @@ function showAnnouncement() {
             box-shadow: 0 20px 60px rgba(168, 85, 247, 0.3);
             position: relative;
             animation: slideUp 0.4s ease;
-        ">`
+        ">
             <button id="closeAnnouncement" style="
                 position: absolute;
                 top: 16px;
