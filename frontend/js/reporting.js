@@ -325,11 +325,12 @@ async function startBulkReport() {
     }
     
     // Check user role first
+    let userRole = null;
     try {
         const profileResponse = await apiCall('/v2/user/profile', { method: 'GET' });
         if (profileResponse.ok) {
             const profileData = await profileResponse.json();
-            const userRole = profileData.role;
+            userRole = profileData.role;
             
             // Only allow premium, admin, and owner roles
             if (!['premium', 'admin', 'owner'].includes(userRole)) {
