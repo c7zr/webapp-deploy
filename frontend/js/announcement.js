@@ -1,5 +1,11 @@
 // Announcement System
 function showAnnouncement() {
+    // Only show if user is logged in
+    const token = localStorage.getItem('token');
+    if (!token) {
+        return;
+    }
+    
     const hasSeenAnnouncement = localStorage.getItem('announcementSeen');
     
     // Only show once
@@ -82,97 +88,91 @@ function showAnnouncement() {
                     color: #a0a0a0;
                     font-size: 14px;
                     margin: 0;
-                ">We've heard your feedback and made improvements</p>
+                ">We've completed major improvements and new features</p>
             </div>
             
             <div style="
                 background: rgba(168, 85, 247, 0.1);
                 border: 1px solid rgba(168, 85, 247, 0.3);
                 border-radius: 12px;
-                padding: 24px;
-                margin-bottom: 24px;
+                padding: 20px;
+                margin-bottom: 16px;
             ">
                 <h3 style="
                     color: #a855f7;
-                    font-size: 20px;
-                    margin: 0 0 16px 0;
+                    font-size: 18px;
+                    margin: 0 0 12px 0;
                     display: flex;
                     align-items: center;
                     gap: 8px;
                 ">
-                    <span style="font-size: 24px;">📊</span>
-                    Single Reporting Enhanced
+                    <span style="font-size: 22px;">⚡</span>
+                    Performance Boost
                 </h3>
                 <p style="
                     color: #e0e0e0;
-                    font-size: 16px;
+                    font-size: 15px;
                     line-height: 1.6;
-                    margin: 0 0 12px 0;
-                ">
-                    <strong>Increased from 1 to 20 reports!</strong><br>
-                    You can now report the same user up to <span style="color: #a855f7; font-weight: bold;">20 times</span> in a single action. Perfect for making your reports count!
-                </p>
-                <ul style="
-                    color: #c0c0c0;
-                    font-size: 14px;
                     margin: 0;
-                    padding-left: 20px;
-                    line-height: 1.8;
                 ">
-                    <li>Set report count from 1-20</li>
-                    <li>1.5 second delay between each report</li>
-                    <li>All reports tracked in history</li>
-                </ul>
+                    Mass reporting now uses <strong style="color: #a855f7;">20 threads</strong> (was 10) for lightning-fast reporting!
+                </p>
             </div>
             
             <div style="
-                background: linear-gradient(135deg, rgba(168, 85, 247, 0.15) 0%, rgba(139, 92, 246, 0.15) 100%);
-                border: 1px solid rgba(168, 85, 247, 0.4);
+                background: rgba(168, 85, 247, 0.1);
+                border: 1px solid rgba(168, 85, 247, 0.3);
                 border-radius: 12px;
-                padding: 24px;
-                margin-bottom: 24px;
+                padding: 20px;
+                margin-bottom: 16px;
             ">
                 <h3 style="
                     color: #a855f7;
-                    font-size: 20px;
-                    margin: 0 0 16px 0;
+                    font-size: 18px;
+                    margin: 0 0 12px 0;
                     display: flex;
                     align-items: center;
                     gap: 8px;
                 ">
-                    <span style="font-size: 24px;">⚡</span>
-                    NEW: Mass Reporting
-                    <span style="
-                        background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%);
-                        color: white;
-                        font-size: 12px;
-                        padding: 4px 12px;
-                        border-radius: 20px;
-                        font-weight: bold;
-                        margin-left: 8px;
-                    ">PREMIUM</span>
+                    <span style="font-size: 22px;">🔐</span>
+                    Credential Alerts
                 </h3>
                 <p style="
                     color: #e0e0e0;
-                    font-size: 16px;
+                    font-size: 15px;
                     line-height: 1.6;
-                    margin: 0 0 12px 0;
-                ">
-                    <strong>Report one user up to 200 times!</strong><br>
-                    Our new <span style="color: #a855f7; font-weight: bold;">Mass Reporting</span> feature uses multi-threading and proxies to send hundreds of reports in seconds.
-                </p>
-                <ul style="
-                    color: #c0c0c0;
-                    font-size: 14px;
                     margin: 0;
-                    padding-left: 20px;
-                    line-height: 1.8;
                 ">
-                    <li>Report 1 target up to 200 times</li>
-                    <li>Multi-threaded for lightning speed ⚡</li>
-                    <li>Premium users only</li>
-                    <li>Uses proxy rotation for reliability</li>
-                </ul>
+                    Get notified when your Instagram credentials expire. <strong style="color: #a855f7;">30-day expiry</strong> with 7-day warning!
+                </p>
+            </div>
+            
+            <div style="
+                background: rgba(168, 85, 247, 0.1);
+                border: 1px solid rgba(168, 85, 247, 0.3);
+                border-radius: 12px;
+                padding: 20px;
+                margin-bottom: 24px;
+            ">
+                <h3 style="
+                    color: #a855f7;
+                    font-size: 18px;
+                    margin: 0 0 12px 0;
+                    display: flex;
+                    align-items: center;
+                    gap: 8px;
+                ">
+                    <span style="font-size: 22px;">👥</span>
+                    Admin Upgrades
+                </h3>
+                <p style="
+                    color: #e0e0e0;
+                    font-size: 15px;
+                    line-height: 1.6;
+                    margin: 0;
+                ">
+                    Bulk user operations, CSV export, enhanced security, and improved mobile UI!
+                </p>
             </div>
             
             <button id="gotItBtn" style="
@@ -197,7 +197,7 @@ function showAnnouncement() {
                 font-size: 12px;
                 text-align: center;
                 margin: 16px 0 0 0;
-            ">${isMobile ? 'Auto-closing in 5 seconds...' : 'This popup will not show again'}</p>
+            ">Auto-closing in 3 seconds...</p>
         </div>
     `;
     
@@ -239,10 +239,8 @@ function showAnnouncement() {
         }
     });
     
-    // Auto-close after 5 seconds on mobile
-    if (isMobile) {
-        setTimeout(closeModal, 5000);
-    }
+    // Auto-close after 3 seconds
+    setTimeout(closeModal, 3000);
 }
 
 // Show announcement after page loads
