@@ -119,8 +119,8 @@ function showExpiryAlert(message) {
     `;
     document.body.appendChild(alertBox);
     
-    // Auto-remove after 10 seconds
-    setTimeout(() => alertBox.remove(), 10000);
+    // Auto-remove after 3 seconds
+    setTimeout(() => alertBox.remove(), 3000);
 }
 
 function showExpiryWarning(message) {
@@ -159,8 +159,8 @@ function showExpiryWarning(message) {
     `;
     document.body.appendChild(warningBox);
     
-    // Auto-remove after 8 seconds
-    setTimeout(() => warningBox.remove(), 8000);
+    // Auto-remove after 3 seconds
+    setTimeout(() => warningBox.remove(), 3000);
 }
 
 async function saveCredentials() {
