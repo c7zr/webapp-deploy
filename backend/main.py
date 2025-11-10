@@ -369,6 +369,16 @@ def migrate_db():
             conn.commit()
             print("✅ registrationIP column added successfully")
         
+        # Check if columns exist in credentials table
+        cursor.execute("PRAGMA table_info(credentials)")
+        cred_columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'expiresAt' not in cred_columns:
+            print("🔧 Adding expiresAt column to credentials table...")
+            cursor.execute("ALTER TABLE credentials ADD COLUMN expiresAt TEXT")
+            conn.commit()
+            print("✅ expiresAt column added successfully")
+        
     except Exception as e:
         print(f"⚠️ Migration warning: {e}")
     finally:
