@@ -1507,10 +1507,12 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
             print(f"   ❌ Thread {report_num} error: {e}")
             return {"report_num": report_num, "success": False, "error": str(e)}
     
-    # Use ThreadPoolExecutor for parallel reporting
-    max_workers = 10  # 10 concurrent threads
+    # Use ThreadPoolExecutor for parallel reporting with optimized thread count
+    max_workers = 20  # Increased from 10 to 20 for faster mass reporting
     successful = 0
     failed = 0
+    
+    print(f"   🚀 Starting {max_workers} parallel threads...")
     
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit all tasks
@@ -1630,6 +1632,23 @@ async def get_history(
     cursor.execute(query, params)
     reports = [dict(row) for row in cursor.fetchall()]
     
+    # Get total count for pagination (considering filters)
+    count_query = "SELECT COUNT(*) as count FROM reports WHERE userId = ?"
+    count_params = [token_data["user_id"]]
+    
+    if status != "all":
+        count_query += " AND status = ?"
+        count_params.append(status)
+    if method != "all":
+        count_query += " AND method = ?"
+        count_params.append(method)
+    if search:
+        count_query += " AND target LIKE ?"
+        count_params.append(f"%{search}%")
+    
+    cursor.execute(count_query, count_params)
+    filtered_total = cursor.fetchone()["count"]
+    
     # Get stats
     cursor.execute("SELECT COUNT(*) as total FROM reports WHERE userId = ?", (token_data["user_id"],))
     total_reports = cursor.fetchone()["total"]
@@ -1642,6 +1661,9 @@ async def get_history(
     
     conn.close()
     
+    import math
+    total_pages = math.ceil(filtered_total / limit) if filtered_total > 0 else 1
+    
     return {
         "reports": reports,
         "stats": {
@@ -1651,8 +1673,9 @@ async def get_history(
         },
         "pagination": {
             "currentPage": page,
-            "totalPages": (len(reports) + limit - 1) // limit if reports else 1,
-            "total": len(reports)
+            "totalPages": total_pages,
+            "pageSize": limit,
+            "total": filtered_total
         }
     }
 

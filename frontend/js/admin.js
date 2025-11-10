@@ -1,4 +1,7 @@
 // Admin Dashboard Handler
+let currentReportsPage = 1;
+let totalReportsPages = 1;
+
 document.addEventListener('DOMContentLoaded', async () => {
     await requireAuth();
     initProfileDropdown();
@@ -45,6 +48,22 @@ function initializeTabs() {
     
     if (addUserBtn) addUserBtn.addEventListener('click', showAddUserModal);
     if (exportReportsBtn) exportReportsBtn.addEventListener('click', exportReports);
+    
+    // Pagination controls for reports
+    const prevReportsBtn = document.getElementById('prevReportsPage');
+    const nextReportsBtn = document.getElementById('nextReportsPage');
+    if (prevReportsBtn) prevReportsBtn.addEventListener('click', () => {
+        if (currentReportsPage > 1) {
+            currentReportsPage--;
+            loadAllReports();
+        }
+    });
+    if (nextReportsBtn) nextReportsBtn.addEventListener('click', () => {
+        if (currentReportsPage < totalReportsPages) {
+            currentReportsPage++;
+            loadAllReports();
+        }
+    });
     if (systemConfigForm) systemConfigForm.addEventListener('submit', saveSystemConfig);
     if (clearLogsBtn) clearLogsBtn.addEventListener('click', clearSystemLogs);
     if (userSearchInput) userSearchInput.addEventListener('input', filterUsers);
@@ -299,18 +318,32 @@ async function assignRole(userId, newRole) {
 
 async function loadAllReports() {
     try {
-        const response = await apiCall('/v2/admin/reports?page=1&limit=50', {
+        const response = await apiCall(`/v2/admin/reports?page=${currentReportsPage}&limit=50`, {
             method: 'GET'
         });
         
         if (response.ok) {
             const data = await response.json();
             displayReports(data.reports || []);
+            updateReportsPagination(data.pagination || {});
         }
     } catch (error) {
         console.error('Error loading reports:', error);
         displayReports([]);
     }
+}
+
+function updateReportsPagination(pagination) {
+    currentReportsPage = pagination.currentPage || 1;
+    totalReportsPages = pagination.totalPages || 1;
+    
+    const pageInfo = document.getElementById('reportsPageInfo');
+    const prevBtn = document.getElementById('prevReportsPage');
+    const nextBtn = document.getElementById('nextReportsPage');
+    
+    if (pageInfo) pageInfo.textContent = `Page ${currentReportsPage} of ${totalReportsPages}`;
+    if (prevBtn) prevBtn.disabled = currentReportsPage === 1;
+    if (nextBtn) nextBtn.disabled = currentReportsPage === totalReportsPages;
 }
 
 function displayReports(reports) {

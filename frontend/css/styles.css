@@ -1882,6 +1882,7 @@ textarea:focus {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+    /* Navigation */
     .nav-container {
         flex-direction: column;
         gap: 20px;
@@ -1893,14 +1894,25 @@ textarea:focus {
         text-align: center;
     }
     
+    /* Login/Register Forms */
+    .login-box, .register-box {
+        padding: 25px;
+        max-width: 100%;
+        margin: 10px;
+    }
+    
+    /* Grids */
     .stats-grid {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
     
     .action-cards {
         grid-template-columns: 1fr;
+        gap: 15px;
     }
     
+    /* Filters */
     .filters-section {
         flex-direction: column;
     }
@@ -1909,6 +1921,7 @@ textarea:focus {
         width: 100%;
     }
     
+    /* History */
     .history-stats {
         flex-direction: column;
         gap: 20px;
@@ -1916,15 +1929,94 @@ textarea:focus {
     
     .results-actions {
         flex-direction: column;
+        gap: 10px;
     }
     
+    /* Admin */
     .admin-tabs {
         overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
     
     .section-header {
         flex-direction: column;
         align-items: flex-start;
+        gap: 10px;
+    }
+    
+    /* Tables */
+    .data-table {
+        font-size: 14px;
+    }
+    
+    .data-table th,
+    .data-table td {
+        padding: 8px;
+    }
+    
+    /* Buttons */
+    .btn {
+        padding: 12px 24px;
+        font-size: 14px;
+        min-height: 44px; /* Touch-friendly */
+    }
+    
+    .btn-sm {
+        padding: 8px 16px;
+        font-size: 12px;
+        min-height: 36px;
+    }
+    
+    /* Forms */
+    input, textarea, select {
+        font-size: 16px; /* Prevents zoom on iOS */
+        min-height: 44px;
+    }
+    
+    /* Profile Dropdown */
+    .profile-dropdown {
+        right: 10px;
+    }
+    
+    /* Main Content */
+    .main-content {
+        padding: 15px;
+    }
+    
+    /* Cards */
+    .stat-card, .action-card {
+        padding: 15px;
+    }
+    
+    /* Modal */
+    .modal-content {
+        width: 95%;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+}
+
+/* Extra small devices */
+@media (max-width: 480px) {
+    body {
+        font-size: 14px;
+    }
+    
+    .header h1 {
+        font-size: 24px;
+    }
+    
+    .login-box, .register-box {
+        padding: 20px;
+    }
+    
+    .data-table {
+        font-size: 12px;
+    }
+    
+    .btn {
+        padding: 10px 20px;
+        font-size: 13px;
     }
 }
 
