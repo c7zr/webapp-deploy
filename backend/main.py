@@ -412,8 +412,10 @@ app.mount("/assets", StaticFiles(directory=os.path.join(FRONTEND_DIR, "assets"))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "http://3.135.232.123:8000",
-        "http://3.135.232.123",
+        "http://18.222.136.234:8000",
+        "http://18.222.136.234",
+        "https://18.222.136.234:8000",
+        "https://18.222.136.234",
         "http://localhost:8000",
         "http://127.0.0.1:8000"
     ],
