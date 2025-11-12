@@ -520,22 +520,27 @@ async def verify_admin(token_data: dict = Depends(verify_token)):
 # Maintenance Mode Middleware
 @app.middleware("http")
 async def maintenance_mode_middleware(request, call_next):
+    # Get the path
+    path = request.url.path
+    
     # Skip maintenance check for:
-    # - Admin pages and admin API
-    # - Auth endpoints (login, register, profile verification)
+    # - Admin pages (/admin, /admin.html, /admin/)
+    # - All admin API endpoints (/v2/admin/*)
+    # - All auth endpoints (/v2/auth/*)
+    # - All user endpoints (/v2/user/*)
     # - TOS page
-    if (request.url.path.startswith("/admin") or 
-        request.url.path.startswith("/v2/admin") or
-        request.url.path.startswith("/v2/auth") or
-        request.url.path.startswith("/v2/user") or
-        request.url.path == "/tos.html"):
+    # - Static files (CSS, JS, assets)
+    if (path.startswith("/admin") or 
+        path.startswith("/v2/admin") or
+        path.startswith("/v2/auth") or
+        path.startswith("/v2/user") or
+        path == "/tos.html" or
+        path.startswith(("/css", "/js", "/assets"))):
         return await call_next(request)
     
     # Check if maintenance mode is enabled
     if is_maintenance_mode():
-        # Allow static files (CSS, JS) to load for maintenance page
-        if not request.url.path.startswith(("/css", "/js", "/assets")):
-            return get_maintenance_page()
+        return get_maintenance_page()
     
     return await call_next(request)
 
