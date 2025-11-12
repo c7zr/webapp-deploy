@@ -520,8 +520,10 @@ async def verify_admin(token_data: dict = Depends(verify_token)):
 # Maintenance Mode Middleware
 @app.middleware("http")
 async def maintenance_mode_middleware(request, call_next):
-    # Skip maintenance check for admin routes and TOS
-    if request.url.path.startswith("/admin") or request.url.path == "/tos.html":
+    # Skip maintenance check for admin routes, admin API, and TOS
+    if (request.url.path.startswith("/admin") or 
+        request.url.path.startswith("/v2/admin") or 
+        request.url.path == "/tos.html"):
         return await call_next(request)
     
     # Check if maintenance mode is enabled
