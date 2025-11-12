@@ -2395,6 +2395,12 @@ async def about_page():
         return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "about.html"))
 
+@app.get("/tos.html", response_class=HTMLResponse)
+async def tos_page():
+    """Serve Terms of Service page"""
+    # TOS is always accessible, even in maintenance mode
+    return FileResponse(os.path.join(FRONTEND_DIR, "tos.html"))
+
 @app.get("/admin.html", response_class=HTMLResponse)
 async def admin_page():
     """Serve admin page (bypasses maintenance for admins)"""

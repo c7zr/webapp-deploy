@@ -1,20 +1,27 @@
 // TOS Page JavaScript
 document.addEventListener('DOMContentLoaded', async () => {
-    // Check authentication
+    // Check if user is logged in
     const token = localStorage.getItem('token');
-    if (!token) {
-        window.location.href = 'login.html';
-        return;
+    
+    if (token) {
+        // User is logged in - show navbar with profile
+        await loadUserProfile();
+        
+        // Setup logout button
+        const logoutBtn = document.getElementById('logout-btn');
+        if (logoutBtn) {
+            logoutBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                logout();
+            });
+        }
+    } else {
+        // User is not logged in - hide user nav, show login link
+        const navUser = document.querySelector('.nav-user');
+        if (navUser) {
+            navUser.innerHTML = '<a href="login.html" class="btn-link">Login</a>';
+        }
     }
-
-    // Load user profile for navbar
-    await loadUserProfile();
-
-    // Setup logout button
-    document.getElementById('logout-btn').addEventListener('click', (e) => {
-        e.preventDefault();
-        logout();
-    });
 
     // Smooth scroll for internal links
     setupSmoothScroll();
