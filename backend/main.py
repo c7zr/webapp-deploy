@@ -517,6 +517,21 @@ async def verify_admin(token_data: dict = Depends(verify_token)):
     return token_data
 
 # Routes
+# Maintenance Mode Middleware
+@app.middleware("http")
+async def maintenance_mode_middleware(request, call_next):
+    # Skip maintenance check for admin routes and TOS
+    if request.url.path.startswith("/admin") or request.url.path == "/tos.html":
+        return await call_next(request)
+    
+    # Check if maintenance mode is enabled
+    if is_maintenance_mode():
+        # Allow static files (CSS, JS) to load for maintenance page
+        if not request.url.path.startswith(("/css", "/js", "/assets")):
+            return get_maintenance_page()
+    
+    return await call_next(request)
+
 # Security Headers Middleware
 @app.middleware("http")
 async def add_security_headers(request, call_next):
@@ -2342,57 +2357,41 @@ def get_maintenance_page() -> HTMLResponse:
 @app.get("/")
 async def root():
     """Redirect root to login page"""
-    if is_maintenance_mode():
-        return get_maintenance_page()
     return RedirectResponse(url="/login.html")
 
 @app.get("/login.html", response_class=HTMLResponse)
 async def login_page():
     """Serve login page"""
-    if is_maintenance_mode():
-        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "login.html"))
 
 @app.get("/register.html", response_class=HTMLResponse)
 async def register_page():
     """Serve register page"""
-    if is_maintenance_mode():
-        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "register.html"))
 
 @app.get("/dashboard.html", response_class=HTMLResponse)
 async def dashboard_page():
     """Serve dashboard page"""
-    if is_maintenance_mode():
-        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "dashboard.html"))
 
 @app.get("/reporting.html", response_class=HTMLResponse)
 async def reporting_page():
     """Serve reporting page"""
-    if is_maintenance_mode():
-        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "reporting.html"))
 
 @app.get("/history.html", response_class=HTMLResponse)
 async def history_page():
     """Serve history page"""
-    if is_maintenance_mode():
-        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "history.html"))
 
 @app.get("/settings.html", response_class=HTMLResponse)
 async def settings_page():
     """Serve settings page"""
-    if is_maintenance_mode():
-        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "settings.html"))
 
 @app.get("/about.html", response_class=HTMLResponse)
 async def about_page():
     """Serve about page"""
-    if is_maintenance_mode():
-        return get_maintenance_page()
     return FileResponse(os.path.join(FRONTEND_DIR, "about.html"))
 
 @app.get("/tos.html", response_class=HTMLResponse)
