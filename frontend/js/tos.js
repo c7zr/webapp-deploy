@@ -20,7 +20,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         // User is not logged in - hide profile dropdown, show login link
         const profileDropdown = document.getElementById('profileDropdown');
         if (profileDropdown) {
-            profileDropdown.innerHTML = '<a href="login.html" style="color: #8a2be2; font-weight: 600; padding: 10px 20px; border: 2px solid #8a2be2; border-radius: 8px; transition: all 0.3s ease;">Login</a>';
+            profileDropdown.innerHTML = `
+                <a href="login.html" class="login-button-tos">
+                    <span style="margin-right: 5px;">🔐</span>
+                    Login
+                </a>
+            `;
         }
     }
 
