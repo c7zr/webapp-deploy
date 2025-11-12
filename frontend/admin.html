@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SWATNFO - Admin Dashboard</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/admin.css">
 </head>
 <body>
     <nav class="navbar">
@@ -45,56 +46,65 @@
         </div>
     </nav>
     
-    <div class="main-content fade-in">
-        <div class="welcome-section">
-            <h1>Admin Dashboard</h1>
-            <p class="subtitle">System Management & Analytics</p>
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1 class="admin-title">Admin Dashboard</h1>
+            <p class="admin-subtitle">Complete system management and analytics control</p>
         </div>
         
         <!-- System Stats -->
         <div class="admin-stats-grid">
-            <div class="stat-card">
-                <div class="stat-icon">👥</div>
-                <div class="stat-info">
-                    <h3 id="totalUsers">0</h3>
-                    <p>Total Users</p>
+            <div class="admin-stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon purple">👥</div>
+                    <div class="stat-card-title">Total Users</div>
                 </div>
+                <div class="stat-card-value" id="totalUsers">0</div>
             </div>
             
-            <div class="stat-card">
-                <div class="stat-icon">📊</div>
-                <div class="stat-info">
-                    <h3 id="totalSystemReports">0</h3>
-                    <p>Total Reports</p>
+            <div class="admin-stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon green">📊</div>
+                    <div class="stat-card-title">Total Reports</div>
                 </div>
+                <div class="stat-card-value" id="totalSystemReports">0</div>
             </div>
             
-            <div class="stat-card">
-                <div class="stat-icon">✅</div>
-                <div class="stat-info">
-                    <h3 id="systemSuccessRate">0%</h3>
-                    <p>Success Rate</p>
+            <div class="admin-stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon blue">✅</div>
+                    <div class="stat-card-title">Success Rate</div>
                 </div>
+                <div class="stat-card-value" id="systemSuccessRate">0%</div>
             </div>
             
-            <div class="stat-card">
-                <div class="stat-icon">🟢</div>
-                <div class="stat-info">
-                    <h3 id="activeUsers">0</h3>
-                    <p>Active Today</p>
+            <div class="admin-stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon gold">🟢</div>
+                    <div class="stat-card-title">Active Today</div>
                 </div>
+                <div class="stat-card-value" id="activeUsers">0</div>
+            </div>
+            
+            <div class="admin-stat-card">
+                <div class="stat-card-header">
+                    <div class="stat-card-icon red">⏰</div>
+                    <div class="stat-card-title">Pending</div>
+                </div>
+                <div class="stat-card-value" id="pendingCount">0</div>
             </div>
         </div>
         
         <!-- Admin Tabs -->
-        <div class="admin-tabs">
-            <button class="tab-btn active" data-tab="users">Users Management</button>
-            <button class="tab-btn" data-tab="pending">Pending Accounts</button>
-            <button class="tab-btn" data-tab="reports">All Reports</button>
-            <button class="tab-btn" data-tab="blacklist">Blacklist</button>
-            <button class="tab-btn" data-tab="system">System Settings</button>
-            <button class="tab-btn" data-tab="logs">System Logs</button>
-        </div>
+        <div class="admin-tabs-container">
+            <div class="admin-tabs">
+                <button class="tab-btn active" data-tab="users">Users Management</button>
+                <button class="tab-btn" data-tab="pending">Pending Accounts</button>
+                <button class="tab-btn" data-tab="reports">All Reports</button>
+                <button class="tab-btn" data-tab="blacklist">Blacklist</button>
+                <button class="tab-btn" data-tab="system">System Settings</button>
+                <button class="tab-btn" data-tab="logs">System Logs</button>
+            </div>
         
         <!-- Users Management Tab -->
         <div id="usersTab" class="admin-tab-content active">
@@ -499,6 +509,7 @@
         </div>
         
         <div class="watermark">Made by SWATNFO - Admin Panel</div>
+    </div>
     </div>
     
     <!-- User Edit Modal -->

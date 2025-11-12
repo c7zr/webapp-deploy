@@ -2228,16 +2228,69 @@ textarea:focus {
 
 /* Responsive Design */
 @media (max-width: 768px) {
-    /* Navigation */
+    /* Navigation - FIXED FOR MOBILE */
+    .navbar {
+        padding: 10px 0;
+    }
+    
     .nav-container {
-        flex-direction: column;
-        gap: 20px;
+        padding: 0 20px;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    .nav-brand {
+        display: block;
+        font-weight: 600;
+        color: var(--purple);
+        font-size: 1.2rem;
     }
     
     .nav-menu {
-        flex-direction: column;
-        gap: 10px;
-        text-align: center;
+        position: static;
+        transform: none;
+        width: 100%;
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 8px;
+        order: 3;
+    }
+    
+    .nav-menu li {
+        flex: 0 0 auto;
+    }
+    
+    .nav-menu a {
+        padding: 6px 12px;
+        font-size: 0.9rem;
+        white-space: nowrap;
+    }
+    
+    .profile-dropdown {
+        margin-left: auto;
+        order: 2;
+    }
+    
+    .profile-button {
+        padding: 6px 12px;
+    }
+    
+    .profile-name {
+        display: none;
+    }
+    
+    .profile-avatar {
+        width: 28px;
+        height: 28px;
+        font-size: 12px;
+    }
+    
+    .dropdown-menu {
+        right: 0;
+        left: auto;
+        min-width: 200px;
     }
     
     /* Login/Register Forms */
