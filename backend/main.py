@@ -525,12 +525,14 @@ async def maintenance_mode_middleware(request, call_next):
     
     # Skip maintenance check for:
     # - Admin pages (/admin, /admin.html, /admin/)
+    # - Login and register pages (so admins can log in)
     # - All admin API endpoints (/v2/admin/*)
     # - All auth endpoints (/v2/auth/*)
     # - All user endpoints (/v2/user/*)
     # - TOS page
     # - Static files (CSS, JS, assets)
     if (path.startswith("/admin") or 
+        path in ["/login.html", "/register.html", "/login", "/register"] or
         path.startswith("/v2/admin") or
         path.startswith("/v2/auth") or
         path.startswith("/v2/user") or
