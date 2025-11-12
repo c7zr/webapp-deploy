@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SWATNFO - Dashboard</title>
     <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
 </head>
 <body>
     <nav class="navbar">
@@ -28,11 +29,11 @@
                         <div class="username" id="dropdownUsername">User</div>
                         <div class="role" id="dropdownRole">user</div>
                     </div>
-                    <a href="/settings" class="dropdown-item">
+                    <a href="/settings.html" class="dropdown-item">
                         <i>⚙️</i>
                         <span>Settings</span>
                     </a>
-                    <a href="/admin" class="dropdown-item" id="adminLink" style="display: none;">
+                    <a href="/admin.html" class="dropdown-item" id="adminLink" style="display: none;">
                         <i>👑</i>
                         <span>Admin Panel</span>
                     </a>
@@ -46,63 +47,146 @@
         </div>
     </nav>
     
-    <div class="main-content fade-in">
-        <div class="welcome-section">
-            <h1>Welcome, <span id="username">User</span></h1>
-            <p class="subtitle">Instagram Report Bot Dashboard</p>
-        </div>
-        
-        <div class="stats-grid">
-            <div class="stat-card slide-up">
-                <div class="stat-info">
-                    <h3 id="totalReports">0</h3>
-                    <p>Total Reports</p>
-                </div>
+    <div class="dashboard-container">
+        <!-- Welcome Header -->
+        <div class="dashboard-header">
+            <div class="header-content">
+                <h1 class="dashboard-title">Welcome back, <span id="username" class="username-highlight">User</span></h1>
+                <p class="dashboard-subtitle">Here's what's happening with your reports today</p>
             </div>
-            
-            <div class="stat-card slide-up" style="animation-delay: 0.1s">
-                <div class="stat-info">
-                    <h3 id="successfulReports">0</h3>
-                    <p>Successful</p>
-                </div>
-            </div>
-            
-            <div class="stat-card slide-up" style="animation-delay: 0.2s">
-                <div class="stat-info">
-                    <h3 id="failedReports">0</h3>
-                    <p>Failed</p>
-                </div>
-            </div>
-            
-            <div class="stat-card slide-up" style="animation-delay: 0.3s">
-                <div class="stat-info">
-                    <h3 id="targetsReported">0</h3>
-                    <p>Targets Reported</p>
+            <div class="header-actions">
+                <div class="premium-badge" id="premiumBadge" style="display: none;">
+                    <span class="badge-icon">⭐</span>
+                    <span>Premium</span>
                 </div>
             </div>
         </div>
-        
-        <div class="action-cards">
-            <div class="action-card">
-                <h2>Quick Report</h2>
-                <p>Report a single Instagram account instantly</p>
-                <a href="/reporting?mode=single" class="btn btn-primary">Start Reporting</a>
+
+        <!-- Stats Grid -->
+        <div class="stats-container">
+            <div class="stat-card modern-card">
+                <div class="stat-icon purple">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 11l3 3l8-8"/>
+                        <path d="M20 12v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h9"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="totalReports">0</div>
+                    <div class="stat-label">Total Reports</div>
+                </div>
             </div>
-            
-            <div class="action-card">
-                <h2>Bulk Report</h2>
-                <p>Report multiple accounts at once (up to 200)</p>
-                <a href="/reporting?mode=bulk" class="btn btn-primary">Bulk Report</a>
+
+            <div class="stat-card modern-card">
+                <div class="stat-icon green">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="successfulReports">0</div>
+                    <div class="stat-label">Successful</div>
+                    <div class="stat-percentage" id="successRate">0%</div>
+                </div>
+            </div>
+
+            <div class="stat-card modern-card">
+                <div class="stat-icon red">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="15" y1="9" x2="9" y2="15"/>
+                        <line x1="9" y1="9" x2="15" y2="15"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="failedReports">0</div>
+                    <div class="stat-label">Failed</div>
+                </div>
+            </div>
+
+            <div class="stat-card modern-card">
+                <div class="stat-icon blue">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="targetsReported">0</div>
+                    <div class="stat-label">Targets Reported</div>
+                </div>
             </div>
         </div>
-        
-        <div class="recent-activity">
-            <h2>Recent Activity</h2>
-            <div id="activityList" class="activity-list">
-                <!-- Activity items will be loaded here -->
+
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <div class="action-card modern-card quick-report">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                    </div>
+                    <h2>Quick Report</h2>
+                </div>
+                <p class="card-description">Report a single Instagram account instantly with our automated system</p>
+                <a href="/reporting.html?mode=single" class="btn-modern btn-purple">
+                    <span>Start Reporting</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </a>
+            </div>
+
+            <div class="action-card modern-card bulk-report">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="8" y1="6" x2="21" y2="6"/>
+                            <line x1="8" y1="12" x2="21" y2="12"/>
+                            <line x1="8" y1="18" x2="21" y2="18"/>
+                            <line x1="3" y1="6" x2="3.01" y2="6"/>
+                            <line x1="3" y1="12" x2="3.01" y2="12"/>
+                            <line x1="3" y1="18" x2="3.01" y2="18"/>
+                        </svg>
+                    </div>
+                    <h2>Bulk Report</h2>
+                </div>
+                <p class="card-description">Report multiple Instagram accounts at once with advanced targeting</p>
+                <a href="/reporting.html?mode=bulk" class="btn-modern btn-gradient">
+                    <span>Bulk Report</span>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                        <polyline points="12 5 19 12 12 19"/>
+                    </svg>
+                </a>
             </div>
         </div>
-        
+
+        <!-- Recent Activity -->
+        <div class="activity-section modern-card">
+            <div class="section-header">
+                <h2>Recent Activity</h2>
+                <a href="/history.html" class="view-all-link">
+                    View All
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="9 18 15 12 9 6"/>
+                    </svg>
+                </a>
+            </div>
+            <div id="activityList" class="activity-list-modern">
+                <div class="activity-loading">
+                    <div class="loading-spinner"></div>
+                    <p>Loading recent activity...</p>
+                </div>
+            </div>
+        </div>
+
         <div class="watermark">Made by SWATNFO</div>
     </div>
     
