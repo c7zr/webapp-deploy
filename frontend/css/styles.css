@@ -1688,6 +1688,48 @@ textarea:focus {
     font-size: 1.2em;
 }
 
+/* Database & Performance Tools */
+.database-tools,
+.performance-tools {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 1rem;
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+}
+
+.database-tools .btn,
+.performance-tools .btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.database-tools .btn span,
+.performance-tools .btn span {
+    font-size: 1.2rem;
+}
+
+.database-tools .btn:hover,
+.performance-tools .btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(138, 43, 226, 0.3);
+}
+
+.form-group small {
+    display: block;
+    margin-top: 0.5rem;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.85rem;
+    font-style: italic;
+}
+
 .bulk-buttons {
     display: flex;
     gap: 10px;

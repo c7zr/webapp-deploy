@@ -343,17 +343,95 @@
                         </label>
                     </div>
                     
+                    <h3>Database Management</h3>
+                    <div class="database-tools">
+                        <button type="button" class="btn btn-secondary" id="backupDbBtn">
+                            <span>💾</span> Backup Database
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="clearReportsBtn">
+                            <span>🗑️</span> Clear All Reports
+                        </button>
+                        <button type="button" class="btn btn-danger" id="resetSystemBtn">
+                            <span>⚠️</span> Reset System (Dangerous!)
+                        </button>
+                    </div>
+                    
+                    <h3>Advanced Security</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="maxSessionsPerUser">Max Sessions Per User</label>
+                            <input type="number" id="maxSessionsPerUser" value="3">
+                            <small>Limit concurrent logins per user</small>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="ipWhitelist">IP Whitelist (comma-separated)</label>
+                            <input type="text" id="ipWhitelist" placeholder="192.168.1.1, 10.0.0.1">
+                            <small>Leave empty to allow all IPs</small>
+                        </div>
+                    </div>
+                    
                     <div class="form-group">
                         <label class="checkbox">
-                            <input type="checkbox" id="requireEmailVerification">
-                            <span>Require Email Verification</span>
+                            <input type="checkbox" id="require2FA">
+                            <span>Require 2FA for Admin Accounts</span>
                         </label>
                     </div>
                     
                     <div class="form-group">
                         <label class="checkbox">
-                            <input type="checkbox" id="enableLogging" checked>
-                            <span>Enable System Logging</span>
+                            <input type="checkbox" id="logIpAddresses" checked>
+                            <span>Log User IP Addresses</span>
+                        </label>
+                    </div>
+                    
+                    <h3>Performance & Caching</h3>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="cacheTimeout">Cache Timeout (minutes)</label>
+                            <input type="number" id="cacheTimeout" value="10">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="maxConcurrentRequests">Max Concurrent Requests</label>
+                            <input type="number" id="maxConcurrentRequests" value="100">
+                        </div>
+                    </div>
+                    
+                    <div class="performance-tools">
+                        <button type="button" class="btn btn-secondary" id="clearCacheBtn">
+                            <span>🧹</span> Clear Cache
+                        </button>
+                        <button type="button" class="btn btn-secondary" id="optimizeDbBtn">
+                            <span>⚡</span> Optimize Database
+                        </button>
+                    </div>
+                    
+                    <h3>Notifications & Alerts</h3>
+                    <div class="form-group">
+                        <label for="adminEmail">Admin Alert Email</label>
+                        <input type="email" id="adminEmail" placeholder="admin@example.com">
+                        <small>Receive alerts for system events</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="alertOnNewUser">
+                            <span>Alert on New User Registration</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="alertOnHighActivity">
+                            <span>Alert on Unusually High Activity</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox">
+                            <input type="checkbox" id="alertOnErrors">
+                            <span>Alert on System Errors</span>
                         </label>
                     </div>
                     

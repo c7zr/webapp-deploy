@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadAdminStats();
     initializeTabs();
     loadUsers();
+    initializeAdminFeatures();
 });
 
 function checkAuth() {
@@ -991,6 +992,126 @@ async function exportUsers() {
         showNotification('Users exported successfully', 'success');
     } catch (error) {
         showNotification('Error exporting users', 'error');
+    }
+}
+
+// Initialize new admin features
+function initializeAdminFeatures() {
+    // Backup Database
+    const backupBtn = document.getElementById('backupDbBtn');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', async () => {
+            if (!confirm('Create a backup of the database?')) return;
+            
+            try {
+                const response = await apiCall('/v2/admin/backup', { method: 'POST' });
+                if (response.ok) {
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `database_backup_${new Date().toISOString().split('T')[0]}.db`;
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    showNotification('Database backed up successfully', 'success');
+                } else {
+                    showNotification('Failed to backup database', 'error');
+                }
+            } catch (error) {
+                console.error('Backup error:', error);
+                showNotification('Error creating backup', 'error');
+            }
+        });
+    }
+    
+    // Clear All Reports
+    const clearReportsBtn = document.getElementById('clearReportsBtn');
+    if (clearReportsBtn) {
+        clearReportsBtn.addEventListener('click', async () => {
+            if (!confirm('⚠️ WARNING: This will delete ALL reports from the database! This action cannot be undone. Are you sure?')) return;
+            if (!confirm('This is your final warning. Delete all reports?')) return;
+            
+            try {
+                const response = await apiCall('/v2/admin/clear-reports', { method: 'DELETE' });
+                if (response.ok) {
+                    showNotification('All reports cleared successfully', 'success');
+                    loadAdminStats(); // Refresh stats
+                } else {
+                    showNotification('Failed to clear reports', 'error');
+                }
+            } catch (error) {
+                console.error('Clear reports error:', error);
+                showNotification('Error clearing reports', 'error');
+            }
+        });
+    }
+    
+    // Reset System
+    const resetSystemBtn = document.getElementById('resetSystemBtn');
+    if (resetSystemBtn) {
+        resetSystemBtn.addEventListener('click', async () => {
+            if (!confirm('⚠️ DANGER: This will reset the ENTIRE system including all users (except owner) and reports! This action CANNOT be undone!')) return;
+            if (!confirm('Type "RESET" to confirm')) return;
+            
+            const confirmation = prompt('Type "DELETE EVERYTHING" to proceed:');
+            if (confirmation !== 'DELETE EVERYTHING') {
+                showNotification('Reset cancelled', 'info');
+                return;
+            }
+            
+            try {
+                const response = await apiCall('/v2/admin/reset-system', { method: 'POST' });
+                if (response.ok) {
+                    showNotification('System reset successfully. Logging out...', 'success');
+                    setTimeout(() => {
+                        logout();
+                    }, 2000);
+                } else {
+                    showNotification('Failed to reset system', 'error');
+                }
+            } catch (error) {
+                console.error('Reset system error:', error);
+                showNotification('Error resetting system', 'error');
+            }
+        });
+    }
+    
+    // Clear Cache
+    const clearCacheBtn = document.getElementById('clearCacheBtn');
+    if (clearCacheBtn) {
+        clearCacheBtn.addEventListener('click', async () => {
+            try {
+                const response = await apiCall('/v2/admin/clear-cache', { method: 'POST' });
+                if (response.ok) {
+                    showNotification('Cache cleared successfully', 'success');
+                } else {
+                    showNotification('Failed to clear cache', 'error');
+                }
+            } catch (error) {
+                console.error('Clear cache error:', error);
+                showNotification('Error clearing cache', 'error');
+            }
+        });
+    }
+    
+    // Optimize Database
+    const optimizeDbBtn = document.getElementById('optimizeDbBtn');
+    if (optimizeDbBtn) {
+        optimizeDbBtn.addEventListener('click', async () => {
+            if (!confirm('Optimize database? This may take a few moments.')) return;
+            
+            try {
+                const response = await apiCall('/v2/admin/optimize-db', { method: 'POST' });
+                if (response.ok) {
+                    showNotification('Database optimized successfully', 'success');
+                } else {
+                    showNotification('Failed to optimize database', 'error');
+                }
+            } catch (error) {
+                console.error('Optimize database error:', error);
+                showNotification('Error optimizing database', 'error');
+            }
+        });
     }
 }
 
