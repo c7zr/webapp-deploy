@@ -123,6 +123,12 @@ function updateStats(stats) {
     document.getElementById('totalHistoryReports').textContent = stats.total || 0;
     document.getElementById('historySuccess').textContent = stats.successful || 0;
     document.getElementById('historyFailed').textContent = stats.failed || 0;
+    
+    // Calculate and display success rate
+    const total = stats.total || 0;
+    const successful = stats.successful || 0;
+    const successRate = total > 0 ? Math.round((successful / total) * 100) : 0;
+    document.getElementById('successRate').textContent = `${successRate}%`;
 }
 
 function updatePagination(pagination) {
