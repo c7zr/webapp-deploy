@@ -4,8 +4,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     const token = localStorage.getItem('token');
     
     if (token) {
-        // User is logged in - show navbar with profile
+        // User is logged in - load profile
         await loadUserProfile();
+        setupProfileDropdown();
         
         // Setup logout button
         const logoutBtn = document.getElementById('logout-btn');
@@ -16,10 +17,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             });
         }
     } else {
-        // User is not logged in - hide user nav, show login link
-        const navUser = document.querySelector('.nav-user');
-        if (navUser) {
-            navUser.innerHTML = '<a href="login.html" class="btn-link">Login</a>';
+        // User is not logged in - hide profile dropdown, show login link
+        const profileDropdown = document.getElementById('profileDropdown');
+        if (profileDropdown) {
+            profileDropdown.innerHTML = '<a href="login.html" style="color: #8a2be2; font-weight: 600; padding: 10px 20px; border: 2px solid #8a2be2; border-radius: 8px; transition: all 0.3s ease;">Login</a>';
         }
     }
 
@@ -43,10 +44,42 @@ async function loadUserProfile() {
         }
 
         const data = await response.json();
-        document.getElementById('username-display').textContent = data.username;
+        
+        // Update profile UI
+        const profileName = document.getElementById('profileName');
+        const profileAvatar = document.getElementById('profileAvatar');
+        const dropdownUsername = document.getElementById('dropdownUsername');
+        const dropdownRole = document.getElementById('dropdownRole');
+        
+        if (profileName) profileName.textContent = data.username;
+        if (profileAvatar) profileAvatar.textContent = data.username.charAt(0).toUpperCase();
+        if (dropdownUsername) dropdownUsername.textContent = data.username;
+        if (dropdownRole) {
+            dropdownRole.textContent = data.role;
+            dropdownRole.className = `role role-${data.role.toLowerCase()}`;
+        }
     } catch (error) {
         console.error('Error loading profile:', error);
-        // Still allow access to TOS page even if profile fails
+        // If profile fails, still allow access to TOS
+    }
+}
+
+function setupProfileDropdown() {
+    const profileButton = document.getElementById('profileButton');
+    const dropdown = document.getElementById('profileDropdown');
+    
+    if (profileButton && dropdown) {
+        profileButton.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('active');
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target)) {
+                dropdown.classList.remove('active');
+            }
+        });
     }
 }
 

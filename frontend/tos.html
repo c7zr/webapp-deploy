@@ -24,18 +24,37 @@
     </div>
 
     <nav class="navbar">
-        <div class="nav-brand">SWATNFO</div>
-        <ul class="nav-menu">
-            <li><a href="dashboard.html">Dashboard</a></li>
-            <li><a href="reporting.html">Report</a></li>
-            <li><a href="history.html">History</a></li>
-            <li><a href="about.html">About</a></li>
-            <li><a href="settings.html">Settings</a></li>
-            <li class="nav-user">
-                <span id="username-display">User</span>
-                <a href="#" id="logout-btn">Logout</a>
-            </li>
-        </ul>
+        <div class="nav-container">
+            <div class="nav-brand">SWATNFO</div>
+            <ul class="nav-menu">
+                <li><a href="dashboard.html">Dashboard</a></li>
+                <li><a href="reporting.html">Report</a></li>
+                <li><a href="history.html">History</a></li>
+                <li><a href="about.html">About</a></li>
+                <li><a href="tos.html" class="active">Terms</a></li>
+            </ul>
+            <div class="profile-dropdown" id="profileDropdown">
+                <div class="profile-button" id="profileButton">
+                    <div class="profile-avatar" id="profileAvatar">U</div>
+                    <span class="profile-name" id="profileName">User</span>
+                    <span class="profile-arrow">▼</span>
+                </div>
+                <div class="dropdown-menu">
+                    <div class="dropdown-header">
+                        <div class="username" id="dropdownUsername">User</div>
+                        <div class="role" id="dropdownRole">user</div>
+                    </div>
+                    <a href="settings.html" class="dropdown-item">
+                        <i>⚙️</i>
+                        <span>Settings</span>
+                    </a>
+                    <a href="#" id="logout-btn" class="dropdown-item logout">
+                        <i>🚪</i>
+                        <span>Logout</span>
+                    </a>
+                </div>
+            </div>
+        </div>
     </nav>
 
     <div class="tos-container fade-in">
@@ -99,12 +118,14 @@
             <!-- Premium Subscription -->
             <section class="tos-section fade-in-delay-5">
                 <div class="section-icon">⭐</div>
-                <h2>4. Premium Subscription</h2>
+                <h2>4. Premium Access</h2>
                 <ul>
-                    <li>Premium subscriptions are billed on a recurring basis</li>
-                    <li>You may cancel at any time, but no partial refunds are provided</li>
-                    <li>Premium features are subject to availability and may change</li>
-                    <li>We reserve the right to modify premium pricing with 30 days notice</li>
+                    <li><strong>Premium is a one-time lifetime purchase</strong> - not a recurring subscription</li>
+                    <li>Once purchased, premium access never expires</li>
+                    <li>No monthly or annual fees - pay once, use forever</li>
+                    <li>Premium features are subject to availability and may be enhanced over time</li>
+                    <li>We reserve the right to modify premium pricing for new purchases with notice</li>
+                    <li>Existing premium users are grandfathered into their lifetime access</li>
                 </ul>
             </section>
 
