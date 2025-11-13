@@ -1,0 +1,177 @@
+/* Update Notification Banner */
+.update-notification {
+    position: fixed;
+    top: 70px;
+    right: 20px;
+    max-width: 450px;
+    width: calc(100% - 40px);
+    max-height: calc(100vh - 100px);
+    background: rgba(25, 25, 30, 0.98);
+    backdrop-filter: blur(15px);
+    border: 1px solid rgba(138, 43, 226, 0.4);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    animation: slideInRight 0.4s ease;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(100px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.update-content {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.update-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 20px;
+    border-bottom: 1px solid rgba(138, 43, 226, 0.2);
+    background: rgba(138, 43, 226, 0.08);
+}
+
+.update-header h3 {
+    margin: 0;
+    color: #fff;
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.update-close-btn {
+    background: none;
+    border: none;
+    color: #aaa;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.update-close-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+
+.update-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.update-body::-webkit-scrollbar {
+    width: 6px;
+}
+
+.update-body::-webkit-scrollbar-track {
+    background: rgba(20, 20, 20, 0.5);
+    border-radius: 3px;
+}
+
+.update-body::-webkit-scrollbar-thumb {
+    background: rgba(138, 43, 226, 0.5);
+    border-radius: 3px;
+}
+
+.update-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(138, 43, 226, 0.7);
+}
+
+.update-date {
+    color: #888;
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+}
+
+.update-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 20px 0;
+}
+
+.update-list li {
+    padding: 12px 0;
+    color: #d0d0d0;
+    line-height: 1.6;
+    border-bottom: 1px solid rgba(80, 80, 90, 0.2);
+}
+
+.update-list li:last-child {
+    border-bottom: none;
+}
+
+.update-list li strong {
+    color: #fff;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.update-footer {
+    padding-top: 10px;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.update-dismiss-btn {
+    padding: 10px 24px;
+    background: linear-gradient(135deg, var(--purple), #9d4edd);
+    border: none;
+    border-radius: 8px;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.update-dismiss-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(138, 43, 226, 0.4);
+}
+
+/* Mobile Responsive for Update Banner */
+@media (max-width: 768px) {
+    .update-notification {
+        top: 60px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        width: calc(100% - 20px);
+        max-height: calc(100vh - 80px);
+    }
+    
+    .update-header {
+        padding: 15px;
+    }
+    
+    .update-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .update-body {
+        padding: 15px;
+    }
+    
+    .update-list li {
+        padding: 10px 0;
+        font-size: 0.95rem;
+    }
+}

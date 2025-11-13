@@ -5,7 +5,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     loadUserData();
     loadStats();
     loadRecentActivity();
+    initUpdateNotification();
 });
+
+function initUpdateNotification() {
+    // Check if update has been seen (unique version identifier)
+    const updateVersion = '2025-11-12-threading';
+    const hasSeenUpdate = localStorage.getItem(`update-seen-${updateVersion}`);
+    
+    if (!hasSeenUpdate) {
+        const notification = document.getElementById('updateNotification');
+        if (notification) {
+            notification.style.display = 'flex';
+        }
+    }
+    
+    // Close button (just hides, doesn't mark as seen)
+    const closeBtn = document.getElementById('closeUpdateBtn');
+    if (closeBtn) {
+        closeBtn.addEventListener('click', () => {
+            const notification = document.getElementById('updateNotification');
+            if (notification) {
+                notification.style.display = 'none';
+            }
+        });
+    }
+    
+    // Dismiss button (marks as seen permanently)
+    const dismissBtn = document.getElementById('dismissUpdateBtn');
+    if (dismissBtn) {
+        dismissBtn.addEventListener('click', () => {
+            localStorage.setItem(`update-seen-${updateVersion}`, 'true');
+            const notification = document.getElementById('updateNotification');
+            if (notification) {
+                notification.style.display = 'none';
+            }
+        });
+    }
+}
 
 function loadUserData() {
     const user = JSON.parse(localStorage.getItem('user') || '{}');
