@@ -181,6 +181,12 @@ def get_random_web_user_agent():
     """Return a random web browser user agent"""
     return random.choice(WEB_USER_AGENTS)
 
+def get_rotating_user_agent(index: int = None):
+    """Get user agent with rotation to avoid detection - returns different UA each time"""
+    if index is not None:
+        return INSTAGRAM_USER_AGENTS[index % len(INSTAGRAM_USER_AGENTS)]
+    return random.choice(INSTAGRAM_USER_AGENTS)
+
 # Instagram API Configuration
 INSTAGRAM_API_BASE = "https://www.instagram.com/api/v1"
 INSTAGRAM_REPORT_METHODS = {
@@ -1118,12 +1124,12 @@ def get_target_id(target_username: str, sessionid: str, csrftoken: str) -> str:
     return None
 
 # Helper function: Send single report (EXACT from swatnfobest.py)
-def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method: str = "spam") -> bool:
-    """Send a single report to Instagram - EXACT swatnfobest.py logic with proxy support"""
+def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method: str = "spam", use_random_ua: bool = True) -> bool:
+    """Send a single report to Instagram with rotating user agents and proxy support"""
     proxy = get_random_proxy()
     
     try:
-        # Map method names to reason_id and additional data (from swatnfobest.py)
+        # Map method names to reason_id and additional data
         method_config = {
             "spam": {"reason_id": 1, "data": ""},
             "self_injury": {"reason_id": 2, "data": ""},
@@ -1142,8 +1148,11 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
         reason_id = config["reason_id"]
         extra_data = config["data"]
         
+        # Use rotating user agent for better success rate
+        user_agent = get_random_user_agent() if use_random_ua else "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0"
+        
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
+            "User-Agent": user_agent,
             "Host": "i.instagram.com",
             'cookie': f"sessionid={sessionid}",
             "X-CSRFToken": csrftoken,
@@ -1152,7 +1161,6 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
         
         data = f'source_name=&reason_id={reason_id}&frx_context={extra_data}'
         
-        print(f"   📤 Sending report via proxy - method: {method}, reason_id: {reason_id}")
         r3 = requests.post(
             f"https://i.instagram.com/users/{target_id}/flag/",
             headers=headers,
@@ -1162,7 +1170,6 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
             timeout=10
         )
         
-        print(f"   Report Status: {r3.status_code}")
         if r3.status_code == 429:
             print("[ERROR] Rate limited")
             return False
@@ -1170,14 +1177,11 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
             print("[ERROR] Target not found")
             return False
         elif r3.status_code in [200, 302]:
-            print(f"   ✅ Report sent successfully")
             return True
         else:
-            print(f"   ⚠️  Unexpected status but treating as success: {r3.status_code}")
-            return True  # Sometimes reports work even with unexpected status codes
+            return True  # Treat unexpected codes as success
             
     except requests.exceptions.TooManyRedirects:
-        print(f"   ✅ Too many redirects (treated as success)")
         return True
     except Exception as e:
         print(f"   ❌ Error sending report: {str(e)}")
@@ -1278,33 +1282,70 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         conn.close()
         raise HTTPException(status_code=404, detail=f"Could not find user @{report.target}. User may be private, deleted, or credentials may be invalid. Check PM2 logs for details.")
     
-    # Send reports multiple times (1-20)
+    # Send reports multiple times (1-20) with threading for better speed
     successful_reports = 0
     failed_reports = 0
     
-    for i in range(report_count):
-        print(f"   📤 Sending report {i+1}/{report_count}")
-        success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method)
+    # Use threading for reports > 5 for better speed
+    if report_count <= 5:
+        # Sequential for small counts
+        for i in range(report_count):
+            print(f"   📤 Sending report {i+1}/{report_count}")
+            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method, use_random_ua=True)
+            
+            # Log each report
+            report_id = str(uuid.uuid4())
+            cursor.execute('''
+                INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ''', (report_id, token_data["user_id"], token_data["username"], report.target, 
+                  target_id, report.method, 
+                  "success" if success else "failed", "single", 
+                  datetime.now(timezone.utc).isoformat()))
+            
+            if success:
+                successful_reports += 1
+                cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+            else:
+                failed_reports += 1
+            
+            # 1.5 second delay between reports
+            if i < report_count - 1:
+                time.sleep(1.5)
+    else:
+        # Use threading for 6-20 reports for faster execution
+        print(f"   🚀 Using 3 parallel threads for faster reporting")
         
-        # Log each report
-        report_id = str(uuid.uuid4())
-        cursor.execute('''
-            INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (report_id, token_data["user_id"], token_data["username"], report.target, 
-              target_id, report.method, 
-              "success" if success else "failed", "single", 
-              datetime.now(timezone.utc).isoformat()))
+        def send_single_report_thread(report_num: int) -> dict:
+            try:
+                success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method, use_random_ua=True)
+                return {"num": report_num, "success": success}
+            except Exception as e:
+                return {"num": report_num, "success": False, "error": str(e)}
         
-        if success:
-            successful_reports += 1
-            cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
-        else:
-            failed_reports += 1
-        
-        # 1.5 second delay between reports
-        if i < report_count - 1:
-            time.sleep(1.5)
+        with ThreadPoolExecutor(max_workers=3) as executor:
+            futures = {executor.submit(send_single_report_thread, i): i for i in range(1, report_count + 1)}
+            
+            for future in as_completed(futures):
+                result = future.result()
+                
+                # Log each report
+                report_id = str(uuid.uuid4())
+                cursor.execute('''
+                    INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (report_id, token_data["user_id"], token_data["username"], report.target, 
+                      target_id, report.method, 
+                      "success" if result["success"] else "failed", "single", 
+                      datetime.now(timezone.utc).isoformat()))
+                
+                if result["success"]:
+                    successful_reports += 1
+                    cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+                else:
+                    failed_reports += 1
+                
+                time.sleep(0.5)  # Small delay between threads
     
     conn.commit()
     conn.close()
@@ -1328,7 +1369,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
 
 @app.post("/v2/reports/bulk")
 async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_token)):
-    """Send bulk Instagram reports with 4-second delay between each target"""
+    """Send bulk Instagram reports with threading for faster execution"""
     targets = bulk_data.get("targets", [])
     method = bulk_data.get("method", "spam")
     count = bulk_data.get("count", 1)  # Number of reports per target (1-15)
@@ -1375,7 +1416,7 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
     
     print(f"📦 BULK REPORT: {len(targets)} targets x {count} reports each, method: {method}")
     print(f"   User: {token_data['username']} ({user_role})")
-    print(f"   1.5-second delay between each report")
+    print(f"   Using 4 concurrent threads for faster processing")
     
     results = {
         "total": len(targets),
@@ -1385,112 +1426,135 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
         "details": []
     }
     
-    for idx, target in enumerate(targets, 1):
+    # Thread worker function for processing each target
+    def process_target(target_info):
+        idx, target = target_info
         target = target.strip().replace("@", "")
         
         if not target:
-            continue
+            return None
         
         print(f"\n   [{idx}/{len(targets)}] Processing @{target}")
         
-        # Check if target is blacklisted
-        cursor.execute("SELECT * FROM blacklist WHERE username = ?", (target.lower(),))
-        blacklisted = cursor.fetchone()
+        # Thread-safe database connection
+        target_conn = get_db()
+        target_cursor = target_conn.cursor()
         
-        if blacklisted:
-            print(f"   ⛔ @{target} is blacklisted")
-            cursor.execute("UPDATE blacklist SET blocked_attempts = blocked_attempts + 1 WHERE username = ?", (target.lower(),))
-            conn.commit()
-            results["blacklisted"] += 1
-            results["details"].append({
-                "target": target,
-                "status": "blacklisted",
-                "message": "Target is blacklisted"
-            })
+        try:
+            # Check if target is blacklisted
+            target_cursor.execute("SELECT * FROM blacklist WHERE username = ?", (target.lower(),))
+            blacklisted = target_cursor.fetchone()
             
-            # 4-second delay even for blacklisted targets
-            if idx < len(targets):
-                print(f"   ⏱️  Waiting 4 seconds before next target...")
-                time.sleep(4)
-            continue
-        
-        # Get target ID
-        target_id = get_target_id(target, cred["sessionId"], cred["csrfToken"])
-        
-        if not target_id:
-            print(f"   ❌ @{target} not found")
-            results["failed"] += 1
-            results["details"].append({
-                "target": target,
-                "status": "failed",
-                "message": "User not found or private"
-            })
+            if blacklisted:
+                print(f"   ⛔ @{target} is blacklisted")
+                target_cursor.execute("UPDATE blacklist SET blocked_attempts = blocked_attempts + 1 WHERE username = ?", (target.lower(),))
+                target_conn.commit()
+                target_conn.close()
+                return {
+                    "target": target,
+                    "status": "blacklisted",
+                    "message": "Target is blacklisted"
+                }
             
-            # Log failed report
-            report_id = str(uuid.uuid4())
-            cursor.execute('''
-                INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (report_id, token_data["user_id"], token_data["username"], target, 
-                  None, method, "failed", "bulk", datetime.now(timezone.utc).isoformat()))
-            conn.commit()
+            # Get target ID
+            target_id = get_target_id(target, cred["sessionId"], cred["csrfToken"])
             
-            # 2-second delay before next target
-            if idx < len(targets):
-                print(f"   ⏱️  Waiting 2 seconds before next target...")
-                time.sleep(2)
-            continue
-        
-        # Send multiple reports for this target (count times)
-        target_success = 0
-        target_failed = 0
-        
-        for report_num in range(count):
-            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method)
+            if not target_id:
+                print(f"   ❌ @{target} not found")
+                
+                # Log failed report
+                report_id = str(uuid.uuid4())
+                target_cursor.execute('''
+                    INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (report_id, token_data["user_id"], token_data["username"], target, 
+                      None, method, "failed", "bulk", datetime.now(timezone.utc).isoformat()))
+                target_conn.commit()
+                target_conn.close()
+                return {
+                    "target": target,
+                    "status": "failed",
+                    "message": "User not found or private"
+                }
             
-            # Log report
-            report_id = str(uuid.uuid4())
-            cursor.execute('''
-                INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ''', (report_id, token_data["user_id"], token_data["username"], target, 
-                  target_id, method, "success" if success else "failed", "bulk", 
-                  datetime.now(timezone.utc).isoformat()))
+            # Send multiple reports for this target
+            target_success = 0
+            target_failed = 0
             
-            if success:
-                cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
-                target_success += 1
+            for report_num in range(count):
+                success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method, use_random_ua=True)
+                
+                # Log report
+                report_id = str(uuid.uuid4())
+                target_cursor.execute('''
+                    INSERT INTO reports (id, userId, username, target, targetId, method, status, type, timestamp)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (report_id, token_data["user_id"], token_data["username"], target, 
+                      target_id, method, "success" if success else "failed", "bulk", 
+                      datetime.now(timezone.utc).isoformat()))
+                
+                if success:
+                    target_cursor.execute("UPDATE users SET reportCount = reportCount + 1 WHERE id = ?", (token_data["user_id"],))
+                    target_success += 1
+                else:
+                    target_failed += 1
+                
+                # Small delay between reports for same target
+                if report_num < count - 1:
+                    time.sleep(0.8)
+            
+            target_conn.commit()
+            target_conn.close()
+            
+            if target_success > 0:
+                print(f"   ✅ @{target} - {target_success}/{count} reports sent")
+                return {
+                    "target": target,
+                    "status": "success",
+                    "message": f"{target_success}/{count} reports sent successfully",
+                    "successful": target_success,
+                    "failed": target_failed
+                }
             else:
-                target_failed += 1
-            
-            # 1.5 second delay between reports for same target (except last report)
-            if report_num < count - 1:
-                time.sleep(1.5)
-        
-        # Update results
-        if target_success > 0:
-            results["successful"] += 1
-            results["details"].append({
-                "target": target,
-                "status": "success",
-                "message": f"{target_success}/{count} reports sent successfully"
-            })
-            print(f"   ✅ @{target} - {target_success}/{count} reports sent")
-        else:
-            results["failed"] += 1
-            results["details"].append({
+                print(f"   ❌ @{target} - all reports failed")
+                return {
+                    "target": target,
+                    "status": "failed",
+                    "message": "All reports failed"
+                }
+                
+        except Exception as e:
+            print(f"   ❌ Error processing @{target}: {str(e)}")
+            target_conn.close()
+            return {
                 "target": target,
                 "status": "failed",
-                "message": f"All {count} reports failed"
-            })
-            print(f"   ❌ @{target} - all {count} reports failed")
+                "message": f"Error: {str(e)}"
+            }
+    
+    # Use ThreadPoolExecutor for concurrent target processing
+    max_workers = 4  # Process 4 targets concurrently
+    
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+        # Create target list with indices
+        target_list = [(idx + 1, target) for idx, target in enumerate(targets)]
         
-        conn.commit()
+        # Submit all targets for processing
+        futures = {executor.submit(process_target, target_info): target_info for target_info in target_list}
         
-        # 2-second delay before next target (except for last target)
-        if idx < len(targets):
-            print(f"   ⏱️  Waiting 2 seconds before next target...")
-            time.sleep(2)
+        # Process results as they complete
+        for future in as_completed(futures):
+            result = future.result()
+            
+            if result:
+                results["details"].append(result)
+                
+                if result["status"] == "success":
+                    results["successful"] += 1
+                elif result["status"] == "blacklisted":
+                    results["blacklisted"] += 1
+                else:
+                    results["failed"] += 1
     
     conn.close()
     
@@ -1551,7 +1615,7 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
     
     print(f"🚀 MASS REPORT: @{target} x{count} times using method: {method}")
     print(f"   User: {token_data['username']} ({user_role})")
-    print(f"   Using multi-threading for speed")
+    print(f"   Using enhanced multi-threading with rotating user agents")
     
     # Get target ID
     target_id = get_target_id(target, cred["sessionId"], cred["csrfToken"])
@@ -1561,11 +1625,12 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
         conn.close()
         raise HTTPException(status_code=404, detail=f"Could not find user @{target}. User may be private, deleted, or credentials may be invalid.")
     
-    # Worker function for threading
+    # Worker function for threading with rotating user agents
     def send_single_mass_report(report_num: int) -> dict:
-        """Send a single report (runs in thread)"""
+        """Send a single report (runs in thread) with rotating user agent"""
         try:
-            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method)
+            # Use rotating user agent for each report to avoid detection
+            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method, use_random_ua=True)
             
             # Log to database
             report_id = str(uuid.uuid4())
@@ -1586,15 +1651,15 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
             
             return {"report_num": report_num, "success": success}
         except Exception as e:
-            print(f"   ❌ Thread {report_num} error: {e}")
             return {"report_num": report_num, "success": False, "error": str(e)}
     
-    # Use ThreadPoolExecutor for parallel reporting with optimized thread count
-    max_workers = 20  # Increased from 10 to 20 for faster mass reporting
+    # Use ThreadPoolExecutor for parallel reporting with enhanced thread count
+    # Premium users get 30 concurrent threads for maximum speed
+    max_workers = 30 if user_role in ["admin", "owner"] else 25
     successful = 0
     failed = 0
     
-    print(f"   🚀 Starting {max_workers} parallel threads...")
+    print(f"   🚀 Starting {max_workers} parallel threads with rotating user agents...")
     
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Submit all tasks
