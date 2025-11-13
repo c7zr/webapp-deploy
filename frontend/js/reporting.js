@@ -571,7 +571,19 @@ function updateProgress(target, current, total, success, failed) {
     document.getElementById('failCount').textContent = failed;
     
     const percentage = (current / total) * 100;
-    document.getElementById('progressBar').style.width = percentage + '%';
+    const progressBar = document.getElementById('progressBar');
+    
+    // Add updating class for pulse animation
+    progressBar.classList.add('updating');
+    
+    // Update width with smooth transition
+    progressBar.style.width = percentage + '%';
+    progressBar.setAttribute('data-percentage', Math.round(percentage) + '%');
+    
+    // Remove updating class after animation
+    setTimeout(() => {
+        progressBar.classList.remove('updating');
+    }, 600);
 }
 
 function addLogEntry(message, type) {
