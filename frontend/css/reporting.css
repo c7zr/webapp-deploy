@@ -180,53 +180,35 @@
 .mode-btn {
     flex: 1;
     max-width: 250px;
-    padding: 16px 24px;
-    background: rgba(30, 30, 30, 0.6);
-    border: 2px solid rgba(138, 43, 226, 0.3);
-    border-radius: 12px;
+    padding: 15px 20px;
+    background: rgba(30, 30, 30, 0.7);
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    border-radius: 10px;
     color: #e0e0e0;
     font-size: 1rem;
     font-weight: 600;
     cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
-}
-
-.mode-btn::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgba(138, 43, 226, 0.2), transparent);
-    transition: left 0.5s ease;
-}
-
-.mode-btn:hover::before {
-    left: 100%;
+    transition: all 0.2s ease;
 }
 
 .mode-btn:hover {
     border-color: var(--purple);
     transform: translateY(-2px);
-    box-shadow: 0 6px 20px rgba(138, 43, 226, 0.3);
+    background: rgba(40, 40, 40, 0.8);
 }
 
 .mode-btn.active {
-    background: linear-gradient(135deg, rgba(138, 43, 226, 0.3), rgba(218, 112, 214, 0.2));
+    background: rgba(138, 43, 226, 0.2);
     border-color: var(--purple);
     color: #fff;
-    box-shadow: 0 4px 16px rgba(138, 43, 226, 0.4);
 }
 
 .mode-btn .premium-badge {
     display: inline-block;
     background: linear-gradient(135deg, #ffd700, #ffed4e);
     color: #000;
-    padding: 2px 8px;
-    border-radius: 6px;
+    padding: 3px 10px;
+    border-radius: 5px;
     font-size: 0.7rem;
     font-weight: 700;
     margin-left: 6px;
@@ -239,18 +221,17 @@
 }
 
 .report-box {
-    background: rgba(30, 30, 30, 0.6);
+    background: rgba(30, 30, 30, 0.7);
     backdrop-filter: blur(10px);
     border: 1px solid rgba(138, 43, 226, 0.3);
-    border-radius: 16px;
-    padding: 35px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    transition: all 0.3s ease;
+    border-radius: 12px;
+    padding: 30px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transition: all 0.2s ease;
 }
 
 .report-box:hover {
     border-color: rgba(138, 43, 226, 0.5);
-    box-shadow: 0 12px 40px rgba(138, 43, 226, 0.2);
 }
 
 .report-header {
@@ -375,8 +356,8 @@
 
 /* Premium Box */
 .premium-box {
-    border: 2px solid rgba(255, 215, 0, 0.4);
-    background: linear-gradient(135deg, rgba(30, 30, 30, 0.8), rgba(40, 30, 50, 0.6));
+    border: 1px solid rgba(255, 215, 0, 0.35);
+    background: rgba(40, 35, 30, 0.7);
 }
 
 .premium-features {
@@ -391,10 +372,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 18px;
-    background: rgba(138, 43, 226, 0.2);
-    border: 1px solid rgba(138, 43, 226, 0.4);
-    border-radius: 10px;
+    padding: 8px 16px;
+    background: rgba(138, 43, 226, 0.15);
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    border-radius: 8px;
     color: #e0e0e0;
     font-size: 0.9rem;
 }
@@ -417,43 +398,28 @@
 /* Modern Buttons */
 .btn-modern {
     position: relative;
-    overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
+    transition: all 0.2s ease;
 }
 
-.btn-modern::before {
-    content: '';
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 0;
-    height: 0;
-    border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    transform: translate(-50%, -50%);
-    transition: width 0.6s ease, height 0.6s ease;
-}
-
-.btn-modern:hover::before {
-    width: 300px;
-    height: 300px;
+.btn-modern:hover {
+    transform: translateY(-2px);
 }
 
 .btn-icon {
-    font-size: 1.3rem;
+    font-size: 1.2rem;
 }
 
 .btn-premium {
-    background: linear-gradient(135deg, #8a2be2, #ffd700);
+    background: linear-gradient(135deg, #8a2be2, #b968f0);
     border: none;
 }
 
 .btn-premium:hover {
-    background: linear-gradient(135deg, #9d3ef5, #ffe44e);
-    box-shadow: 0 6px 24px rgba(255, 215, 0, 0.4);
+    background: linear-gradient(135deg, #9d3ef5, #c77cf5);
 }
 
 /* Progress Section - ENHANCED */
@@ -484,16 +450,15 @@
 .progress-stat {
     background: rgba(20, 20, 20, 0.6);
     border: 1px solid rgba(138, 43, 226, 0.2);
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 10px;
+    padding: 18px;
     text-align: center;
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 }
 
 .progress-stat:hover {
-    transform: translateY(-4px);
-    border-color: rgba(138, 43, 226, 0.5);
-    box-shadow: 0 6px 20px rgba(138, 43, 226, 0.2);
+    transform: translateY(-2px);
+    border-color: rgba(138, 43, 226, 0.4);
 }
 
 .stat-label {
@@ -524,48 +489,24 @@
 .progress-bar-container {
     position: relative;
     width: 100%;
-    height: 50px;
+    height: 45px;
     background: rgba(20, 20, 20, 0.8);
-    border: 2px solid rgba(138, 43, 226, 0.3);
-    border-radius: 25px;
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    border-radius: 22px;
     overflow: hidden;
     margin-bottom: 30px;
-    box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
-}
-
-.progress-bar-container::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: repeating-linear-gradient(
-        90deg,
-        transparent,
-        transparent 20px,
-        rgba(138, 43, 226, 0.1) 20px,
-        rgba(138, 43, 226, 0.1) 40px
-    );
-    animation: barberPole 1s linear infinite;
-    opacity: 0.3;
-}
-
-@keyframes barberPole {
-    0% { background-position: 0 0; }
-    100% { background-position: 40px 0; }
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .progress-bar {
     position: relative;
     height: 100%;
     width: 0%;
-    background: linear-gradient(90deg, #8a2be2, #da70d6, #00ff7f);
+    background: linear-gradient(90deg, #8a2be2, #b968f0, #00ff7f);
     background-size: 200% 100%;
-    border-radius: 25px;
-    transition: width 0.5s cubic-bezier(0.4, 0.0, 0.2, 1);
-    box-shadow: 0 0 20px rgba(138, 43, 226, 0.6);
-    animation: gradientShift 2s ease infinite;
+    border-radius: 22px;
+    transition: width 0.4s ease;
+    animation: gradientShift 3s ease infinite;
     overflow: hidden;
 }
 
@@ -584,10 +525,10 @@
     background: linear-gradient(
         90deg,
         transparent,
-        rgba(255, 255, 255, 0.3),
+        rgba(255, 255, 255, 0.2),
         transparent
     );
-    animation: shimmer 1.5s infinite;
+    animation: shimmer 2s infinite;
 }
 
 @keyframes shimmer {
@@ -603,19 +544,12 @@
     transform: translateY(-50%);
     color: #fff;
     font-weight: 700;
-    font-size: 1rem;
-    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
-}
-
-/* Add ripple effect when progress updates */
-@keyframes progressPulse {
-    0% { box-shadow: 0 0 20px rgba(138, 43, 226, 0.6); }
-    50% { box-shadow: 0 0 40px rgba(138, 43, 226, 1), 0 0 60px rgba(0, 255, 127, 0.5); }
-    100% { box-shadow: 0 0 20px rgba(138, 43, 226, 0.6); }
+    font-size: 0.95rem;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .progress-bar.updating {
-    animation: gradientShift 2s ease infinite, progressPulse 0.6s ease;
+    animation: gradientShift 3s ease infinite;
 }
 
 /* Live Log */
@@ -696,15 +630,15 @@
 
 .result-card {
     background: rgba(20, 20, 20, 0.6);
-    border: 2px solid rgba(138, 43, 226, 0.3);
-    border-radius: 16px;
-    padding: 30px;
-    transition: all 0.3s ease;
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    border-radius: 12px;
+    padding: 25px;
+    transition: all 0.2s ease;
 }
 
 .result-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 8px 24px rgba(138, 43, 226, 0.3);
+    transform: translateY(-4px);
+    border-color: rgba(138, 43, 226, 0.5);
 }
 
 .result-card h3 {
@@ -722,8 +656,8 @@
 }
 
 .success-card {
-    border-color: rgba(0, 255, 127, 0.5);
-    background: linear-gradient(135deg, rgba(0, 255, 127, 0.1), rgba(0, 255, 127, 0.05));
+    border-color: rgba(0, 255, 127, 0.4);
+    background: rgba(0, 255, 127, 0.05);
 }
 
 .success-card h3 {
@@ -731,8 +665,8 @@
 }
 
 .danger-card {
-    border-color: rgba(255, 69, 69, 0.5);
-    background: linear-gradient(135deg, rgba(255, 69, 69, 0.1), rgba(255, 69, 69, 0.05));
+    border-color: rgba(255, 69, 69, 0.4);
+    background: rgba(255, 69, 69, 0.05);
 }
 
 .danger-card h3 {
