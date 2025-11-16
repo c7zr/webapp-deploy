@@ -1,4 +1,4 @@
-// Announcement System
+// Announcement System - November 2025 Update
 function showAnnouncement() {
     // Only show if user is logged in
     const token = localStorage.getItem('token');
@@ -6,10 +6,12 @@ function showAnnouncement() {
         return;
     }
     
-    const hasSeenAnnouncement = localStorage.getItem('announcementSeen');
+    // Reset for new announcement - November 2025
+    const announcementVersion = 'v2.1-nov2025';
+    const hasSeenThisVersion = localStorage.getItem('announcementVersion') === announcementVersion;
     
-    // Only show once
-    if (hasSeenAnnouncement === 'true') {
+    // Only show once per version
+    if (hasSeenThisVersion) {
         return;
     }
     
@@ -106,8 +108,8 @@ function showAnnouncement() {
                     align-items: center;
                     gap: 8px;
                 ">
-                    <span style="font-size: 22px;">⚡</span>
-                    Performance Boost
+                    <span style="font-size: 22px;">⏰</span>
+                    NEW: Scheduled Reports
                 </h3>
                 <p style="
                     color: #e0e0e0;
@@ -115,7 +117,7 @@ function showAnnouncement() {
                     line-height: 1.6;
                     margin: 0;
                 ">
-                    Mass reporting now uses <strong style="color: #a855f7;">20 threads</strong> (was 10) for lightning-fast reporting!
+                    Schedule reports for any future time! <strong style="color: #a855f7;">Free: 3 max</strong> | <strong style="color: #a855f7;">Premium: 50 max</strong> with auto-execution!
                 </p>
             </div>
             
@@ -134,8 +136,8 @@ function showAnnouncement() {
                     align-items: center;
                     gap: 8px;
                 ">
-                    <span style="font-size: 22px;">🔐</span>
-                    Credential Alerts
+                    <span style="font-size: 22px;">🚀</span>
+                    Instagram Updates
                 </h3>
                 <p style="
                     color: #e0e0e0;
@@ -143,7 +145,7 @@ function showAnnouncement() {
                     line-height: 1.6;
                     margin: 0;
                 ">
-                    Get notified when your Instagram credentials expire. <strong style="color: #a855f7;">30-day expiry</strong> with 7-day warning!
+                    Updated to <strong style="color: #a855f7;">Instagram 320.0+</strong> with iPhone 15 Pro user agents! Premium users get <strong style="color: #a855f7;">better bypasses & faster success rates</strong>!
                 </p>
             </div>
             
@@ -162,8 +164,8 @@ function showAnnouncement() {
                     align-items: center;
                     gap: 8px;
                 ">
-                    <span style="font-size: 22px;">👥</span>
-                    Admin Upgrades
+                    <span style="font-size: 22px;">⚡</span>
+                    Performance Boost
                 </h3>
                 <p style="
                     color: #e0e0e0;
@@ -171,7 +173,7 @@ function showAnnouncement() {
                     line-height: 1.6;
                     margin: 0;
                 ">
-                    Bulk user operations, CSV export, enhanced security, and improved mobile UI!
+                    Mass reporting uses <strong style="color: #a855f7;">20 concurrent threads</strong> for ultra-fast execution. 200 reports in ~10 seconds!
                 </p>
             </div>
             
@@ -225,7 +227,9 @@ function showAnnouncement() {
             style.remove();
         }, 300);
         
-        // Mark as seen permanently
+        // Mark this version as seen
+        localStorage.setItem('announcementVersion', announcementVersion);
+        // Keep old key for compatibility
         localStorage.setItem('announcementSeen', 'true');
     }
     

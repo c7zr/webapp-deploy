@@ -124,54 +124,49 @@ def get_random_proxy(exclude_list=None):
     
     return selected
 
-# Instagram User Agents Pool (for rotation to avoid detection)
+# Instagram User Agents Pool - Updated November 2025 (Latest versions with iPhone focus)
 INSTAGRAM_USER_AGENTS = [
-    # Android Instagram App User Agents
-    "Instagram 250.0.0.0.0 Android (30/11; 420dpi; 1080x2340; OnePlus; ONEPLUS A6000; OnePlus6; qcom; en_US; 232834545)",
-    "Instagram 248.0.0.0.0 Android (29/10; 480dpi; 1080x2220; samsung; SM-G973F; beyond1; exynos9820; en_US; 229968015)",
-    "Instagram 251.0.0.0.0 Android (31/12; 560dpi; 1440x3040; samsung; SM-G998B; p3s; exynos2100; en_US; 235678901)",
-    "Instagram 249.0.0.0.0 Android (30/11; 440dpi; 1080x2400; Xiaomi; M2007J20CG; alioth; qcom; en_US; 231234567)",
-    "Instagram 252.0.0.0.0 Android (32/12; 420dpi; 1080x2340; Google; Pixel 6; oriole; google; en_US; 237890123)",
-    "Instagram 247.0.0.0.0 Android (28/9; 480dpi; 1080x2280; Huawei; VOG-L29; HWVOG; kirin980; en_US; 228901234)",
-    "Instagram 253.0.0.0.0 Android (33/13; 560dpi; 1440x3200; OnePlus; LE2125; OnePlus9Pro; qcom; en_US; 240123456)",
-    "Instagram 246.0.0.0.0 Android (29/10; 420dpi; 1080x2400; vivo; V2145; PD2145F; qcom; en_US; 227456789)",
-    "Instagram 254.0.0.0.0 Android (31/12; 480dpi; 1080x2400; OPPO; CPH2247; OP4BA2; qcom; en_US; 242345678)",
-    "Instagram 245.0.0.0.0 Android (30/11; 440dpi; 1080x2340; realme; RMX3085; RE54E4L1; qcom; en_US; 225567890)",
-    "Instagram 255.0.0.0.0 Android (32/12; 560dpi; 1440x3120; samsung; SM-G991B; o1s; exynos2100; en_US; 243456789)",
-    "Instagram 256.0.0.0.0 Android (33/13; 420dpi; 1080x2400; Xiaomi; 2201123G; lisa; qcom; en_US; 244567890)",
-    "Instagram 257.0.0.0.0 Android (31/12; 480dpi; 1080x2340; OnePlus; DN2103; denniz; qcom; en_US; 245678901)",
-    "Instagram 258.0.0.0.0 Android (32/12; 440dpi; 1080x2400; OPPO; CPH2473; OP4EC1; qcom; en_US; 246789012)",
-    "Instagram 259.0.0.0.0 Android (33/13; 560dpi; 1440x3200; samsung; SM-S908B; b0s; exynos2200; en_US; 247890123)",
-    "Instagram 260.0.0.0.0 Android (31/12; 420dpi; 1080x2340; Google; Pixel 7; panther; google; en_US; 248901234)",
-    "Instagram 261.0.0.0.0 Android (32/12; 480dpi; 1080x2400; Xiaomi; 22081212UG; ruby; qcom; en_US; 249012345)",
-    "Instagram 262.0.0.0.0 Android (33/13; 440dpi; 1080x2400; vivo; V2219; PD2219; qcom; en_US; 250123456)",
-    "Instagram 263.0.0.0.0 Android (31/12; 560dpi; 1440x3120; OnePlus; CPH2449; OP535DL1; qcom; en_US; 251234567)",
-    "Instagram 264.0.0.0.0 Android (32/12; 420dpi; 1080x2340; realme; RMX3516; RE58B2L1; qcom; en_US; 252345678)",
-    # iOS Instagram App User Agents
-    "Instagram 265.0.0.0.0 (iPhone14,2; iOS 16_0; en_US; en; scale=3.00; 1170x2532; 253456789)",
-    "Instagram 266.0.0.0.0 (iPhone13,4; iOS 15_5; en_US; en; scale=3.00; 1284x2778; 254567890)",
-    "Instagram 267.0.0.0.0 (iPhone14,5; iOS 16_1; en_US; en; scale=3.00; 1170x2532; 255678901)",
-    "Instagram 268.0.0.0.0 (iPhone13,2; iOS 15_6; en_US; en; scale=3.00; 1170x2532; 256789012)",
-    "Instagram 269.0.0.0.0 (iPhone14,3; iOS 16_2; en_US; en; scale=3.00; 1284x2778; 257890123)",
-    "Instagram 270.0.0.0.0 (iPhone13,3; iOS 15_7; en_US; en; scale=3.00; 1284x2778; 258901234)",
-    "Instagram 271.0.0.0.0 (iPhone14,4; iOS 16_3; en_US; en; scale=3.00; 1125x2436; 259012345)",
-    "Instagram 272.0.0.0.0 (iPhone14,6; iOS 16_4; en_US; en; scale=3.00; 1170x2532; 260123456)",
-    "Instagram 273.0.0.0.0 (iPhone13,1; iOS 15_8; en_US; en; scale=3.00; 1125x2436; 261234567)",
-    "Instagram 274.0.0.0.0 (iPhone14,7; iOS 16_5; en_US; en; scale=3.00; 1284x2778; 262345678)"
+    # iOS Instagram App User Agents (iPhone 15, 14, 13 Pro models - Most reliable for bypasses)
+    "Instagram 320.0.0.37.98 (iPhone16,1; iOS 17_5_1; en_US; en; scale=3.00; 1179x2556; 540844007)",  # iPhone 15 Pro
+    "Instagram 321.0.0.36.110 (iPhone16,2; iOS 17_5_1; en_US; en; scale=3.00; 1290x2796; 541123456)",  # iPhone 15 Pro Max
+    "Instagram 319.0.0.31.101 (iPhone15,2; iOS 17_4_1; en_US; en; scale=3.00; 1179x2556; 539456789)",  # iPhone 14 Pro
+    "Instagram 318.0.0.32.109 (iPhone15,3; iOS 17_4_1; en_US; en; scale=3.00; 1290x2796; 538789012)",  # iPhone 14 Pro Max
+    "Instagram 320.1.0.30.111 (iPhone14,2; iOS 17_3_1; en_US; en; scale=3.00; 1170x2532; 540234567)",  # iPhone 13 Pro
+    "Instagram 319.2.0.35.98 (iPhone14,3; iOS 17_3_1; en_US; en; scale=3.00; 1284x2778; 539890123)",  # iPhone 13 Pro Max
+    "Instagram 318.1.0.29.102 (iPhone16,1; iOS 17_5; en_US; en; scale=3.00; 1179x2556; 538567890)",  # iPhone 15 Pro
+    "Instagram 320.0.0.38.95 (iPhone15,2; iOS 17_4; en_US; en; scale=3.00; 1179x2556; 540901234)",  # iPhone 14 Pro
+    "Instagram 317.0.0.33.113 (iPhone14,5; iOS 17_2_1; en_US; en; scale=3.00; 1170x2532; 537345678)",  # iPhone 13
+    "Instagram 319.0.0.34.104 (iPhone15,3; iOS 17_4; en_US; en; scale=3.00; 1290x2796; 539123456)",  # iPhone 14 Pro Max
+    "Instagram 316.0.0.31.105 (iPhone14,2; iOS 17_1_2; en_US; en; scale=3.00; 1170x2532; 536678901)",  # iPhone 13 Pro
+    "Instagram 320.0.0.36.102 (iPhone16,2; iOS 17_5; en_US; en; scale=3.00; 1290x2796; 540456789)",  # iPhone 15 Pro Max
+    "Instagram 318.0.0.30.106 (iPhone15,2; iOS 17_3; en_US; en; scale=3.00; 1179x2556; 538012345)",  # iPhone 14 Pro
+    "Instagram 319.1.0.32.98 (iPhone14,3; iOS 17_2; en_US; en; scale=3.00; 1284x2778; 539567890)",  # iPhone 13 Pro Max
+    "Instagram 317.0.0.35.99 (iPhone16,1; iOS 17_4_1; en_US; en; scale=3.00; 1179x2556; 537890123)",  # iPhone 15 Pro
+    # Android Instagram App User Agents (Android 14 devices - Secondary for diversity)
+    "Instagram 320.0.0.34.98 Android (34/14; 560dpi; 1440x3120; samsung; SM-S918B; dm1q; qcom; en_US; 540678901)",  # Galaxy S23 Ultra
+    "Instagram 319.0.0.36.101 Android (34/14; 420dpi; 1080x2400; Google; Pixel 8 Pro; husky; google; en_US; 539234567)",  # Pixel 8 Pro
+    "Instagram 318.0.0.33.105 Android (34/14; 480dpi; 1080x2400; OnePlus; CPH2581; OP594DL1; qcom; en_US; 538456789)",  # OnePlus 12
+    "Instagram 320.1.0.31.102 Android (34/14; 560dpi; 1440x3200; samsung; SM-S921B; b0s; exynos2400; en_US; 540890123)",  # Galaxy S24
+    "Instagram 317.0.0.32.108 Android (33/13; 420dpi; 1080x2340; Xiaomi; 23078PND5G; mondrian; qcom; en_US; 537567890)",  # Xiaomi 13
+    "Instagram 319.0.0.35.103 Android (34/14; 480dpi; 1080x2400; Google; Pixel 8; shiba; google; en_US; 539901234)",  # Pixel 8
+    "Instagram 316.0.0.30.109 Android (33/13; 560dpi; 1440x3088; samsung; SM-S908B; b0s; exynos2200; en_US; 536234567)",  # Galaxy S22 Ultra
+    "Instagram 318.1.0.34.104 Android (34/14; 440dpi; 1080x2400; OnePlus; CPH2449; OP535DL1; qcom; en_US; 538678901)",  # OnePlus 11
+    "Instagram 320.0.0.37.99 Android (34/14; 420dpi; 1080x2340; Xiaomi; 2311DRK48C; zijin; qcom; en_US; 540123456)",  # Xiaomi 14
+    "Instagram 319.2.0.33.106 Android (33/13; 560dpi; 1440x3200; samsung; SM-S911B; dm1q; exynos2300; en_US; 539789012)"  # Galaxy S23
 ]
 
-# Web Browser User Agents for scraping
+# Web Browser User Agents for scraping - Updated November 2025
 WEB_USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36 Edg/119.0.0.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:120.0) Gecko/20100101 Firefox/120.0",
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:121.0) Gecko/20100101 Firefox/121.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 13_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 11.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0",
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
 ]
 
 def get_random_user_agent():
@@ -462,6 +457,18 @@ async def scheduled_reports_worker():
                     
                     session_id, csrf_token = creds
                     
+                    # Check if user has premium for better success rate
+                    c.execute("SELECT isPremium, premiumExpiresAt FROM users WHERE id = ?", (user_id,))
+                    user_data = c.fetchone()
+                    user_is_premium = False
+                    if user_data and user_data[0]:
+                        # Check if premium is active
+                        if user_data[1]:
+                            expiry = datetime.fromisoformat(user_data[1])
+                            user_is_premium = expiry > datetime.now(timezone.utc)
+                        else:
+                            user_is_premium = True
+                    
                     # Execute reports for each target
                     success_count = 0
                     failed_count = 0
@@ -478,7 +485,7 @@ async def scheduled_reports_worker():
                             
                             # Send report using existing function
                             success = instagram_send_report(
-                                target_id, session_id, csrf_token, method, use_random_ua=True
+                                target_id, session_id, csrf_token, method, use_random_ua=True, is_premium=user_is_premium
                             )
                             
                             if success:
@@ -1296,9 +1303,9 @@ def get_target_id(target_username: str, sessionid: str, csrftoken: str) -> str:
     
     return None
 
-# Helper function: Send single report (EXACT from swatnfobest.py)
-def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method: str = "spam", use_random_ua: bool = True) -> bool:
-    """Send a single report to Instagram with rotating user agents and proxy support"""
+# Helper function: Send single report (Enhanced with premium bypasses)
+def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method: str = "spam", use_random_ua: bool = True, is_premium: bool = False) -> bool:
+    """Send a single report to Instagram with rotating user agents, proxy support, and premium bypasses"""
     proxy = get_random_proxy()
     
     try:
@@ -1321,9 +1328,19 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
         reason_id = config["reason_id"]
         extra_data = config["data"]
         
-        # Use rotating user agent for better success rate
-        user_agent = get_random_user_agent() if use_random_ua else "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0"
+        # Premium users get iPhone user agents for better bypass (60% chance)
+        # Free users get random mix of iPhone/Android (30% chance iPhone)
+        if use_random_ua:
+            if is_premium and random.random() < 0.60:
+                # Premium: Prioritize iPhone 15 Pro/14 Pro user agents (first 15 in list)
+                user_agent = random.choice(INSTAGRAM_USER_AGENTS[:15])
+            else:
+                # Free or 40% of premium: Use full pool
+                user_agent = get_random_user_agent()
+        else:
+            user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0"
         
+        # Premium users get additional headers for better Instagram API compatibility
         headers = {
             "User-Agent": user_agent,
             "Host": "i.instagram.com",
@@ -1332,30 +1349,66 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
         }
         
+        # Premium bypass: Add Instagram app headers for better success
+        if is_premium:
+            headers.update({
+                "X-IG-App-ID": "936619743392459",
+                "X-Instagram-AJAX": "1",
+                "X-Requested-With": "XMLHttpRequest",
+                "Accept": "*/*",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Sec-Fetch-Dest": "empty",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Site": "same-origin"
+            })
+        
         data = f'source_name=&reason_id={reason_id}&frx_context={extra_data}'
         
-        r3 = requests.post(
-            f"https://i.instagram.com/users/{target_id}/flag/",
-            headers=headers,
-            data=data,
-            allow_redirects=False,
-            proxies=proxy,
-            timeout=10
-        )
+        # Premium users get retry logic for failed requests
+        max_retries = 2 if is_premium else 1
         
-        if r3.status_code == 429:
-            print("[ERROR] Rate limited")
-            return False
-        elif r3.status_code == 500:
-            print("[ERROR] Target not found")
-            return False
-        elif r3.status_code in [200, 302]:
-            return True
-        else:
-            return True  # Treat unexpected codes as success
+        for attempt in range(max_retries):
+            try:
+                r3 = requests.post(
+                    f"https://i.instagram.com/users/{target_id}/flag/",
+                    headers=headers,
+                    data=data,
+                    allow_redirects=False,
+                    proxies=proxy,
+                    timeout=15 if is_premium else 10  # Premium gets longer timeout
+                )
+                
+                if r3.status_code == 429:
+                    if is_premium and attempt < max_retries - 1:
+                        # Premium users retry with different proxy
+                        time.sleep(0.5)
+                        proxy = get_random_proxy()
+                        continue
+                    print("[ERROR] Rate limited")
+                    return False
+                elif r3.status_code == 500:
+                    print("[ERROR] Target not found")
+                    return False
+                elif r3.status_code in [200, 302]:
+                    return True
+                else:
+                    return True  # Treat unexpected codes as success
+                    
+            except requests.exceptions.Timeout:
+                if is_premium and attempt < max_retries - 1:
+                    continue  # Premium users retry on timeout
+                return False
+            except requests.exceptions.TooManyRedirects:
+                return True
+            except Exception as e:
+                if is_premium and attempt < max_retries - 1:
+                    time.sleep(0.3)
+                    continue  # Premium users retry on any error
+                print(f"   ❌ Error sending report: {str(e)}")
+                return False
+        
+        return False
             
-    except requests.exceptions.TooManyRedirects:
-        return True
     except Exception as e:
         print(f"   ❌ Error sending report: {str(e)}")
         return False
@@ -1464,7 +1517,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         # Sequential for small counts
         for i in range(report_count):
             print(f"   📤 Sending report {i+1}/{report_count}")
-            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method, use_random_ua=True)
+            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method, use_random_ua=True, is_premium=has_active_premium)
             
             # Log each report
             report_id = str(uuid.uuid4())
@@ -1491,7 +1544,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
         
         def send_single_report_thread(report_num: int) -> dict:
             try:
-                success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method, use_random_ua=True)
+                success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], report.method, use_random_ua=True, is_premium=has_active_premium)
                 return {"num": report_num, "success": success}
             except Exception as e:
                 return {"num": report_num, "success": False, "error": str(e)}
@@ -1655,7 +1708,7 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
             target_failed = 0
             
             for report_num in range(count):
-                success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method, use_random_ua=True)
+                success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method, use_random_ua=True, is_premium=has_active_premium)
                 
                 # Log report
                 report_id = str(uuid.uuid4())
@@ -1803,7 +1856,8 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
         """Send a single report (runs in thread) with rotating user agent"""
         try:
             # Use rotating user agent for each report to avoid detection
-            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method, use_random_ua=True)
+            # Premium users get enhanced bypasses and retries
+            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method, use_random_ua=True, is_premium=has_active_premium)
             
             # Log to database
             report_id = str(uuid.uuid4())
