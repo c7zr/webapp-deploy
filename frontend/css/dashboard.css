@@ -385,13 +385,7 @@
 }
 
 .action-tile:hover .tile-glow {
-    opacity: 1;
-    animation: tileGlowRotate 2s linear infinite;
-}
-
-@keyframes tileGlowRotate {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    opacity: 0;
 }
 
 .tile-icon {
@@ -399,11 +393,11 @@
     margin-bottom: 1rem;
     position: relative;
     z-index: 1;
-    transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: transform 0.3s ease;
 }
 
 .action-tile:hover .tile-icon {
-    transform: scale(1.2) rotate(10deg);
+    transform: scale(1.1);
 }
 
 .tile-content {
