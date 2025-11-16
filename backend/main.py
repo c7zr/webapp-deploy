@@ -1939,7 +1939,7 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
     cursor = conn.cursor()
     
     # Get user info - PREMIUM ONLY
-    cursor.execute("SELECT role FROM users WHERE id = ?", (token_data["user_id"],))
+    cursor.execute("SELECT role, isPremium, premiumExpiresAt FROM users WHERE id = ?", (token_data["user_id"],))
     user = cursor.fetchone()
     user_role = user["role"] if user else "user"
     
