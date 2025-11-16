@@ -1,22 +1,24 @@
 // Announcement System - November 2025 Update
 function showAnnouncement() {
     console.log('[Announcement] Function called');
-    console.log('[Announcement] localStorage.token =', localStorage.getItem('token'));
-    console.log('[Announcement] All localStorage keys:', Object.keys(localStorage));
     
-    // Only show if user is logged in
+    // Check if user is logged in (check both token and user object)
     const token = localStorage.getItem('token');
-    if (!token) {
-        console.log('[Announcement] No token found, skipping');
+    const user = localStorage.getItem('user');
+    
+    console.log('[Announcement] token =', token);
+    console.log('[Announcement] user =', user);
+    
+    if (!token && !user) {
+        console.log('[Announcement] No token or user found, skipping');
         return;
     }
     
     // Reset for new announcement - November 15, 2025 - MAJOR UPDATE
-    const announcementVersion = 'v2.6-debug-nov15-2025';
+    const announcementVersion = 'v2.7-final-nov15-2025';
     const hasSeenThisVersion = localStorage.getItem('announcementVersion') === announcementVersion;
     
     console.log('[Announcement] Version:', announcementVersion);
-    console.log('[Announcement] Stored version:', localStorage.getItem('announcementVersion'));
     console.log('[Announcement] Has seen:', hasSeenThisVersion);
     
     // Only show once per version
@@ -25,7 +27,7 @@ function showAnnouncement() {
         return;
     }
     
-    console.log('[Announcement] Showing announcement...');
+    console.log('[Announcement] Showing announcement NOW!');
     
     // Check if mobile device
     const isMobile = window.innerWidth <= 768;
