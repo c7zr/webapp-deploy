@@ -1943,8 +1943,11 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
     user = cursor.fetchone()
     user_role = user["role"] if user else "user"
     
-    # Check if premium/admin/owner
-    if user_role not in ["premium", "admin", "owner"]:
+    # Check if user has active premium status
+    has_active_premium = is_premium_active(user) if user else False
+    
+    # Check if mass reporting is allowed (admin/owner OR users with active premium)
+    if user_role not in ["admin", "owner"] and not has_active_premium:
         conn.close()
         raise HTTPException(
             status_code=403, 
