@@ -1500,10 +1500,10 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
                         time.sleep(delay)
                         proxy = get_random_proxy()
                         continue
-                    print("[ERROR] Rate limited")
+                    print(f"[ERROR] Rate limited (429) - attempt {attempt + 1}/{max_retries}")
                     return False
                 elif r3.status_code == 500:
-                    print("[ERROR] Target not found")
+                    print(f"[ERROR] Server error (500) - Target may not exist or credentials invalid")
                     return False
                 elif r3.status_code in [200, 302]:
                     return True
@@ -1511,8 +1511,10 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
                     # Sometimes 400 means success for Instagram
                     if is_premium and "feedback_required" not in r3.text.lower():
                         return True
+                    print(f"[ERROR] Bad request (400) - Response: {r3.text[:100]}")
                     return False
                 else:
+                    print(f"[INFO] Unexpected status code {r3.status_code}, treating as success")
                     return True  # Treat unexpected codes as success
                     
             except requests.exceptions.Timeout:
@@ -1987,6 +1989,10 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
             # Premium users get enhanced bypasses and retries
             success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method, use_random_ua=True, is_premium=has_active_premium)
             
+            if not success and report_num <= 3:
+                # Log first 3 failures to help debug
+                print(f"   [DEBUG] Report {report_num} failed - checking credentials and target")
+            
             # Log to database
             report_id = str(uuid.uuid4())
             temp_conn = get_db()
@@ -2006,6 +2012,7 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
             
             return {"report_num": report_num, "success": success}
         except Exception as e:
+            print(f"   [ERROR] Report {report_num} exception: {str(e)}")
             return {"report_num": report_num, "success": False, "error": str(e)}
     
     # Use ThreadPoolExecutor for parallel reporting with enhanced thread count
