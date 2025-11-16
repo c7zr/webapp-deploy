@@ -718,7 +718,7 @@ async function loadScheduledReports() {
                         <div class="targets-list">${targetsList}${moreTargets}</div>
                     </div>
                     
-                    ${report.status === 'pending' ? `
+                    ${report.status === 'pending' || report.status === 'executing' ? `
                         <div class="scheduled-actions">
                             <button class="btn btn-small btn-cancel" onclick="cancelScheduledReport('${report.id}')">
                                 ❌ Cancel

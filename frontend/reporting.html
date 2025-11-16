@@ -49,9 +49,25 @@
     
     <div class="main-content fade-in">
         <div class="reporting-container">
-            <div class="reporting-header">
-                <h1>Instagram Reporting</h1>
-                <p class="subtitle">Report Instagram accounts using multiple methods</p>
+            <!-- Modern Header -->
+            <div class="reporting-header-modern">
+                <div class="header-content">
+                    <div class="header-icon">⚠️</div>
+                    <div class="header-text">
+                        <h1>Instagram Reporting</h1>
+                        <p class="subtitle">Multi-method reporting system with advanced automation</p>
+                    </div>
+                </div>
+                <div class="header-stats">
+                    <div class="stat-item">
+                        <div class="stat-value" id="todayReports">0</div>
+                        <div class="stat-label">Today</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-value" id="totalSuccess">0</div>
+                        <div class="stat-label">Success</div>
+                    </div>
+                </div>
             </div>
         
         <!-- Instagram Credentials Section -->
@@ -93,11 +109,36 @@
         </div>
         
         <div class="report-container">
-            <div class="report-mode-selector">
-                <button id="singleModeBtn" class="mode-btn active">Single Report</button>
-                <button id="bulkModeBtn" class="mode-btn">Bulk Report</button>
-                <button id="massModeBtn" class="mode-btn">Mass Report <span class="premium-badge">PREMIUM</span></button>
-                <button id="scheduleModeBtn" class="mode-btn">⏰ Schedule Reports</button>
+            <!-- Modern Mode Selector -->
+            <div class="report-mode-selector-modern">
+                <button id="singleModeBtn" class="mode-btn-modern active" data-mode="single">
+                    <div class="mode-icon">📝</div>
+                    <div class="mode-info">
+                        <div class="mode-title">Single Report</div>
+                        <div class="mode-desc">Quick single-target reporting</div>
+                    </div>
+                </button>
+                <button id="bulkModeBtn" class="mode-btn-modern" data-mode="bulk">
+                    <div class="mode-icon">📦</div>
+                    <div class="mode-info">
+                        <div class="mode-title">Bulk Report</div>
+                        <div class="mode-desc">Multiple targets, one method</div>
+                    </div>
+                </button>
+                <button id="massModeBtn" class="mode-btn-modern premium-mode" data-mode="mass">
+                    <div class="mode-icon">⚡</div>
+                    <div class="mode-info">
+                        <div class="mode-title">Mass Report <span class="premium-badge-inline">PRO</span></div>
+                        <div class="mode-desc">500 reports with threading</div>
+                    </div>
+                </button>
+                <button id="scheduleModeBtn" class="mode-btn-modern" data-mode="schedule">
+                    <div class="mode-icon">⏰</div>
+                    <div class="mode-info">
+                        <div class="mode-title">Schedule</div>
+                        <div class="mode-desc">Automated future reporting</div>
+                    </div>
+                </button>
             </div>
             
             <!-- Single Report Mode -->
@@ -235,7 +276,7 @@
                     <div class="schedule-limits" id="scheduleLimits">
                         <div class="limit-badge">
                             <span class="limit-icon">📊</span>
-                            <span id="scheduledCount">0</span> / <span id="maxScheduled">3</span> scheduled
+                            <span id="scheduledCount" style="color: #fff;">0</span> / <span id="maxScheduled" style="color: #fff;">3</span> <span style="color: #fff;">scheduled</span>
                         </div>
                     </div>
                     

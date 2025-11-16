@@ -1,5 +1,195 @@
 /* Reporting Page Modern Styles */
 
+/* Modern Header */
+.reporting-header-modern {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.1) 0%, rgba(218, 112, 214, 0.1) 100%);
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    border-radius: 20px;
+    padding: 30px;
+    margin-bottom: 30px;
+    animation: fadeInDown 0.5s ease;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-icon {
+    font-size: 4rem;
+    background: linear-gradient(135deg, #8a2be2, #da70d6);
+    border-radius: 20px;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 8px 24px rgba(138, 43, 226, 0.3);
+}
+
+.header-text h1 {
+    font-size: 2.5rem;
+    background: linear-gradient(135deg, #8a2be2, #da70d6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0 0 5px 0;
+    font-weight: 700;
+}
+
+.header-text .subtitle {
+    color: #a0a0a0;
+    font-size: 1rem;
+    margin: 0;
+}
+
+.header-stats {
+    display: flex;
+    gap: 30px;
+}
+
+.stat-item {
+    text-align: center;
+    padding: 15px 25px;
+    background: rgba(138, 43, 226, 0.1);
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    border-radius: 12px;
+}
+
+.stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--purple);
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #a0a0a0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Modern Mode Selector */
+.report-mode-selector-modern {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 15px;
+    margin-bottom: 30px;
+    animation: fadeInUp 0.6s ease;
+}
+
+.mode-btn-modern {
+    background: rgba(30, 30, 30, 0.6);
+    backdrop-filter: blur(10px);
+    border: 2px solid rgba(138, 43, 226, 0.3);
+    border-radius: 16px;
+    padding: 20px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.mode-btn-modern::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(138, 43, 226, 0.2), transparent);
+    transition: left 0.5s ease;
+}
+
+.mode-btn-modern:hover::before {
+    left: 100%;
+}
+
+.mode-btn-modern:hover {
+    transform: translateY(-5px);
+    border-color: var(--purple);
+    box-shadow: 0 8px 24px rgba(138, 43, 226, 0.4);
+}
+
+.mode-btn-modern.active {
+    background: linear-gradient(135deg, rgba(138, 43, 226, 0.2) 0%, rgba(218, 112, 214, 0.2) 100%);
+    border-color: var(--purple);
+    box-shadow: 0 8px 24px rgba(138, 43, 226, 0.3);
+}
+
+.mode-btn-modern.premium-mode {
+    border-color: rgba(255, 215, 0, 0.4);
+}
+
+.mode-btn-modern.premium-mode:hover {
+    border-color: gold;
+    box-shadow: 0 8px 24px rgba(255, 215, 0, 0.3);
+}
+
+.mode-icon {
+    font-size: 2.5rem;
+    margin-bottom: 10px;
+}
+
+.mode-info {
+    width: 100%;
+}
+
+.mode-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 5px;
+}
+
+.mode-desc {
+    font-size: 0.85rem;
+    color: #a0a0a0;
+}
+
+.premium-badge-inline {
+    display: inline-block;
+    background: linear-gradient(135deg, gold, orange);
+    color: #000;
+    font-size: 0.7rem;
+    padding: 2px 8px;
+    border-radius: 8px;
+    font-weight: 700;
+    margin-left: 5px;
+    vertical-align: middle;
+}
+
+@media (max-width: 1200px) {
+    .report-mode-selector-modern {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 768px) {
+    .reporting-header-modern {
+        flex-direction: column;
+        gap: 20px;
+        text-align: center;
+    }
+    
+    .header-content {
+        flex-direction: column;
+    }
+    
+    .report-mode-selector-modern {
+        grid-template-columns: 1fr;
+    }
+}
+
 .reporting-container {
     max-width: 1400px;
     margin: 0 auto;
