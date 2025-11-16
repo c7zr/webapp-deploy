@@ -62,7 +62,10 @@ function isLoggedIn() {
 
 // Redirect to login if not authenticated
 async function requireAuth() {
-    if (!isLoggedIn()) {
+    const token = getAuthToken();
+    
+    if (!token) {
+        console.log('No token found, redirecting to login');
         window.location.href = '/login';
         return false;
     }
@@ -70,13 +73,24 @@ async function requireAuth() {
     // Verify token is still valid and get user data
     try {
         const response = await apiCall('/v2/user/profile', { method: 'GET' });
+        
         if (!response.ok) {
-            // Token invalid or expired
-            localStorage.removeItem('token');
-            sessionStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.href = '/login';
-            return false;
+            const errorText = await response.text();
+            console.error('Token verification failed:', response.status, errorText);
+            
+            // Only clear auth and redirect on actual auth errors
+            if (response.status === 401 || response.status === 403) {
+                localStorage.removeItem('token');
+                localStorage.removeItem('token_expiry');
+                sessionStorage.removeItem('token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+                return false;
+            }
+            
+            // For other errors (500, network issues), don't log out immediately
+            console.warn('Profile fetch failed but keeping user logged in');
+            return true;
         }
         
         // Update user data in localStorage
@@ -85,9 +99,10 @@ async function requireAuth() {
         
         return true;
     } catch (error) {
-        console.error('Auth verification failed:', error);
-        window.location.href = '/login';
-        return false;
+        console.error('Auth verification error:', error);
+        // Don't log out on network errors, only on auth failures
+        console.warn('Network error during auth check, keeping user logged in');
+        return true;
     }
 }
 
