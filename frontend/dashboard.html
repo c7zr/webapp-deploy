@@ -48,30 +48,6 @@
         </div>
     </nav>
     
-    <!-- Update Notification Banner -->
-    <div class="update-notification" id="updateNotification" style="display: none;">
-        <div class="update-content">
-            <div class="update-header">
-                <h3>🚀 New Updates Available!</h3>
-                <button class="update-close-btn" id="closeUpdateBtn">✕</button>
-            </div>
-            <div class="update-body">
-                <p class="update-date">November 12, 2025</p>
-                <ul class="update-list">
-                    <li><strong>⚡ Enhanced Performance:</strong> Single reports now use 3-thread concurrent execution for 6-20 reports (3x faster!)</li>
-                    <li><strong>📦 Bulk Report Threading:</strong> Process 4 targets simultaneously instead of one-by-one</li>
-                    <li><strong>🚀 Mass Report Boost:</strong> 25-30 concurrent threads for premium users (up from 10)</li>
-                    <li><strong>🔄 Rotating User Agents:</strong> 20+ different user agents to reduce failed reports and avoid detection</li>
-                    <li><strong>⚡ Faster Execution:</strong> Reduced delays between reports for maximum speed</li>
-                    <li><strong>🎨 UI Improvements:</strong> Cleaner design, fixed mobile navbar, improved progress animations</li>
-                </ul>
-                <div class="update-footer">
-                    <button class="update-dismiss-btn" id="dismissUpdateBtn">Got it!</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    
     <div class="dashboard-container">
         <!-- Welcome Header -->
         <div class="dashboard-header">
@@ -216,6 +192,13 @@
     </div>
     
     <script src="js/config.js"></script>
+    <script src="js/announcement.js"></script>
     <script src="js/dashboard.js"></script>
+    <script>
+        // Show announcement on dashboard load
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(() => showAnnouncement(), 500);
+        });
+    </script>
 </body>
 </html>
