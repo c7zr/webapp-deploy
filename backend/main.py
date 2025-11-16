@@ -495,9 +495,9 @@ async def scheduled_reports_worker():
                                 failed_count += 1
                                 print(f"   ❌ Failed to report {target}")
                             
-                            # Save to history
+                            # Save to history (correct table name is 'reports')
                             c.execute("""
-                                INSERT INTO report_history 
+                                INSERT INTO reports 
                                 (id, userId, username, target, method, status, timestamp, details)
                                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                             """, (
