@@ -1411,11 +1411,11 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
         request_timestamp = str(int(time.time() * 1000))
         request_id = hashlib.md5(f"{sessionid}{request_timestamp}{target_id}".encode()).hexdigest()[:16]
         
-        # SWATNFO BYPASS #2: Randomized delay before request (anti-pattern detection)
+        # SWATNFO BYPASS #2: Minimal delay for speed (proxies handle rate limiting)
         if is_premium:
-            time.sleep(random.uniform(0.1, 0.3))  # Premium: 100-300ms
+            time.sleep(random.uniform(0.05, 0.15))  # Premium: 50-150ms (faster)
         else:
-            time.sleep(random.uniform(0.2, 0.5))  # Free: 200-500ms
+            time.sleep(random.uniform(0.15, 0.3))  # Free: 150-300ms
         
         # SWATNFO BYPASS #3: Build comprehensive header set with fingerprint rotation
         headers = {
@@ -1492,7 +1492,7 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
                     timeout=15 if is_premium else 10
                 )
                 
-                # SWATNFO BYPASS #8: Smart status code handling
+                # SWATNFO BYPASS #8: Smart status code handling with proxy rotation
                 if r3.status_code == 429:
                     if is_premium and attempt < max_retries - 1:
                         # Premium: Exponential backoff + proxy rotation
@@ -1501,6 +1501,15 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
                         proxy = get_random_proxy()
                         continue
                     print(f"[ERROR] Rate limited (429) - attempt {attempt + 1}/{max_retries}")
+                    return False
+                elif r3.status_code == 403:
+                    # 403 Forbidden - Rotate proxy and retry for premium
+                    if is_premium and attempt < max_retries - 1:
+                        print(f"[INFO] 403 blocked - rotating proxy and retrying ({attempt + 1}/{max_retries})")
+                        proxy = get_random_proxy()
+                        time.sleep(random.uniform(0.3, 0.7))
+                        continue
+                    print(f"[ERROR] Request blocked (403) - Rate limited or invalid credentials")
                     return False
                 elif r3.status_code == 500:
                     print(f"[ERROR] Server error (500) - Target may not exist or credentials invalid")
@@ -1512,10 +1521,6 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
                     if is_premium and "feedback_required" not in r3.text.lower():
                         return True
                     print(f"[ERROR] Bad request (400) - Response: {r3.text[:100]}")
-                    return False
-                elif r3.status_code == 403:
-                    # 403 Forbidden - Instagram blocked the request (rate limit or invalid session)
-                    print(f"[ERROR] Request blocked (403) - Rate limited or invalid credentials")
                     return False
                 else:
                     # Other unexpected codes - treat as failure to be safe
@@ -2027,8 +2032,8 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
             return {"report_num": report_num, "success": False, "error": str(e)}
     
     # Use ThreadPoolExecutor for parallel reporting with enhanced thread count
-    # Premium users get 30 concurrent threads for maximum speed
-    max_workers = 30 if user_role in ["admin", "owner"] else 25
+    # Premium users get 40 concurrent threads with proxy rotation for maximum speed
+    max_workers = 40 if user_role in ["admin", "owner"] else 30 if is_premium else 20
     successful = 0
     failed = 0
     
