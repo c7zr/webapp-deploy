@@ -3234,8 +3234,8 @@ async def backup_database(token_data: dict = Depends(verify_admin)):
     import shutil
     try:
         # Create a temporary backup
-        backup_path = f"{DATABASE_PATH}.backup"
-        shutil.copy2(DATABASE_PATH, backup_path)
+        backup_path = f"{DB_PATH}.backup"
+        shutil.copy2(DB_PATH, backup_path)
         
         # Return the backup file
         return FileResponse(
