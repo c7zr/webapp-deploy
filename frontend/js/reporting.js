@@ -445,8 +445,8 @@ async function startMassReport() {
         return;
     }
     
-    if (count < 1 || count > 200) {
-        alert('Number of reports must be between 1 and 200');
+    if (count < 1 || count > 500) {
+        alert('Number of reports must be between 1 and 500');
         return;
     }
     
@@ -477,7 +477,7 @@ async function startMassReport() {
         return;
     }
     
-    if (!confirm(`⚡ Mass Report Confirmation\n\nThis will send ${count} reports to @${target} using multi-threading.\n\nAll reports will be sent in parallel for maximum speed.\n\nContinue?`)) {
+    if (!confirm(`⚡ Mass Report Confirmation\n\nThis will send ${count} reports to @${target} using multi-threading with auto proxy switching.\n\nAll reports will be sent in parallel for maximum speed.\n\nContinue?`)) {
         return;
     }
     

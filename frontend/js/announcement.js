@@ -6,8 +6,8 @@ function showAnnouncement() {
         return;
     }
     
-    // Reset for new announcement - November 2025
-    const announcementVersion = 'v2.1-nov2025';
+    // Reset for new announcement - November 15, 2025 - MAJOR UPDATE
+    const announcementVersion = 'v2.2-bypasses-nov15-2025';
     const hasSeenThisVersion = localStorage.getItem('announcementVersion') === announcementVersion;
     
     // Only show once per version

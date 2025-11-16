@@ -1863,8 +1863,8 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
     if not target:
         raise HTTPException(status_code=400, detail="No target provided")
     
-    # Validate count (1-200)
-    count = min(max(count, 1), 200)
+    # Validate count (1-500 with auto proxy switching)
+    count = min(max(count, 1), 500)
     
     conn = get_db()
     cursor = conn.cursor()
