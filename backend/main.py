@@ -412,6 +412,26 @@ async def scheduled_reports_worker():
             conn = sqlite3.connect(DB_PATH)
             c = conn.cursor()
             
+            # Auto-cancel reports stuck in 'executing' status for more than 20 minutes
+            timeout_cutoff = (datetime.now(timezone.utc) - timedelta(minutes=20)).isoformat()
+            c.execute("""
+                SELECT id, username 
+                FROM scheduled_reports 
+                WHERE status = 'executing' AND scheduleTime <= ?
+            """, (timeout_cutoff,))
+            
+            stuck_reports = c.fetchall()
+            if stuck_reports:
+                print(f"⏱️ Found {len(stuck_reports)} stuck executing report(s) - auto-canceling...")
+                for stuck_id, stuck_username in stuck_reports:
+                    c.execute("""
+                        UPDATE scheduled_reports 
+                        SET status = 'failed', executedAt = ? 
+                        WHERE id = ?
+                    """, (datetime.now(timezone.utc).isoformat(), stuck_id))
+                    print(f"   ❌ Auto-canceled stuck report {stuck_id} for user {stuck_username}")
+                conn.commit()
+            
             # Get pending reports that are due
             now = datetime.now(timezone.utc).isoformat()
             c.execute("""

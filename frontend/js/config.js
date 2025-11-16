@@ -47,12 +47,96 @@ async function apiCall(endpoint, options = {}) {
         headers['Authorization'] = `Bearer ${token}`;
     }
     
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        ...options,
-        headers
-    });
+    try {
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+            ...options,
+            headers
+        });
+        
+        return response;
+    } catch (error) {
+        console.error('API call failed:', endpoint, error);
+        throw new Error('Network error. Please check your connection.');
+    }
+}
+
+// Show user-friendly error notification
+function showError(message, duration = 5000) {
+    // Remove existing error if present
+    const existing = document.querySelector('.error-toast');
+    if (existing) existing.remove();
     
-    return response;
+    const toast = document.createElement('div');
+    toast.className = 'error-toast';
+    toast.innerHTML = `
+        <div class="toast-icon">❌</div>
+        <div class="toast-message">${sanitizeInput(message)}</div>
+        <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Auto-remove after duration
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.classList.add('toast-fade-out');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, duration);
+}
+
+// Show success notification
+function showSuccess(message, duration = 3000) {
+    const existing = document.querySelector('.success-toast');
+    if (existing) existing.remove();
+    
+    const toast = document.createElement('div');
+    toast.className = 'success-toast';
+    toast.innerHTML = `
+        <div class="toast-icon">✅</div>
+        <div class="toast-message">${sanitizeInput(message)}</div>
+        <button class="toast-close" onclick="this.parentElement.remove()">✕</button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.classList.add('toast-fade-out');
+            setTimeout(() => toast.remove(), 300);
+        }
+    }, duration);
+}
+
+// Handle API errors with user-friendly messages
+async function handleApiError(response, defaultMessage = 'An error occurred') {
+    let errorMessage = defaultMessage;
+    
+    try {
+        const data = await response.json();
+        errorMessage = data.detail || data.message || errorMessage;
+    } catch (e) {
+        // If JSON parsing fails, use status text
+        errorMessage = response.statusText || errorMessage;
+    }
+    
+    // Map common HTTP errors to friendly messages
+    const statusMessages = {
+        400: 'Invalid request. Please check your input.',
+        401: 'Session expired. Please log in again.',
+        403: 'You don\'t have permission to do that.',
+        404: 'Resource not found.',
+        429: 'Too many requests. Please wait a moment.',
+        500: 'Server error. Please try again later.',
+        503: 'Service temporarily unavailable.'
+    };
+    
+    if (statusMessages[response.status]) {
+        errorMessage = statusMessages[response.status];
+    }
+    
+    showError(errorMessage);
+    return errorMessage;
 }
 
 // Check if user is logged in
