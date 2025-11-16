@@ -313,6 +313,22 @@ def init_db():
         )
     ''')
     
+    # Scheduled reports table
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS scheduled_reports (
+            id TEXT PRIMARY KEY,
+            userId TEXT NOT NULL,
+            username TEXT NOT NULL,
+            targets TEXT NOT NULL,
+            method TEXT NOT NULL,
+            scheduleTime TEXT NOT NULL,
+            status TEXT DEFAULT 'pending',
+            createdAt TEXT NOT NULL,
+            executedAt TEXT,
+            FOREIGN KEY (userId) REFERENCES users (id)
+        )
+    ''')
+    
     # Initialize default settings
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maintenanceMode', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.now(timezone.utc).isoformat(),))
@@ -1845,6 +1861,167 @@ async def clear_history(token_data: dict = Depends(verify_token)):
     conn.commit()
     conn.close()
     return {"message": "History cleared successfully"}
+
+# Scheduled Reports Routes
+@app.post("/v2/reports/schedule")
+async def schedule_report(schedule_data: dict, token_data: dict = Depends(verify_token)):
+    """Schedule reports for future execution - Free: 3 max, Premium: 50 max"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Get user info
+    cursor.execute("SELECT username, isPremium FROM users WHERE id = ?", (token_data["user_id"],))
+    user = cursor.fetchone()
+    
+    if not user:
+        conn.close()
+        raise HTTPException(status_code=404, detail="User not found")
+    
+    # Check premium status
+    has_active_premium = is_premium_active(user)
+    
+    # Set limits based on premium status
+    max_scheduled = 50 if has_active_premium else 3
+    
+    # Count current scheduled reports (pending only)
+    cursor.execute(
+        "SELECT COUNT(*) as count FROM scheduled_reports WHERE userId = ? AND status = 'pending'",
+        (token_data["user_id"],)
+    )
+    current_scheduled = cursor.fetchone()["count"]
+    
+    if current_scheduled >= max_scheduled:
+        conn.close()
+        raise HTTPException(
+            status_code=403,
+            detail=f"{'Premium' if has_active_premium else 'Free'} users can only have {max_scheduled} scheduled reports at a time. Cancel some existing scheduled reports first."
+        )
+    
+    # Validate input
+    targets = schedule_data.get("targets", [])
+    method = schedule_data.get("method")
+    schedule_time = schedule_data.get("scheduleTime")
+    
+    if not targets or not method or not schedule_time:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Missing required fields: targets, method, scheduleTime")
+    
+    if len(targets) > max_scheduled:
+        conn.close()
+        raise HTTPException(
+            status_code=400,
+            detail=f"Cannot schedule more than {max_scheduled} targets at once"
+        )
+    
+    # Validate schedule time is in the future
+    try:
+        schedule_dt = datetime.fromisoformat(schedule_time.replace('Z', '+00:00'))
+        if schedule_dt <= datetime.now(timezone.utc):
+            conn.close()
+            raise HTTPException(status_code=400, detail="Schedule time must be in the future")
+    except ValueError:
+        conn.close()
+        raise HTTPException(status_code=400, detail="Invalid schedule time format")
+    
+    # Create scheduled report
+    report_id = "sched_" + hashlib.md5(f"{token_data['user_id']}{schedule_time}".encode()).hexdigest()
+    
+    cursor.execute('''
+        INSERT INTO scheduled_reports (id, userId, username, targets, method, scheduleTime, status, createdAt)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (
+        report_id,
+        token_data["user_id"],
+        user["username"],
+        json.dumps(targets),
+        method,
+        schedule_time,
+        "pending",
+        datetime.now(timezone.utc).isoformat()
+    ))
+    
+    conn.commit()
+    conn.close()
+    
+    return {
+        "success": True,
+        "message": f"Scheduled {len(targets)} report(s) for {schedule_dt.strftime('%Y-%m-%d %H:%M UTC')}",
+        "scheduledId": report_id,
+        "scheduleTime": schedule_time,
+        "targetCount": len(targets),
+        "currentScheduled": current_scheduled + 1,
+        "maxScheduled": max_scheduled
+    }
+
+@app.get("/v2/reports/scheduled")
+async def get_scheduled_reports(token_data: dict = Depends(verify_token)):
+    """Get all scheduled reports for the current user"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    cursor.execute('''
+        SELECT * FROM scheduled_reports 
+        WHERE userId = ? 
+        ORDER BY scheduleTime ASC
+    ''', (token_data["user_id"],))
+    
+    scheduled = []
+    for row in cursor.fetchall():
+        scheduled.append({
+            "id": row["id"],
+            "targets": json.loads(row["targets"]),
+            "method": row["method"],
+            "scheduleTime": row["scheduleTime"],
+            "status": row["status"],
+            "createdAt": row["createdAt"],
+            "executedAt": row["executedAt"]
+        })
+    
+    # Get user's max limit
+    cursor.execute("SELECT isPremium, premiumExpiresAt FROM users WHERE id = ?", (token_data["user_id"],))
+    user = cursor.fetchone()
+    has_active_premium = is_premium_active(user)
+    max_scheduled = 50 if has_active_premium else 3
+    
+    pending_count = sum(1 for s in scheduled if s["status"] == "pending")
+    
+    conn.close()
+    
+    return {
+        "scheduled": scheduled,
+        "total": len(scheduled),
+        "pending": pending_count,
+        "maxScheduled": max_scheduled,
+        "isPremium": has_active_premium
+    }
+
+@app.delete("/v2/reports/scheduled/{schedule_id}")
+async def cancel_scheduled_report(schedule_id: str, token_data: dict = Depends(verify_token)):
+    """Cancel a scheduled report"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    # Check if scheduled report exists and belongs to user
+    cursor.execute(
+        "SELECT * FROM scheduled_reports WHERE id = ? AND userId = ?",
+        (schedule_id, token_data["user_id"])
+    )
+    scheduled = cursor.fetchone()
+    
+    if not scheduled:
+        conn.close()
+        raise HTTPException(status_code=404, detail="Scheduled report not found")
+    
+    if scheduled["status"] != "pending":
+        conn.close()
+        raise HTTPException(status_code=400, detail="Cannot cancel non-pending scheduled report")
+    
+    # Delete the scheduled report
+    cursor.execute("DELETE FROM scheduled_reports WHERE id = ?", (schedule_id,))
+    conn.commit()
+    conn.close()
+    
+    return {"message": "Scheduled report cancelled successfully"}
 
 # Admin Routes
 @app.get("/v2/admin/stats")
