@@ -687,7 +687,16 @@ async function loadScheduledReports() {
         
         listContainer.innerHTML = data.scheduled.map(report => {
             const scheduleDate = new Date(report.scheduleTime);
-            const targets = JSON.parse(report.targets);
+            
+            // Safely parse targets with error handling
+            let targets = [];
+            try {
+                targets = Array.isArray(report.targets) ? report.targets : JSON.parse(report.targets);
+            } catch (e) {
+                console.error('Invalid targets JSON:', report.targets, e);
+                targets = ['[Invalid data]'];
+            }
+            
             const targetsList = targets.slice(0, 5).map(t => `@${t}`).join(', ');
             const moreTargets = targets.length > 5 ? ` +${targets.length - 5} more` : '';
             
