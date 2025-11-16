@@ -56,8 +56,9 @@ function showAnnouncement() {
             border-radius: 16px;
             padding: 32px;
             max-width: 600px;
-            max-height: 90vh;
+            max-height: 85vh;
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             width: 90%;
             box-shadow: 0 20px 60px rgba(168, 85, 247, 0.3);
             position: relative;
@@ -207,13 +208,6 @@ function showAnnouncement() {
                onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 16px rgba(168, 85, 247, 0.4)'">
                 Got it! Let's go 🚀
             </button>
-            
-            <p style="
-                color: #808080;
-                font-size: 12px;
-                text-align: center;
-                margin: 16px 0 0 0;
-            ">Auto-closing in 3 seconds...</p>
         </div>
     `;
     
@@ -247,18 +241,21 @@ function showAnnouncement() {
         localStorage.setItem('announcementSeen', 'true');
     }
     
-    document.getElementById('closeAnnouncement').addEventListener('click', closeModal);
-    document.getElementById('gotItBtn').addEventListener('click', closeModal);
-    
-    // Close on outside click
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) {
-            closeModal();
-        }
-    });
-    
-    // Auto-close after 3 seconds
-    setTimeout(closeModal, 3000);
+    // Add event listeners after modal is in DOM
+    setTimeout(() => {
+        const closeBtn = document.getElementById('closeAnnouncement');
+        const gotItBtn = document.getElementById('gotItBtn');
+        
+        if (closeBtn) closeBtn.addEventListener('click', closeModal);
+        if (gotItBtn) gotItBtn.addEventListener('click', closeModal);
+        
+        // Close on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    }, 100);
 }
 
 // Show announcement after page loads
