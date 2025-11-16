@@ -1513,9 +1513,14 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
                         return True
                     print(f"[ERROR] Bad request (400) - Response: {r3.text[:100]}")
                     return False
+                elif r3.status_code == 403:
+                    # 403 Forbidden - Instagram blocked the request (rate limit or invalid session)
+                    print(f"[ERROR] Request blocked (403) - Rate limited or invalid credentials")
+                    return False
                 else:
-                    print(f"[INFO] Unexpected status code {r3.status_code}, treating as success")
-                    return True  # Treat unexpected codes as success
+                    # Other unexpected codes - treat as failure to be safe
+                    print(f"[WARNING] Unexpected status code {r3.status_code}, treating as failure")
+                    return False
                     
             except requests.exceptions.Timeout:
                 if is_premium and attempt < max_retries - 1:
