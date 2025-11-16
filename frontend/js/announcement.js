@@ -1,19 +1,28 @@
 // Announcement System - November 2025 Update
 function showAnnouncement() {
+    console.log('[Announcement] Function called');
+    
     // Only show if user is logged in
     const token = localStorage.getItem('token');
     if (!token) {
+        console.log('[Announcement] No token found, skipping');
         return;
     }
     
     // Reset for new announcement - November 15, 2025 - MAJOR UPDATE
-    const announcementVersion = 'v2.4-deployment-nov15-2025';
+    const announcementVersion = 'v2.5-force-nov15-2025';
     const hasSeenThisVersion = localStorage.getItem('announcementVersion') === announcementVersion;
+    
+    console.log('[Announcement] Version:', announcementVersion);
+    console.log('[Announcement] Has seen:', hasSeenThisVersion);
     
     // Only show once per version
     if (hasSeenThisVersion) {
+        console.log('[Announcement] Already seen this version');
         return;
     }
+    
+    console.log('[Announcement] Showing announcement...');
     
     // Check if mobile device
     const isMobile = window.innerWidth <= 768;
