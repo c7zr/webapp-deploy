@@ -97,6 +97,7 @@
                 <button id="singleModeBtn" class="mode-btn active">Single Report</button>
                 <button id="bulkModeBtn" class="mode-btn">Bulk Report</button>
                 <button id="massModeBtn" class="mode-btn">Mass Report <span class="premium-badge">PREMIUM</span></button>
+                <button id="scheduleModeBtn" class="mode-btn">⏰ Schedule Reports</button>
             </div>
             
             <!-- Single Report Mode -->
@@ -220,6 +221,79 @@
                         <span class="btn-icon">🚀</span>
                         Start Bulk Report
                     </button>
+                </div>
+            </div>
+            
+            <!-- Schedule Reports Mode -->
+            <div id="scheduleReportSection" class="report-section" style="display: none;">
+                <div class="report-box">
+                    <div class="report-header">
+                        <h2>⏰ Schedule Reports</h2>
+                        <p class="report-description">Schedule reports to be sent automatically at a future time</p>
+                    </div>
+                    
+                    <div class="schedule-limits" id="scheduleLimits">
+                        <div class="limit-badge">
+                            <span class="limit-icon">📊</span>
+                            <span id="scheduledCount">0</span> / <span id="maxScheduled">3</span> scheduled
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="scheduleTargets">
+                            <span class="label-icon">👥</span>
+                            Target Usernames
+                        </label>
+                        <textarea id="scheduleTargets" rows="5" placeholder="username1&#10;username2&#10;username3&#10;..." class="textarea-modern"></textarea>
+                        <small class="input-hint">One username per line (max based on your tier)</small>
+                    </div>
+                    
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label for="scheduleMethod">
+                                <span class="label-icon">⚠️</span>
+                                Report Method
+                            </label>
+                            <select id="scheduleMethod" class="select-modern">
+                                <option value="spam">💬 Spam</option>
+                                <option value="self_injury">🩹 Self Injury</option>
+                                <option value="violent_threat">⚔️ Violent Threat</option>
+                                <option value="hate_speech">🚫 Hate Speech</option>
+                                <option value="nudity">🔞 Nudity</option>
+                                <option value="bullying">😢 Bullying</option>
+                                <option value="impersonation_me">🎭 Impersonation (Me)</option>
+                                <option value="sale_illegal">💊 Sale of Illegal Goods</option>
+                                <option value="violence">🔪 Violence</option>
+                                <option value="intellectual_property">©️ Intellectual Property</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="scheduleDateTime">
+                                <span class="label-icon">📅</span>
+                                Schedule Time
+                            </label>
+                            <input type="datetime-local" id="scheduleDateTime" class="input-modern">
+                            <small class="input-hint">When to send the reports</small>
+                        </div>
+                    </div>
+                    
+                    <button id="createSchedule" class="btn btn-primary btn-large btn-modern">
+                        <span class="btn-icon">⏰</span>
+                        Create Scheduled Report
+                    </button>
+                </div>
+                
+                <!-- Scheduled Reports List -->
+                <div class="report-box" style="margin-top: 20px;">
+                    <div class="report-header">
+                        <h2>📋 Your Scheduled Reports</h2>
+                        <button id="refreshScheduled" class="btn btn-secondary" style="float: right; margin-top: -10px;">🔄 Refresh</button>
+                    </div>
+                    
+                    <div id="scheduledReportsList" class="scheduled-list">
+                        <p class="empty-state">No scheduled reports yet</p>
+                    </div>
                 </div>
             </div>
             

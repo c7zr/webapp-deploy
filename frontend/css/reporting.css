@@ -753,3 +753,152 @@
         transform: translateY(0);
     }
 }
+
+/* Schedule Reports Section */
+.schedule-limits {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+.limit-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 24px;
+    background: rgba(138, 43, 226, 0.15);
+    border: 1px solid rgba(138, 43, 226, 0.4);
+    border-radius: 10px;
+    color: #fff;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.limit-icon {
+    font-size: 1.3rem;
+}
+
+.scheduled-list {
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+.empty-state {
+    text-align: center;
+    color: #888;
+    padding: 40px 20px;
+    font-size: 1.1rem;
+}
+
+.scheduled-item {
+    background: rgba(20, 20, 20, 0.6);
+    border: 1px solid rgba(138, 43, 226, 0.3);
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 15px;
+    transition: all 0.3s ease;
+    animation: fadeInUp 0.5s ease;
+}
+
+.scheduled-item:hover {
+    border-color: rgba(138, 43, 226, 0.5);
+    transform: translateX(5px);
+}
+
+.scheduled-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: start;
+    margin-bottom: 15px;
+}
+
+.scheduled-info {
+    flex: 1;
+}
+
+.scheduled-time {
+    color: var(--purple);
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-bottom: 5px;
+}
+
+.scheduled-method {
+    color: #a0a0a0;
+    font-size: 0.9rem;
+}
+
+.scheduled-status {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-pending {
+    background: rgba(255, 165, 0, 0.2);
+    border: 1px solid rgba(255, 165, 0, 0.4);
+    color: #ffa500;
+}
+
+.status-completed {
+    background: rgba(0, 255, 127, 0.2);
+    border: 1px solid rgba(0, 255, 127, 0.4);
+    color: #00ff7f;
+}
+
+.status-failed {
+    background: rgba(255, 69, 69, 0.2);
+    border: 1px solid rgba(255, 69, 69, 0.4);
+    color: #ff4545;
+}
+
+.scheduled-targets {
+    background: rgba(10, 10, 10, 0.5);
+    border: 1px solid rgba(138, 43, 226, 0.2);
+    border-radius: 8px;
+    padding: 12px;
+    margin-bottom: 15px;
+}
+
+.targets-header {
+    color: #a0a0a0;
+    font-size: 0.85rem;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.targets-list {
+    color: #fff;
+    font-size: 0.95rem;
+    line-height: 1.6;
+}
+
+.scheduled-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-small {
+    padding: 8px 16px;
+    font-size: 0.85rem;
+    border-radius: 6px;
+}
+
+.btn-cancel {
+    background: rgba(255, 69, 69, 0.2);
+    border: 1px solid rgba(255, 69, 69, 0.4);
+    color: #ff4545;
+}
+
+.btn-cancel:hover {
+    background: rgba(255, 69, 69, 0.3);
+    border-color: #ff4545;
+}
+
+input[type="datetime-local"] {
+    color-scheme: dark;
+}
+

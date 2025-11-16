@@ -23,6 +23,11 @@ function initializeReporting() {
         switchMode('mass');
     });
     
+    document.getElementById('scheduleModeBtn').addEventListener('click', () => {
+        switchMode('schedule');
+        loadScheduledReports();
+    });
+    
     // Input method switching
     document.getElementById('manualInputBtn').addEventListener('click', () => {
         switchInputMethod('manual');
@@ -41,6 +46,10 @@ function initializeReporting() {
     document.getElementById('startBulkReport').addEventListener('click', startBulkReport);
     document.getElementById('startMassReport').addEventListener('click', startMassReport);
     
+    // Schedule buttons
+    document.getElementById('createSchedule').addEventListener('click', createScheduledReport);
+    document.getElementById('refreshScheduled').addEventListener('click', loadScheduledReports);
+    
     // Control buttons
     document.getElementById('stopReport').addEventListener('click', stopReporting);
     document.getElementById('newReport').addEventListener('click', resetReporting);
@@ -50,6 +59,11 @@ function initializeReporting() {
     
     // File upload handler
     document.getElementById('targetsFile').addEventListener('change', handleFileUpload);
+    
+    // Set minimum datetime to now
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('scheduleDateTime').min = now.toISOString().slice(0, 16);
 }
 
 async function loadCredentials() {
@@ -235,11 +249,13 @@ function switchMode(mode) {
     document.getElementById('singleReportSection').style.display = 'none';
     document.getElementById('bulkReportSection').style.display = 'none';
     document.getElementById('massReportSection').style.display = 'none';
+    document.getElementById('scheduleReportSection').style.display = 'none';
     
     // Remove all active states
     document.getElementById('singleModeBtn').classList.remove('active');
     document.getElementById('bulkModeBtn').classList.remove('active');
     document.getElementById('massModeBtn').classList.remove('active');
+    document.getElementById('scheduleModeBtn').classList.remove('active');
     
     // Show selected mode
     if (mode === 'single') {
@@ -251,6 +267,9 @@ function switchMode(mode) {
     } else if (mode === 'mass') {
         document.getElementById('massModeBtn').classList.add('active');
         document.getElementById('massReportSection').style.display = 'block';
+    } else if (mode === 'schedule') {
+        document.getElementById('scheduleModeBtn').classList.add('active');
+        document.getElementById('scheduleReportSection').style.display = 'block';
     }
 }
 
@@ -641,5 +660,174 @@ function showError(message) {
 
 function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+// Scheduled Reports Functions
+async function loadScheduledReports() {
+    try {
+        const response = await apiCall('/v2/reports/scheduled', { method: 'GET' });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load scheduled reports');
+        }
+        
+        const data = await response.json();
+        
+        // Update limits display
+        document.getElementById('scheduledCount').textContent = data.pendingCount || 0;
+        document.getElementById('maxScheduled').textContent = data.maxScheduled || 3;
+        
+        // Display scheduled reports
+        const listContainer = document.getElementById('scheduledReportsList');
+        
+        if (!data.scheduled || data.scheduled.length === 0) {
+            listContainer.innerHTML = '<p class="empty-state">No scheduled reports yet</p>';
+            return;
+        }
+        
+        listContainer.innerHTML = data.scheduled.map(report => {
+            const scheduleDate = new Date(report.scheduleTime);
+            const targets = JSON.parse(report.targets);
+            const targetsList = targets.slice(0, 5).map(t => `@${t}`).join(', ');
+            const moreTargets = targets.length > 5 ? ` +${targets.length - 5} more` : '';
+            
+            const statusClass = report.status === 'pending' ? 'status-pending' : 
+                               report.status === 'completed' ? 'status-completed' : 'status-failed';
+            
+            return `
+                <div class="scheduled-item">
+                    <div class="scheduled-item-header">
+                        <div class="scheduled-info">
+                            <div class="scheduled-time">⏰ ${scheduleDate.toLocaleString()}</div>
+                            <div class="scheduled-method">Method: ${formatMethod(report.method)}</div>
+                        </div>
+                        <span class="scheduled-status ${statusClass}">${report.status}</span>
+                    </div>
+                    
+                    <div class="scheduled-targets">
+                        <div class="targets-header">Targets (${targets.length})</div>
+                        <div class="targets-list">${targetsList}${moreTargets}</div>
+                    </div>
+                    
+                    ${report.status === 'pending' ? `
+                        <div class="scheduled-actions">
+                            <button class="btn btn-small btn-cancel" onclick="cancelScheduledReport('${report.id}')">
+                                ❌ Cancel
+                            </button>
+                        </div>
+                    ` : ''}
+                </div>
+            `;
+        }).join('');
+        
+    } catch (error) {
+        console.error('Error loading scheduled reports:', error);
+        alert('Failed to load scheduled reports: ' + error.message);
+    }
+}
+
+async function createScheduledReport() {
+    const targetsText = document.getElementById('scheduleTargets').value.trim();
+    const method = document.getElementById('scheduleMethod').value;
+    const scheduleDateTime = document.getElementById('scheduleDateTime').value;
+    
+    if (!targetsText) {
+        alert('Please enter at least one username');
+        return;
+    }
+    
+    if (!scheduleDateTime) {
+        alert('Please select a date and time');
+        return;
+    }
+    
+    const targets = targetsText.split('\n').filter(t => t.trim()).map(t => t.trim().replace('@', ''));
+    
+    if (targets.length === 0) {
+        alert('No valid targets found');
+        return;
+    }
+    
+    // Convert to ISO format
+    const scheduleTime = new Date(scheduleDateTime).toISOString();
+    
+    // Check if time is in the future
+    if (new Date(scheduleTime) <= new Date()) {
+        alert('Schedule time must be in the future');
+        return;
+    }
+    
+    try {
+        const response = await apiCall('/v2/reports/schedule', {
+            method: 'POST',
+            body: JSON.stringify({
+                targets: targets,
+                method: method,
+                scheduleTime: scheduleTime
+            })
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to create scheduled report');
+        }
+        
+        const data = await response.json();
+        
+        alert(`✅ Report scheduled successfully!\n\nSchedule ID: ${data.scheduledId}\nTargets: ${targets.length}\nTime: ${new Date(scheduleTime).toLocaleString()}`);
+        
+        // Clear form
+        document.getElementById('scheduleTargets').value = '';
+        document.getElementById('scheduleDateTime').value = '';
+        
+        // Reload scheduled reports
+        await loadScheduledReports();
+        
+    } catch (error) {
+        console.error('Error creating scheduled report:', error);
+        alert('Failed to schedule report: ' + error.message);
+    }
+}
+
+async function cancelScheduledReport(scheduleId) {
+    if (!confirm('Are you sure you want to cancel this scheduled report?')) {
+        return;
+    }
+    
+    try {
+        const response = await apiCall(`/v2/reports/scheduled/${scheduleId}`, {
+            method: 'DELETE'
+        });
+        
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || 'Failed to cancel scheduled report');
+        }
+        
+        alert('✅ Scheduled report cancelled successfully');
+        
+        // Reload scheduled reports
+        await loadScheduledReports();
+        
+    } catch (error) {
+        console.error('Error cancelling scheduled report:', error);
+        alert('Failed to cancel scheduled report: ' + error.message);
+    }
+}
+
+function formatMethod(method) {
+    const methodMap = {
+        'spam': '💬 Spam',
+        'self_injury': '🩹 Self Injury',
+        'violent_threat': '⚔️ Violent Threat',
+        'hate_speech': '🚫 Hate Speech',
+        'nudity': '🔞 Nudity',
+        'bullying': '😢 Bullying',
+        'impersonation_me': '🎭 Impersonation (Me)',
+        'sale_illegal': '💊 Sale of Illegal Goods',
+        'violence': '🔪 Violence',
+        'intellectual_property': '©️ Intellectual Property'
+    };
+    return methodMap[method] || method;
 }
 
