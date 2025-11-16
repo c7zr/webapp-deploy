@@ -122,10 +122,10 @@
         .register-card {
             background: rgba(255, 255, 255, 0.08);
             backdrop-filter: blur(30px);
-            border-radius: 32px;
-            padding: 50px 45px;
+            border-radius: 24px;
+            padding: 35px 30px;
             width: 100%;
-            max-width: 460px;
+            max-width: 400px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
                         0 0 80px rgba(138, 43, 226, 0.2),
                         inset 0 1px 1px rgba(255, 255, 255, 0.15);
@@ -145,39 +145,21 @@
             }
         }
         
-        .register-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, #8a2be2, #da70d6, #ba55d3, #8a2be2);
-            border-radius: 32px 32px 0 0;
-            background-size: 200% 100%;
-            animation: shimmer 3s linear infinite;
-        }
-        
-        @keyframes shimmer {
-            0% { background-position: -200% 0; }
-            100% { background-position: 200% 0; }
-        }
-        
         .header {
             text-align: center;
-            margin-bottom: 40px;
+            margin-bottom: 30px;
         }
         
         .logo-circle {
-            width: 90px;
-            height: 90px;
+            width: 70px;
+            height: 70px;
             background: linear-gradient(135deg, #9333ea, #c026d3);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 24px;
-            font-size: 42px;
+            margin: 0 auto 20px;
+            font-size: 36px;
             box-shadow: 0 15px 40px rgba(147, 51, 234, 0.5),
                         0 0 60px rgba(147, 51, 234, 0.3);
             animation: pulse 3s ease-in-out infinite;
@@ -203,29 +185,29 @@
         }
         
         .header h1 {
-            font-size: 32px;
+            font-size: 26px;
             font-weight: 700;
             color: #fff;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             letter-spacing: -0.5px;
         }
         
         .header p {
             color: rgba(255, 255, 255, 0.7);
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 400;
         }
         
         .form-group {
-            margin-bottom: 22px;
+            margin-bottom: 18px;
         }
         
         .form-group label {
             display: block;
-            margin-bottom: 12px;
+            margin-bottom: 10px;
             color: #fff;
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
             letter-spacing: 0.3px;
         }
         
@@ -235,7 +217,7 @@
         
         .input-wrapper input {
             width: 100%;
-            padding: 16px 18px 16px 52px;
+            padding: 14px 16px 14px 48px;
             background: rgba(255, 255, 255, 0.1);
             border: 2px solid rgba(255, 255, 255, 0.15);
             border-radius: 14px;
