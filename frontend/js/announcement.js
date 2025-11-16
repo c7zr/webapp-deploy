@@ -1,6 +1,8 @@
 // Announcement System - November 2025 Update
 function showAnnouncement() {
     console.log('[Announcement] Function called');
+    console.log('[Announcement] localStorage.token =', localStorage.getItem('token'));
+    console.log('[Announcement] All localStorage keys:', Object.keys(localStorage));
     
     // Only show if user is logged in
     const token = localStorage.getItem('token');
@@ -10,10 +12,11 @@ function showAnnouncement() {
     }
     
     // Reset for new announcement - November 15, 2025 - MAJOR UPDATE
-    const announcementVersion = 'v2.5-force-nov15-2025';
+    const announcementVersion = 'v2.6-debug-nov15-2025';
     const hasSeenThisVersion = localStorage.getItem('announcementVersion') === announcementVersion;
     
     console.log('[Announcement] Version:', announcementVersion);
+    console.log('[Announcement] Stored version:', localStorage.getItem('announcementVersion'));
     console.log('[Announcement] Has seen:', hasSeenThisVersion);
     
     // Only show once per version
