@@ -857,7 +857,13 @@ async def get_profile(token_data: dict = Depends(verify_token)):
         raise HTTPException(status_code=404, detail="User not found")
     
     # Check if user has active premium
-    has_active_premium = is_premium_active(user)
+    try:
+        has_active_premium = is_premium_active(user)
+        premium_expires_at = user["premiumExpiresAt"] if "premiumExpiresAt" in user.keys() else None
+    except Exception as e:
+        print(f"Error checking premium status: {e}")
+        has_active_premium = False
+        premium_expires_at = None
     
     return {
         "username": user["username"],
@@ -866,7 +872,7 @@ async def get_profile(token_data: dict = Depends(verify_token)):
         "reportCount": user["reportCount"],
         "createdAt": user["createdAt"],
         "isPremium": has_active_premium,
-        "premiumExpiresAt": user.get("premiumExpiresAt")
+        "premiumExpiresAt": premium_expires_at
     }
 
 @app.put("/v2/user/update")
