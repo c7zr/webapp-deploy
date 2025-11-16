@@ -2062,7 +2062,9 @@ async def admin_get_config(token_data: dict = Depends(verify_admin)):
         "rateLimitPerMinute": int(settings.get("rateLimitPerMinute", "60")),
         "maintenanceMode": settings.get("maintenanceMode", "false") == "true",
         "registrationEnabled": settings.get("registrationEnabled", "true") == "true",
-        "requireApproval": settings.get("requireApproval", "true") == "true"
+        "requireApproval": settings.get("requireApproval", "true") == "true",
+        "logIpAddresses": settings.get("logIpAddresses", "true") == "true",
+        "ipWhitelist": settings.get("ipWhitelist", "")
     }
 
 @app.put("/v2/admin/config")

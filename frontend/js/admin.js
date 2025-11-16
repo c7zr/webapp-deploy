@@ -398,6 +398,8 @@ async function loadSystemConfig() {
             document.getElementById('maintenanceMode').checked = data.maintenanceMode || false;
             document.getElementById('registrationEnabled').checked = data.registrationEnabled !== false;
             document.getElementById('requireApproval').checked = data.requireApproval || false;
+            document.getElementById('logIpAddresses').checked = data.logIpAddresses !== false;
+            document.getElementById('ipWhitelist').value = data.ipWhitelist || '';
         }
     } catch (error) {
         console.error('Error loading system config:', error);
@@ -415,7 +417,9 @@ async function saveSystemConfig(e) {
         rateLimitPerMinute: parseInt(document.getElementById('rateLimitPerMinute').value),
         maintenanceMode: document.getElementById('maintenanceMode').checked,
         registrationEnabled: document.getElementById('registrationEnabled').checked,
-        requireApproval: document.getElementById('requireApproval').checked
+        requireApproval: document.getElementById('requireApproval').checked,
+        logIpAddresses: document.getElementById('logIpAddresses').checked,
+        ipWhitelist: document.getElementById('ipWhitelist').value.trim()
     };
     
     try {
