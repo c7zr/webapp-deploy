@@ -7,7 +7,7 @@ function showAnnouncement() {
     }
     
     // Reset for new announcement - November 15, 2025 - MAJOR UPDATE
-    const announcementVersion = 'v2.2-bypasses-nov15-2025';
+    const announcementVersion = 'v2.3-final-nov15-2025';
     const hasSeenThisVersion = localStorage.getItem('announcementVersion') === announcementVersion;
     
     // Only show once per version
@@ -173,7 +173,7 @@ function showAnnouncement() {
                     line-height: 1.6;
                     margin: 0;
                 ">
-                    Mass reporting uses <strong style="color: #a855f7;">20 concurrent threads</strong> for ultra-fast execution. 200 reports in ~10 seconds!
+                    Mass reporting uses <strong style="color: #a855f7;">20 concurrent threads</strong> for ultra-fast execution. 500 reports in ~25 seconds!
                 </p>
             </div>
             
