@@ -6,336 +6,534 @@
     <title>SWATNFO - Register</title>
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        .modern-auth-container {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        
+        /* Animated Gradient Background - Matching Dashboard Theme */
+        .animated-bg {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(-45deg, #1a0033, #2d1b4e, #4a148c, #6a1b9a);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Floating orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.6;
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        .orb1 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(138, 43, 226, 0.8), transparent);
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .orb2 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(186, 85, 211, 0.6), transparent);
+            top: 60%;
+            right: 10%;
+            animation-delay: 7s;
+        }
+        
+        .orb3 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.7), transparent);
+            bottom: 20%;
+            left: 40%;
+            animation-delay: 14s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(50px, -50px) scale(1.1); }
+            66% { transform: translate(-30px, 30px) scale(0.9); }
+        }
+        
+        /* Particle effect */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: rise linear infinite;
+        }
+        
+        @keyframes rise {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) scale(1);
+                opacity: 0;
+            }
+        }
+        
+        .register-container {
+            position: relative;
+            z-index: 10;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
-            position: relative;
-            overflow: hidden;
         }
         
-        .modern-auth-box {
-            background: rgba(20, 20, 25, 0.85);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 48px 40px;
+        .register-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(30px);
+            border-radius: 32px;
+            padding: 50px 45px;
             width: 100%;
-            max-width: 480px;
-            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
-                        0 0 100px rgba(0, 201, 255, 0.15),
-                        inset 0 1px 1px rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(0, 201, 255, 0.2);
+            max-width: 460px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        0 0 80px rgba(138, 43, 226, 0.2),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.15);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
             position: relative;
-            animation: slideUpFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+            animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
         
-        @keyframes slideUpFadeIn {
-            from {
+        @keyframes cardEntrance {
+            0% {
                 opacity: 0;
-                transform: translateY(30px);
+                transform: translateY(40px) scale(0.9);
             }
-            to {
+            100% {
                 opacity: 1;
-                transform: translateY(0);
+                transform: translateY(0) scale(1);
             }
         }
         
-        .modern-header {
-            text-align: center;
-            margin-bottom: 32px;
+        .register-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #8a2be2, #da70d6, #ba55d3, #8a2be2);
+            border-radius: 32px 32px 0 0;
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
         }
         
-        .modern-logo {
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, #00c9ff, #0077ff);
-            border-radius: 20px;
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo-circle {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #9333ea, #c026d3);
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 36px;
-            box-shadow: 0 12px 32px rgba(0, 119, 255, 0.5);
-        }
-        
-        .modern-header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #fff, #00c9ff);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
-        }
-        
-        .modern-header p {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 15px;
-        }
-        
-        .modern-form-group {
-            margin-bottom: 20px;
-        }
-        
-        .modern-form-group label {
-            display: block;
-            margin-bottom: 10px;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        .modern-input-wrapper {
+            margin: 0 auto 24px;
+            font-size: 42px;
+            box-shadow: 0 15px 40px rgba(147, 51, 234, 0.5),
+                        0 0 60px rgba(147, 51, 234, 0.3);
+            animation: pulse 3s ease-in-out infinite;
             position: relative;
         }
         
-        .modern-input-wrapper input {
+        .logo-circle::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            padding: 3px;
+            background: linear-gradient(45deg, #9333ea, #c026d3, #e879f9);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.6;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+        
+        .header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            font-weight: 400;
+        }
+        
+        .form-group {
+            margin-bottom: 22px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 12px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .input-wrapper input {
             width: 100%;
-            padding: 14px 16px 14px 48px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1.5px solid rgba(0, 201, 255, 0.3);
-            border-radius: 12px;
+            padding: 16px 18px 16px 52px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
             color: #fff;
             font-size: 15px;
-            transition: all 0.3s ease;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 400;
         }
         
-        .modern-input-wrapper input:focus {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: #00c9ff;
-            box-shadow: 0 0 0 4px rgba(0, 201, 255, 0.15);
+        .input-wrapper input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .input-wrapper input:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #a855f7;
+            box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.2);
             outline: none;
+            transform: translateY(-1px);
         }
         
-        .modern-input-icon {
+        .input-icon {
             position: absolute;
-            left: 16px;
+            left: 18px;
             top: 50%;
             transform: translateY(-50%);
             font-size: 20px;
-            color: rgba(0, 201, 255, 0.7);
+            color: rgba(168, 85, 247, 0.8);
+            transition: all 0.3s ease;
         }
         
-        .password-strength-container {
-            margin-top: 12px;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.03);
-            border-radius: 8px;
-            border: 1px solid rgba(0, 201, 255, 0.2);
+        .input-wrapper input:focus ~ .input-icon {
+            color: #a855f7;
+            transform: translateY(-50%) scale(1.1);
         }
         
-        .strength-bar-wrapper {
-            height: 6px;
+        .password-strength {
+            margin-top: 8px;
+            height: 4px;
             background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
+            border-radius: 2px;
             overflow: hidden;
-            margin-bottom: 8px;
+            display: none;
         }
         
-        .strength-bar-fill {
+        .password-strength.active {
+            display: block;
+        }
+        
+        .strength-bar {
             height: 100%;
             width: 0%;
-            background: linear-gradient(90deg, #f44336, #ff9800, #4CAF50);
-            transition: width 0.3s ease;
-            border-radius: 3px;
+            transition: all 0.3s ease;
+            border-radius: 2px;
         }
+        
+        .strength-weak { width: 33%; background: #ef4444; }
+        .strength-medium { width: 66%; background: #f59e0b; }
+        .strength-strong { width: 100%; background: #10b981; }
         
         .strength-text {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            margin-bottom: 8px;
-        }
-        
-        .strength-requirements {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-        
-        .strength-requirements li {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.5);
-            padding: 4px 0;
-            padding-left: 18px;
-            position: relative;
-        }
-        
-        .strength-requirements li::before {
-            content: '○';
-            position: absolute;
-            left: 0;
-            color: rgba(255, 255, 255, 0.3);
-        }
-        
-        .strength-requirements li.met {
-            color: #4CAF50;
-        }
-        
-        .strength-requirements li.met::before {
-            content: '✓';
-            color: #4CAF50;
-        }
-        
-        .modern-checkbox {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-            font-size: 14px;
-            color: rgba(255, 255, 255, 0.8);
-        }
-        
-        .modern-checkbox input {
-            margin-right: 8px;
-            cursor: pointer;
-        }
-        
-        .modern-btn {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #00c9ff, #0077ff);
-            border: none;
-            border-radius: 12px;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 24px rgba(0, 119, 255, 0.4);
-            margin-top: 24px;
-        }
-        
-        .modern-btn:hover {
-            background: linear-gradient(135deg, #33d4ff, #0088ff);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(0, 119, 255, 0.6);
-        }
-        
-        .modern-btn:active {
-            transform: translateY(0);
-        }
-        
-        .modern-footer {
-            text-align: center;
-            margin-top: 28px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        .modern-footer p {
+            margin-top: 6px;
             color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
         }
         
-        .modern-footer a {
-            color: #00c9ff;
+        .checkbox-group {
+            margin: 24px 0;
+        }
+        
+        .checkbox-wrapper {
+            display: flex;
+            align-items: flex-start;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .checkbox-wrapper input {
+            margin-right: 10px;
+            margin-top: 4px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+            flex-shrink: 0;
+        }
+        
+        .checkbox-wrapper a {
+            color: #c084fc;
             text-decoration: none;
             font-weight: 600;
-            transition: color 0.2s;
+            transition: all 0.2s;
         }
         
-        .modern-footer a:hover {
-            color: #33d4ff;
+        .checkbox-wrapper a:hover {
+            color: #e9d5ff;
+            text-decoration: underline;
         }
         
-        .modern-watermark {
+        .submit-btn {
+            width: 100%;
+            padding: 17px;
+            background: linear-gradient(135deg, #9333ea, #c026d3);
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.4);
+            position: relative;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+        
+        .submit-btn::before {
+            content: '';
             position: absolute;
-            bottom: 20px;
-            right: 24px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.3);
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+        
+        .submit-btn:hover::before {
+            left: 100%;
+        }
+        
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #a855f7, #d946ef);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(147, 51, 234, 0.5);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .footer {
+            text-align: center;
+            margin-top: 32px;
+            padding-top: 24px;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+        }
+        
+        .footer p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            line-height: 1.8;
+        }
+        
+        .footer a {
+            color: #c084fc;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        
+        .footer a:hover {
+            color: #e9d5ff;
+            text-decoration: underline;
+        }
+        
+        .watermark {
+            position: absolute;
+            bottom: 25px;
+            right: 28px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.35);
             font-weight: 500;
         }
     </style>
 </head>
 <body>
-    <div class="gradient-background">
-        <div class="floating-shapes">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
+    <div class="animated-bg">
+        <div class="orb orb1"></div>
+        <div class="orb orb2"></div>
+        <div class="orb orb3"></div>
     </div>
     
-    <div class="modern-auth-container">
-        <div class="modern-auth-box">
-            <div class="modern-header">
-                <div class="modern-logo">🚀</div>
+    <div class="particles">
+        <div class="particle" style="left: 10%; animation-duration: 12s; animation-delay: 0s;"></div>
+        <div class="particle" style="left: 20%; animation-duration: 15s; animation-delay: 2s;"></div>
+        <div class="particle" style="left: 30%; animation-duration: 18s; animation-delay: 4s;"></div>
+        <div class="particle" style="left: 40%; animation-duration: 14s; animation-delay: 1s;"></div>
+        <div class="particle" style="left: 50%; animation-duration: 16s; animation-delay: 3s;"></div>
+        <div class="particle" style="left: 60%; animation-duration: 13s; animation-delay: 5s;"></div>
+        <div class="particle" style="left: 70%; animation-duration: 17s; animation-delay: 2s;"></div>
+        <div class="particle" style="left: 80%; animation-duration: 19s; animation-delay: 4s;"></div>
+        <div class="particle" style="left: 90%; animation-duration: 11s; animation-delay: 1s;"></div>
+    </div>
+    
+    <div class="register-container">
+        <div class="register-card">
+            <div class="header">
+                <div class="logo-circle">🚀</div>
                 <h1>Create Account</h1>
-                <p>Join the Instagram Report Bot platform</p>
+                <p>Join SWATNFO and start reporting today</p>
             </div>
             
-            <form id="registerForm" class="modern-form">
-                <div class="modern-form-group">
+            <form id="registerForm">
+                <div class="form-group">
                     <label for="username">Username</label>
-                    <div class="modern-input-wrapper">
-                        <span class="modern-input-icon">👤</span>
+                    <div class="input-wrapper">
                         <input type="text" id="username" name="username" placeholder="Choose a username" required autocomplete="username">
+                        <span class="input-icon">👤</span>
                     </div>
                 </div>
                 
-                <div class="modern-form-group">
-                    <label for="email">Email <span style="color: rgba(255,255,255,0.5); font-weight: 400;">(Optional)</span></label>
-                    <div class="modern-input-wrapper">
-                        <span class="modern-input-icon">✉️</span>
-                        <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <div class="input-wrapper">
+                        <input type="email" id="email" name="email" placeholder="your@email.com" required autocomplete="email">
+                        <span class="input-icon">📧</span>
                     </div>
                 </div>
                 
-                <div class="modern-form-group">
+                <div class="form-group">
                     <label for="password">Password</label>
-                    <div class="modern-input-wrapper">
-                        <span class="modern-input-icon">🔒</span>
+                    <div class="input-wrapper">
                         <input type="password" id="password" name="password" placeholder="Create a strong password" required autocomplete="new-password">
+                        <span class="input-icon">🔒</span>
                     </div>
-                    <div class="password-strength-container" id="passwordStrength" style="display: none;">
-                        <div class="strength-bar-wrapper">
-                            <div class="strength-bar-fill" id="strengthFill"></div>
-                        </div>
-                        <div class="strength-text" id="strengthText">Password strength: Weak</div>
-                        <ul class="strength-requirements">
-                            <li id="req-length">At least 8 characters</li>
-                            <li id="req-uppercase">One uppercase letter</li>
-                            <li id="req-lowercase">One lowercase letter</li>
-                            <li id="req-number">One number</li>
-                        </ul>
+                    <div id="passwordStrength" class="password-strength">
+                        <div id="strengthBar" class="strength-bar"></div>
                     </div>
+                    <div id="strengthText" class="strength-text"></div>
                 </div>
                 
-                <div class="modern-form-group">
+                <div class="form-group">
                     <label for="confirmPassword">Confirm Password</label>
-                    <div class="modern-input-wrapper">
-                        <span class="modern-input-icon">🔐</span>
-                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" required autocomplete="new-password">
+                    <div class="input-wrapper">
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Re-enter your password" required autocomplete="new-password">
+                        <span class="input-icon">✅</span>
                     </div>
                 </div>
                 
-                <div class="modern-form-group" style="margin-top: 20px;">
-                    <label class="modern-checkbox">
-                        <input type="checkbox" id="terms" required>
-                        <span>I agree to the <a href="tos.html" target="_blank" style="color: #00c9ff; text-decoration: none;">Terms of Service</a></span>
+                <div class="checkbox-group">
+                    <label class="checkbox-wrapper">
+                        <input type="checkbox" id="agreeTerms" required>
+                        <span>I agree to the <a href="tos.html" target="_blank">Terms of Service</a> and <a href="tos.html" target="_blank">Privacy Policy</a></span>
                     </label>
                 </div>
                 
-                <button type="submit" class="modern-btn">Create Account</button>
+                <button type="submit" class="submit-btn">Create Account</button>
                 
-                <div class="modern-footer">
-                    <p>Already have an account? <a href="/login">Sign in now</a></p>
+                <div class="footer">
+                    <p>Already have an account? <a href="/login">Sign in here</a></p>
                 </div>
             </form>
             
-            <div class="modern-watermark">Made by SWATNFO</div>
+            <div class="watermark">Made by SWATNFO</div>
         </div>
     </div>
     
-    <script src="js/config.js"></script>
-    <script src="js/register.js"></script>
+    <script type="module" src="js/config.js"></script>
+    <script type="module" src="js/register.js"></script>
+    <script>
+        // Password strength checker
+        const passwordInput = document.getElementById('password');
+        const strengthBar = document.getElementById('strengthBar');
+        const strengthText = document.getElementById('strengthText');
+        const passwordStrength = document.getElementById('passwordStrength');
+        
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            
+            if (password.length === 0) {
+                passwordStrength.classList.remove('active');
+                strengthText.textContent = '';
+                return;
+            }
+            
+            passwordStrength.classList.add('active');
+            
+            let strength = 0;
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]/) && password.match(/[A-Z]/)) strength++;
+            if (password.match(/[0-9]/)) strength++;
+            if (password.match(/[^a-zA-Z0-9]/)) strength++;
+            
+            strengthBar.className = 'strength-bar';
+            
+            if (strength <= 2) {
+                strengthBar.classList.add('strength-weak');
+                strengthText.textContent = 'Weak password';
+                strengthText.style.color = '#ef4444';
+            } else if (strength === 3) {
+                strengthBar.classList.add('strength-medium');
+                strengthText.textContent = 'Medium strength';
+                strengthText.style.color = '#f59e0b';
+            } else {
+                strengthBar.classList.add('strength-strong');
+                strengthText.textContent = 'Strong password';
+                strengthText.style.color = '#10b981';
+            }
+        });
+    </script>
 </body>
 </html>

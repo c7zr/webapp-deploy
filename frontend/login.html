@@ -6,261 +6,439 @@
     <title>SWATNFO - Login</title>
     <link rel="stylesheet" href="css/styles.css">
     <style>
-        .modern-auth-container {
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            overflow: hidden;
+        }
+        
+        /* Animated Gradient Mesh Background */
+        .animated-bg {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(-45deg, #1a0033, #2d1b4e, #4a148c, #6a1b9a);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        /* Floating orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(60px);
+            opacity: 0.6;
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        .orb1 {
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(138, 43, 226, 0.8), transparent);
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+        }
+        
+        .orb2 {
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle, rgba(186, 85, 211, 0.6), transparent);
+            top: 60%;
+            right: 10%;
+            animation-delay: 7s;
+        }
+        
+        .orb3 {
+            width: 250px;
+            height: 250px;
+            background: radial-gradient(circle, rgba(147, 51, 234, 0.7), transparent);
+            bottom: 20%;
+            left: 40%;
+            animation-delay: 14s;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(50px, -50px) scale(1.1); }
+            66% { transform: translate(-30px, 30px) scale(0.9); }
+        }
+        
+        /* Particle effect */
+        .particles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+        }
+        
+        .particle {
+            position: absolute;
+            width: 3px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 50%;
+            animation: rise linear infinite;
+        }
+        
+        @keyframes rise {
+            0% {
+                transform: translateY(100vh) scale(0);
+                opacity: 0;
+            }
+            50% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100vh) scale(1);
+                opacity: 0;
+            }
+        }
+        
+        <style>
+        .login-container {
+            position: relative;
+            z-index: 10;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
+        }
+        
+        .login-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(30px);
+            border-radius: 32px;
+            padding: 50px 45px;
+            width: 100%;
+            max-width: 460px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4),
+                        0 0 80px rgba(138, 43, 226, 0.2),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.15);
+            border: 1.5px solid rgba(255, 255, 255, 0.18);
+            position: relative;
+            animation: cardEntrance 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @keyframes cardEntrance {
+            0% {
+                opacity: 0;
+                transform: translateY(40px) scale(0.9);
+            }
+            100% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #8a2be2, #da70d6, #ba55d3, #8a2be2);
+            border-radius: 32px 32px 0 0;
+            background-size: 200% 100%;
+            animation: shimmer 3s linear infinite;
+        }
+        
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 45px;
+        }
+        
+        .logo-circle {
+            width: 90px;
+            height: 90px;
+            background: linear-gradient(135deg, #9333ea, #c026d3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 42px;
+            box-shadow: 0 15px 40px rgba(147, 51, 234, 0.5),
+                        0 0 60px rgba(147, 51, 234, 0.3);
+            animation: pulse 3s ease-in-out infinite;
+            position: relative;
+        }
+        
+        .logo-circle::after {
+            content: '';
+            position: absolute;
+            inset: -3px;
+            border-radius: 50%;
+            padding: 3px;
+            background: linear-gradient(45deg, #9333ea, #c026d3, #e879f9);
+            -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+            -webkit-mask-composite: xor;
+            mask-composite: exclude;
+            opacity: 0.6;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 10px;
+            letter-spacing: -0.5px;
+        }
+        
+        .header p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 16px;
+            font-weight: 400;
+        }
+        
+        .form-group {
+            margin-bottom: 26px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 12px;
+            color: #fff;
+            font-weight: 600;
+            font-size: 14px;
+            letter-spacing: 0.3px;
+        }
+        
+        .input-wrapper {
+            position: relative;
+        }
+        
+        .input-wrapper input {
+            width: 100%;
+            padding: 16px 18px 16px 52px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.15);
+            border-radius: 14px;
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            font-weight: 400;
+        }
+        
+        .input-wrapper input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        
+        .input-wrapper input:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #a855f7;
+            box-shadow: 0 0 0 4px rgba(168, 85, 247, 0.2);
+            outline: none;
+            transform: translateY(-1px);
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            color: rgba(168, 85, 247, 0.8);
+            transition: all 0.3s ease;
+        }
+        
+        .input-wrapper input:focus ~ .input-icon {
+            color: #a855f7;
+            transform: translateY(-50%) scale(1.1);
+        }
+        
+        .form-options {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .checkbox-wrapper input {
+            margin-right: 8px;
+            cursor: pointer;
+            width: 18px;
+            height: 18px;
+        }
+        
+        .forgot-link {
+            color: #c084fc;
+            text-decoration: none;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+        
+        .forgot-link:hover {
+            color: #e9d5ff;
+        }
+        
+        .submit-btn {
+            width: 100%;
+            padding: 17px;
+            background: linear-gradient(135deg, #9333ea, #c026d3);
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.4);
             position: relative;
             overflow: hidden;
         }
         
-        .modern-auth-box {
-            background: rgba(20, 20, 25, 0.85);
-            backdrop-filter: blur(20px);
-            border-radius: 24px;
-            padding: 48px 40px;
-            width: 100%;
-            max-width: 440px;
-            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
-                        0 0 100px rgba(138, 43, 226, 0.15),
-                        inset 0 1px 1px rgba(255, 255, 255, 0.1);
-            border: 1px solid rgba(138, 43, 226, 0.2);
-            position: relative;
-            animation: slideUpFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        
-        @keyframes slideUpFadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .modern-header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        
-        .modern-logo {
-            width: 72px;
-            height: 72px;
-            background: linear-gradient(135deg, #8a2be2, #6a1bb2);
-            border-radius: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 36px;
-            box-shadow: 0 12px 32px rgba(138, 43, 226, 0.4);
-        }
-        
-        .modern-header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            background: linear-gradient(135deg, #fff, #8a2be2);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
-        }
-        
-        .modern-header p {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 15px;
-        }
-        
-        .modern-form-group {
-            margin-bottom: 24px;
-        }
-        
-        .modern-form-group label {
-            display: block;
-            margin-bottom: 10px;
-            color: rgba(255, 255, 255, 0.9);
-            font-weight: 500;
-            font-size: 14px;
-        }
-        
-        .modern-input-wrapper {
-            position: relative;
-        }
-        
-        .modern-input-wrapper input {
-            width: 100%;
-            padding: 14px 16px 14px 48px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1.5px solid rgba(138, 43, 226, 0.3);
-            border-radius: 12px;
-            color: #fff;
-            font-size: 15px;
-            transition: all 0.3s ease;
-        }
-        
-        .modern-input-wrapper input:focus {
-            background: rgba(255, 255, 255, 0.08);
-            border-color: #8a2be2;
-            box-shadow: 0 0 0 4px rgba(138, 43, 226, 0.15);
-            outline: none;
-        }
-        
-        .modern-input-icon {
+        .submit-btn::before {
+            content: '';
             position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            font-size: 20px;
-            color: rgba(138, 43, 226, 0.7);
-        }
-        
-        .modern-form-options {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 28px;
-            font-size: 14px;
-        }
-        
-        .modern-checkbox {
-            display: flex;
-            align-items: center;
-            cursor: pointer;
-        }
-        
-        .modern-checkbox input {
-            margin-right: 8px;
-            cursor: pointer;
-        }
-        
-        .modern-forgot-link {
-            color: #8a2be2;
-            text-decoration: none;
-            transition: color 0.2s;
-        }
-        
-        .modern-forgot-link:hover {
-            color: #a255f5;
-        }
-        
-        .modern-btn {
+            top: 0;
+            left: -100%;
             width: 100%;
-            padding: 16px;
-            background: linear-gradient(135deg, #8a2be2, #6a1bb2);
-            border: none;
-            border-radius: 12px;
-            color: #fff;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 8px 24px rgba(138, 43, 226, 0.4);
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.5s;
         }
         
-        .modern-btn:hover {
-            background: linear-gradient(135deg, #9d4eed, #7a2bc2);
-            transform: translateY(-2px);
-            box-shadow: 0 12px 32px rgba(138, 43, 226, 0.5);
+        .submit-btn:hover::before {
+            left: 100%;
         }
         
-        .modern-btn:active {
-            transform: translateY(0);
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #a855f7, #d946ef);
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(147, 51, 234, 0.5);
         }
         
-        .modern-footer {
+        .submit-btn:active {
+            transform: translateY(-1px);
+        }
+        
+        .footer {
             text-align: center;
-            margin-top: 32px;
-            padding-top: 24px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 35px;
+            padding-top: 28px;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
         }
         
-        .modern-footer p {
-            color: rgba(255, 255, 255, 0.6);
+        .footer p {
+            color: rgba(255, 255, 255, 0.7);
             font-size: 14px;
+            line-height: 1.8;
         }
         
-        .modern-footer a {
-            color: #8a2be2;
+        .footer a {
+            color: #c084fc;
             text-decoration: none;
             font-weight: 600;
-            transition: color 0.2s;
+            transition: all 0.2s;
         }
         
-        .modern-footer a:hover {
-            color: #a255f5;
+        .footer a:hover {
+            color: #e9d5ff;
+            text-decoration: underline;
         }
         
-        .modern-watermark {
+        .watermark {
             position: absolute;
-            bottom: 20px;
-            right: 24px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.3);
+            bottom: 25px;
+            right: 28px;
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.35);
             font-weight: 500;
         }
     </style>
 </head>
 <body>
-    <div class="gradient-background">
-        <div class="floating-shapes">
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-            <span></span>
-        </div>
+    <div class="animated-bg">
+        <div class="orb orb1"></div>
+        <div class="orb orb2"></div>
+        <div class="orb orb3"></div>
     </div>
     
-    <div class="modern-auth-container">
-        <div class="modern-auth-box">
-            <div class="modern-header">
-                <div class="modern-logo">📱</div>
+    <div class="particles">
+        <div class="particle" style="left: 10%; animation-duration: 12s; animation-delay: 0s;"></div>
+        <div class="particle" style="left: 20%; animation-duration: 15s; animation-delay: 2s;"></div>
+        <div class="particle" style="left: 30%; animation-duration: 18s; animation-delay: 4s;"></div>
+        <div class="particle" style="left: 40%; animation-duration: 14s; animation-delay: 1s;"></div>
+        <div class="particle" style="left: 50%; animation-duration: 16s; animation-delay: 3s;"></div>
+        <div class="particle" style="left: 60%; animation-duration: 13s; animation-delay: 5s;"></div>
+        <div class="particle" style="left: 70%; animation-duration: 17s; animation-delay: 2s;"></div>
+        <div class="particle" style="left: 80%; animation-duration: 19s; animation-delay: 4s;"></div>
+        <div class="particle" style="left: 90%; animation-duration: 11s; animation-delay: 1s;"></div>
+    </div>
+    
+    <div class="login-container">
+        <div class="login-card">
+            <div class="header">
+                <div class="logo-circle">📱</div>
                 <h1>Welcome Back</h1>
-                <p>Sign in to your Instagram Report Bot account</p>
+                <p>Sign in to continue to your account</p>
             </div>
             
-            <form id="loginForm" class="modern-form">
-                <div class="modern-form-group">
+            <form id="loginForm">
+                <div class="form-group">
                     <label for="username">Username</label>
-                    <div class="modern-input-wrapper">
-                        <span class="modern-input-icon">👤</span>
+                    <div class="input-wrapper">
                         <input type="text" id="username" name="username" placeholder="Enter your username" required autocomplete="username">
+                        <span class="input-icon">👤</span>
                     </div>
                 </div>
                 
-                <div class="modern-form-group">
+                <div class="form-group">
                     <label for="password">Password</label>
-                    <div class="modern-input-wrapper">
-                        <span class="modern-input-icon">🔒</span>
+                    <div class="input-wrapper">
                         <input type="password" id="password" name="password" placeholder="Enter your password" required autocomplete="current-password">
+                        <span class="input-icon">🔒</span>
                     </div>
                 </div>
                 
-                <div class="modern-form-options">
-                    <label class="modern-checkbox">
+                <div class="form-options">
+                    <label class="checkbox-wrapper">
                         <input type="checkbox" id="remember">
                         <span>Remember me</span>
                     </label>
-                    <a href="#" class="modern-forgot-link">Forgot password?</a>
                 </div>
                 
-                <button type="submit" class="modern-btn">Sign In</button>
+                <button type="submit" class="submit-btn">Sign In</button>
                 
-                <div class="modern-footer">
+                <div class="footer">
                     <p>Don't have an account? <a href="/register">Create one now</a></p>
-                    <p style="margin-top: 12px; font-size: 13px;">By continuing, you agree to our <a href="tos.html" target="_blank">Terms of Service</a></p>
+                    <p>By continuing, you agree to our <a href="tos.html" target="_blank">Terms of Service</a></p>
                 </div>
             </form>
             
-            <div class="modern-watermark">Made by SWATNFO</div>
+            <div class="watermark">Made by SWATNFO</div>
         </div>
     </div>
     
