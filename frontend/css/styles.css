@@ -17,20 +17,25 @@
     --gray: #2d2d2d;
     --light-gray: #444444;
     --white: #ffffff;
-    --text-gray: #cccccc;
+    --text-primary: #ffffff;
+    --text-secondary: #e0e0e0;
+    --text-muted: #a0a0a0;
     --success: #2ecc71;
     --danger: #e74c3c;
     --warning: #f39c12;
+    --info: #3498db;
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Segoe UI', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--black);
-    color: var(--white);
+    color: var(--text-primary);
     min-height: 100vh;
     line-height: 1.6;
     position: relative;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* Smooth Elegant Background */

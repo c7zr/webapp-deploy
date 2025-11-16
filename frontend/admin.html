@@ -103,6 +103,7 @@
                 <button class="tab-btn" data-tab="reports">All Reports</button>
                 <button class="tab-btn" data-tab="blacklist">Blacklist</button>
                 <button class="tab-btn" data-tab="system">System Settings</button>
+                <button class="tab-btn" data-tab="iplogs" id="ipLogsTab" style="display: none;">IP Logs (Owner)</button>
                 <button class="tab-btn" data-tab="logs">System Logs</button>
             </div>
         
@@ -483,6 +484,35 @@
                     
                     <button type="submit" class="btn btn-primary">Save Configuration</button>
                 </form>
+            </div>
+        </div>
+        
+        
+        <!-- IP Logs Tab (Owner Only) -->
+        <div id="iplogsTab" class="admin-tab-content">
+            <div class="ip-logs-container">
+                <div class="section-header">
+                    <h2>IP Address Logs <span class="owner-only-badge">OWNER ONLY</span></h2>
+                    <div class="section-actions">
+                        <input type="text" id="ipLogSearch" placeholder="Search by username..." class="search-input">
+                        <select id="ipActionFilter" class="select-input">
+                            <option value="all">All Actions</option>
+                            <option value="login">Login</option>
+                            <option value="register">Register</option>
+                        </select>
+                        <button id="exportIpLogsBtn" class="btn btn-secondary">Export CSV</button>
+                    </div>
+                </div>
+                
+                <div id="ipLogsContainer">
+                    <p style="text-align: center; color: var(--text-secondary); padding: 2rem;">Loading IP logs...</p>
+                </div>
+                
+                <div class="pagination" id="ipLogsPagination">
+                    <button id="ipLogsPrevBtn" class="btn btn-secondary" disabled>Previous</button>
+                    <span id="ipLogsPageInfo">Page 1</span>
+                    <button id="ipLogsNextBtn" class="btn btn-secondary">Next</button>
+                </div>
             </div>
         </div>
         

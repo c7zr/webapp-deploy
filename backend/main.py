@@ -325,6 +325,20 @@ def init_db():
         )
     ''')
     
+    # IP Logs table for security tracking
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS ip_logs (
+            id TEXT PRIMARY KEY,
+            userId TEXT,
+            username TEXT NOT NULL,
+            ipAddress TEXT NOT NULL,
+            action TEXT NOT NULL,
+            userAgent TEXT,
+            timestamp TEXT NOT NULL,
+            success INTEGER DEFAULT 1
+        )
+    ''')
+    
     # Initialize default settings
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('maintenanceMode', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('registrationEnabled', 'true', ?)", (datetime.now(timezone.utc).isoformat(),))
@@ -711,6 +725,11 @@ async def verify_admin(token_data: dict = Depends(verify_token)):
         raise HTTPException(status_code=403, detail="Admin access required")
     return token_data
 
+async def verify_owner(token_data: dict = Depends(verify_token)):
+    if token_data["role"] != "owner":
+        raise HTTPException(status_code=403, detail="Owner access required")
+    return token_data
+
 # Routes
 # Maintenance Mode Middleware
 @app.middleware("http")
@@ -921,6 +940,14 @@ async def register(user: UserRegister, request: Request):
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (user_id, user.username, email, hashed_pw, "user", 1, 0, is_approved, approved_by, approved_at, datetime.now(timezone.utc).isoformat(), 0, 0, None, None, is_premium, premium_expires_at, client_ip))
         
+        # Log IP address for registration
+        log_id = str(uuid.uuid4())
+        user_agent = request.headers.get('user-agent', 'Unknown')
+        cursor.execute(
+            "INSERT INTO ip_logs (id, userId, username, ipAddress, action, userAgent, timestamp, success) VALUES (?, ?, ?, ?, 'register', ?, ?, 1)",
+            (log_id, user_id, user.username, client_ip, user_agent, datetime.now(timezone.utc).isoformat())
+        )
+        
         conn.commit()
         conn.close()
         
@@ -946,7 +973,7 @@ async def register(user: UserRegister, request: Request):
         )
 
 @app.post("/v2/auth/login")
-async def login(credentials: UserLogin):
+async def login(credentials: UserLogin, request: Request):
     # Rate limiting for login attempts
     if not check_rate_limit(f"login_{credentials.username}", max_requests=5, window_seconds=300):
         raise HTTPException(status_code=429, detail="Too many login attempts. Please try again in 5 minutes.")
@@ -1017,6 +1044,16 @@ async def login(credentials: UserLogin):
             "UPDATE users SET failedLoginAttempts = 0, lastFailedLogin = NULL, accountLockedUntil = NULL WHERE id = ?", 
             (user["id"],)
         )
+    
+    # Log successful login IP
+    log_id = str(uuid.uuid4())
+    client_ip = request.client.host
+    user_agent = request.headers.get('user-agent', 'Unknown')
+    cursor.execute(
+        "INSERT INTO ip_logs (id, userId, username, ipAddress, action, userAgent, timestamp, success) VALUES (?, ?, ?, ?, 'login', ?, ?, 1)",
+        (log_id, user["id"], user["username"], client_ip, user_agent, datetime.now(timezone.utc).isoformat())
+    )
+    
     conn.commit()
     conn.close()
     
@@ -2520,9 +2557,16 @@ async def admin_get_config(token_data: dict = Depends(verify_admin)):
         "rateLimitPerMinute": int(settings.get("rateLimitPerMinute", "60")),
         "maintenanceMode": settings.get("maintenanceMode", "false") == "true",
         "registrationEnabled": settings.get("registrationEnabled", "true") == "true",
-        "requireApproval": settings.get("requireApproval", "true") == "true",
+        "requireApproval": settings.get("requireApproval", "false") == "true",
         "logIpAddresses": settings.get("logIpAddresses", "true") == "true",
-        "ipWhitelist": settings.get("ipWhitelist", "")
+        "ipWhitelist": settings.get("ipWhitelist", ""),
+        "maxLoginAttempts": int(settings.get("maxLoginAttempts", "5")),
+        "sessionTimeout": int(settings.get("sessionTimeout", "86400")),
+        "enableApiRateLimit": settings.get("enableApiRateLimit", "true") == "true",
+        "siteName": settings.get("siteName", "SWATNFO"),
+        "supportEmail": settings.get("supportEmail", "support@swatnfo.com"),
+        "enableAnnouncements": settings.get("enableAnnouncements", "true") == "true",
+        "defaultUserRole": settings.get("defaultUserRole", "user")
     }
 
 @app.put("/v2/admin/config")
@@ -2727,6 +2771,46 @@ async def remove_from_blacklist(username: str, token_data: dict = Depends(verify
     
     return {"message": f"@{username} removed from blacklist"}
 
+@app.get("/v2/admin/ip-logs")
+async def get_ip_logs(limit: int = 100, offset: int = 0, username: str = None, token_data: dict = Depends(verify_owner)):
+    """Get IP logs - owner only endpoint for security tracking"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    try:
+        if username:
+            cursor.execute(
+                "SELECT * FROM ip_logs WHERE username = ? ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+                (username, limit, offset)
+            )
+        else:
+            cursor.execute(
+                "SELECT * FROM ip_logs ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+                (limit, offset)
+            )
+        
+        logs = [dict(row) for row in cursor.fetchall()]
+        
+        # Get total count
+        if username:
+            cursor.execute("SELECT COUNT(*) as total FROM ip_logs WHERE username = ?", (username,))
+        else:
+            cursor.execute("SELECT COUNT(*) as total FROM ip_logs")
+        
+        total = cursor.fetchone()["total"]
+        
+        conn.close()
+        
+        return {
+            "logs": logs,
+            "total": total,
+            "limit": limit,
+            "offset": offset
+        }
+    except Exception as e:
+        conn.close()
+        raise HTTPException(status_code=500, detail=f"Error fetching IP logs: {str(e)}")
+
 @app.delete("/v2/admin/logs")
 async def admin_clear_logs(token_data: dict = Depends(verify_admin)):
     return {"message": "Logs cleared successfully"}
@@ -2745,7 +2829,7 @@ def is_maintenance_mode() -> bool:
         return False
 
 def get_maintenance_page() -> HTMLResponse:
-    """Return beautiful maintenance page"""
+    """Return beautiful maintenance page with unique asymmetric design"""
     html = """
     <!DOCTYPE html>
     <html lang="en">
@@ -2760,9 +2844,17 @@ def get_maintenance_page() -> HTMLResponse:
                 box-sizing: border-box;
             }
             
+            :root {
+                --purple-primary: #8a2be2;
+                --purple-light: #9d4edd;
+                --purple-dark: #6a1bb2;
+                --bg-dark: #0a0a14;
+                --bg-card: rgba(255, 255, 255, 0.02);
+            }
+            
             body {
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-                background: linear-gradient(135deg, #0f0f1e 0%, #1a1a2e 50%, #16213e 100%);
+                font-family: 'Segoe UI', 'Apple Color Emoji', 'Segoe UI Emoji', Tahoma, Geneva, Verdana, sans-serif;
+                background: linear-gradient(135deg, #0a0a14 0%, #1a1a2e 50%, #16213e 100%);
                 color: white;
                 min-height: 100vh;
                 display: flex;
@@ -2772,83 +2864,148 @@ def get_maintenance_page() -> HTMLResponse:
                 position: relative;
             }
             
-            .stars {
+            /* Animated Background Particles */
+            .particles {
                 position: absolute;
                 width: 100%;
                 height: 100%;
                 overflow: hidden;
+                z-index: 0;
             }
             
-            .star {
+            .particle {
                 position: absolute;
-                background: white;
+                background: radial-gradient(circle, rgba(138, 43, 226, 0.6) 0%, transparent 70%);
                 border-radius: 50%;
-                animation: twinkle 3s infinite;
+                animation: float 20s infinite;
             }
             
-            @keyframes twinkle {
-                0%, 100% { opacity: 0.3; }
-                50% { opacity: 1; }
+            .particle:nth-child(1) { width: 300px; height: 300px; top: 10%; left: 10%; animation-delay: 0s; }
+            .particle:nth-child(2) { width: 200px; height: 200px; top: 60%; left: 70%; animation-delay: 5s; }
+            .particle:nth-child(3) { width: 250px; height: 250px; top: 40%; left: 50%; animation-delay: 10s; }
+            
+            @keyframes float {
+                0%, 100% { transform: translate(0, 0) scale(1); opacity: 0.3; }
+                25% { transform: translate(50px, -50px) scale(1.1); opacity: 0.5; }
+                50% { transform: translate(-30px, 30px) scale(0.9); opacity: 0.4; }
+                75% { transform: translate(40px, 20px) scale(1.05); opacity: 0.45; }
             }
             
-            .container {
-                text-align: center;
+            /* Main Container - Asymmetric Layout */
+            .maintenance-container {
+                position: relative;
                 z-index: 10;
-                max-width: 600px;
-                padding: 40px;
-                background: rgba(26, 26, 46, 0.8);
-                border-radius: 20px;
-                border: 2px solid rgba(168, 85, 247, 0.3);
-                box-shadow: 0 20px 60px rgba(168, 85, 247, 0.2);
-                backdrop-filter: blur(10px);
+                max-width: 1200px;
+                width: 90%;
+                display: grid;
+                grid-template-columns: 1fr 1.2fr;
+                gap: 2rem;
+                padding: 2rem;
+            }
+            
+            /* Left Section - Status Card */
+            .status-card {
+                background: var(--bg-card);
+                border: 1px solid rgba(138, 43, 226, 0.3);
+                border-radius: 32px;
+                padding: 3rem 2.5rem;
+                position: relative;
+                overflow: hidden;
+                backdrop-filter: blur(20px);
+                box-shadow: 0 25px 50px rgba(138, 43, 226, 0.2);
+                animation: cardSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            }
+            
+            @keyframes cardSlideIn {
+                0% { opacity: 0; transform: translateX(-50px) scale(0.9); }
+                100% { opacity: 1; transform: translateX(0) scale(1); }
+            }
+            
+            .status-card::before {
+                content: '';
+                position: absolute;
+                top: -50%;
+                right: -50%;
+                width: 200%;
+                height: 200%;
+                background: radial-gradient(circle, rgba(138, 43, 226, 0.1) 0%, transparent 50%);
+                animation: rotateGlow 15s linear infinite;
+            }
+            
+            @keyframes rotateGlow {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            
+            .logo-container {
+                position: relative;
+                z-index: 1;
+                text-align: center;
+                margin-bottom: 2rem;
             }
             
             .logo {
-                font-size: 80px;
-                margin-bottom: 20px;
-                animation: pulse 2s ease-in-out infinite;
+                font-size: 100px;
+                filter: drop-shadow(0 0 30px rgba(138, 43, 226, 0.6));
+                animation: iconPulse 3s ease-in-out infinite;
             }
             
-            @keyframes pulse {
-                0%, 100% { transform: scale(1); }
-                50% { transform: scale(1.1); }
+            @keyframes iconPulse {
+                0%, 100% { transform: scale(1) rotate(0deg); }
+                50% { transform: scale(1.15) rotate(5deg); }
             }
             
-            h1 {
-                font-size: 2.5em;
-                margin-bottom: 20px;
-                background: linear-gradient(135deg, #a855f7 0%, #e879f9 100%);
+            .brand-name {
+                position: relative;
+                z-index: 1;
+                font-size: 3rem;
+                font-weight: 700;
+                background: linear-gradient(135deg, #fff 0%, var(--purple-primary) 100%);
                 -webkit-background-clip: text;
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
+                margin-bottom: 0.5rem;
+                animation: titleReveal 1s ease-out;
             }
             
-            .subtitle {
-                font-size: 1.2em;
-                color: #999;
-                margin-bottom: 30px;
+            @keyframes titleReveal {
+                0% { opacity: 0; transform: translateY(20px); }
+                100% { opacity: 1; transform: translateY(0); }
             }
             
-            .features {
-                margin: 30px 0;
-                padding: 20px;
-                background: rgba(168, 85, 247, 0.1);
-                border-radius: 12px;
-                border: 1px solid rgba(168, 85, 247, 0.2);
+            .status-badge {
+                position: relative;
+                z-index: 1;
+                display: inline-block;
+                padding: 0.75rem 1.5rem;
+                background: rgba(251, 191, 36, 0.2);
+                border: 1px solid rgba(251, 191, 36, 0.4);
+                border-radius: 50px;
+                color: #fbbf24;
+                font-weight: 600;
+                font-size: 0.95rem;
+                margin-bottom: 2rem;
+                animation: badgePulse 2s ease-in-out infinite;
             }
             
-            .feature-item {
-                padding: 10px;
-                color: #e879f9;
-                font-size: 1.1em;
+            @keyframes badgePulse {
+                0%, 100% { box-shadow: 0 0 20px rgba(251, 191, 36, 0.3); }
+                50% { box-shadow: 0 0 40px rgba(251, 191, 36, 0.5); }
+            }
+            
+            .spinner-container {
+                position: relative;
+                z-index: 1;
+                margin: 2rem auto;
+                width: 80px;
+                height: 80px;
             }
             
             .spinner {
-                margin: 30px auto;
-                width: 60px;
-                height: 60px;
-                border: 4px solid rgba(168, 85, 247, 0.2);
-                border-top: 4px solid #a855f7;
+                width: 80px;
+                height: 80px;
+                border: 4px solid rgba(138, 43, 226, 0.2);
+                border-top: 4px solid var(--purple-primary);
                 border-radius: 50%;
                 animation: spin 1s linear infinite;
             }
@@ -2858,60 +3015,213 @@ def get_maintenance_page() -> HTMLResponse:
                 100% { transform: rotate(360deg); }
             }
             
-            .message {
-                font-size: 1.1em;
-                color: #ccc;
-                line-height: 1.6;
+            /* Right Section - Info Grid */
+            .info-section {
+                display: flex;
+                flex-direction: column;
+                gap: 1.5rem;
+                animation: cardSlideIn 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) 0.2s both;
             }
             
-            .brand {
-                margin-top: 40px;
-                font-size: 0.9em;
-                color: #666;
+            .message-card {
+                background: var(--bg-card);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 24px;
+                padding: 2rem;
+                position: relative;
+                overflow: hidden;
+                backdrop-filter: blur(20px);
+            }
+            
+            .message-card::after {
+                content: '';
+                position: absolute;
+                bottom: 0;
+                left: 0;
+                right: 0;
+                height: 3px;
+                background: linear-gradient(90deg, transparent, var(--purple-primary), transparent);
+                opacity: 0.5;
+            }
+            
+            .message-title {
+                font-size: 1.8rem;
+                font-weight: 600;
+                margin-bottom: 1rem;
+                color: #fff;
+            }
+            
+            .message-text {
+                font-size: 1.1rem;
+                color: rgba(255, 255, 255, 0.7);
+                line-height: 1.8;
+                margin-bottom: 0;
+            }
+            
+            /* Features Grid */
+            .features-grid {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 1rem;
+            }
+            
+            .feature-box {
+                background: rgba(138, 43, 226, 0.1);
+                border: 1px solid rgba(138, 43, 226, 0.3);
+                border-radius: 16px;
+                padding: 1.5rem;
+                text-align: center;
+                transition: all 0.3s ease;
+                animation: featureAppear 0.6s ease both;
+            }
+            
+            .feature-box:nth-child(1) { animation-delay: 0.4s; }
+            .feature-box:nth-child(2) { animation-delay: 0.5s; }
+            .feature-box:nth-child(3) { animation-delay: 0.6s; }
+            .feature-box:nth-child(4) { animation-delay: 0.7s; }
+            
+            @keyframes featureAppear {
+                0% { opacity: 0; transform: scale(0.8); }
+                100% { opacity: 1; transform: scale(1); }
+            }
+            
+            .feature-box:hover {
+                transform: translateY(-5px);
+                border-color: rgba(138, 43, 226, 0.6);
+                box-shadow: 0 10px 30px rgba(138, 43, 226, 0.3);
+            }
+            
+            .feature-icon {
+                font-size: 2.5rem;
+                margin-bottom: 0.75rem;
+                filter: drop-shadow(0 0 10px rgba(138, 43, 226, 0.4));
+            }
+            
+            .feature-label {
+                font-size: 0.95rem;
+                color: var(--purple-light);
+                font-weight: 600;
+            }
+            
+            /* ETA Card */
+            .eta-card {
+                background: linear-gradient(135deg, rgba(138, 43, 226, 0.15) 0%, rgba(157, 78, 221, 0.1) 100%);
+                border: 1px solid rgba(138, 43, 226, 0.4);
+                border-radius: 20px;
+                padding: 1.5rem;
+                text-align: center;
+            }
+            
+            .eta-label {
+                font-size: 0.9rem;
+                color: rgba(255, 255, 255, 0.6);
+                margin-bottom: 0.5rem;
+                text-transform: uppercase;
+                letter-spacing: 1px;
+            }
+            
+            .eta-time {
+                font-size: 2rem;
+                font-weight: 700;
+                background: linear-gradient(135deg, #fff 0%, var(--purple-light) 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                background-clip: text;
+            }
+            
+            /* Footer */
+            .footer {
+                position: relative;
+                z-index: 1;
+                grid-column: 1 / -1;
+                text-align: center;
+                margin-top: 2rem;
+                padding-top: 2rem;
+                border-top: 1px solid rgba(255, 255, 255, 0.1);
+                color: rgba(255, 255, 255, 0.5);
+                font-size: 0.9rem;
+            }
+            
+            /* Responsive Design */
+            @media (max-width: 968px) {
+                .maintenance-container {
+                    grid-template-columns: 1fr;
+                    padding: 1rem;
+                }
+                
+                .features-grid {
+                    grid-template-columns: 1fr;
+                }
+                
+                .brand-name {
+                    font-size: 2.5rem;
+                }
+                
+                .logo {
+                    font-size: 80px;
+                }
             }
         </style>
     </head>
     <body>
-        <div class="stars" id="stars"></div>
-        
-        <div class="container">
-            <div class="logo">🔧</div>
-            <h1>Under Maintenance</h1>
-            <p class="subtitle">We're making things better!</p>
-            
-            <div class="features">
-                <div class="feature-item">✨ New Features Coming</div>
-                <div class="feature-item">⚡ Performance Improvements</div>
-                <div class="feature-item">🔒 Security Enhancements</div>
-            </div>
-            
-            <div class="spinner"></div>
-            
-            <p class="message">
-                We're currently performing scheduled maintenance to bring you<br>
-                exciting new updates and improvements.<br><br>
-                We'll be back online shortly. Thank you for your patience!
-            </p>
-            
-            <div class="brand">
-                <strong>SWATNFO</strong> | Instagram Report Bot v2
-            </div>
+        <div class="particles">
+            <div class="particle"></div>
+            <div class="particle"></div>
+            <div class="particle"></div>
         </div>
         
-        <script>
-            // Create stars
-            const starsContainer = document.getElementById('stars');
-            for (let i = 0; i < 100; i++) {
-                const star = document.createElement('div');
-                star.className = 'star';
-                star.style.width = Math.random() * 3 + 'px';
-                star.style.height = star.style.width;
-                star.style.left = Math.random() * 100 + '%';
-                star.style.top = Math.random() * 100 + '%';
-                star.style.animationDelay = Math.random() * 3 + 's';
-                starsContainer.appendChild(star);
-            }
-        </script>
+        <div class="maintenance-container">
+            <!-- Left Section - Status -->
+            <div class="status-card">
+                <div class="logo-container">
+                    <div class="logo">🔧</div>
+                </div>
+                <h1 class="brand-name">SWATNFO</h1>
+                <div class="status-badge">⚠️ Under Maintenance</div>
+                <div class="spinner-container">
+                    <div class="spinner"></div>
+                </div>
+            </div>
+            
+            <!-- Right Section - Information -->
+            <div class="info-section">
+                <div class="message-card">
+                    <h2 class="message-title">We're Making Things Better</h2>
+                    <p class="message-text">
+                        Our team is currently performing scheduled maintenance to bring you exciting new features, 
+                        performance improvements, and security enhancements. We'll be back online shortly!
+                    </p>
+                </div>
+                
+                <div class="features-grid">
+                    <div class="feature-box">
+                        <div class="feature-icon">✨</div>
+                        <div class="feature-label">New Features</div>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">⚡</div>
+                        <div class="feature-label">Performance</div>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">🔒</div>
+                        <div class="feature-label">Security</div>
+                    </div>
+                    <div class="feature-box">
+                        <div class="feature-icon">🎨</div>
+                        <div class="feature-label">UI Updates</div>
+                    </div>
+                </div>
+                
+                <div class="eta-card">
+                    <div class="eta-label">Estimated Return</div>
+                    <div class="eta-time">Coming Soon</div>
+                </div>
+            </div>
+            
+            <div class="footer">
+                <strong>SWATNFO</strong> - Instagram Report Bot v2.8 | Thank you for your patience
+            </div>
+        </div>
     </body>
     </html>
     """

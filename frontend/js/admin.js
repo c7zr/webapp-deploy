@@ -26,6 +26,14 @@ function checkAdminRole() {
         window.location.href = '/dashboard';
         return;
     }
+    
+    // Show IP Logs tab only for owner
+    if (user.role === 'owner') {
+        const ipLogsTab = document.getElementById('ipLogsTab');
+        if (ipLogsTab) {
+            ipLogsTab.style.display = 'block';
+        }
+    }
 }
 
 function initializeTabs() {
@@ -119,6 +127,8 @@ function switchTab(tabName) {
             loadBlacklist();
         } else if (tabName === 'system') {
             loadSystemConfig();
+        } else if (tabName === 'iplogs') {
+            loadIPLogs();
         } else if (tabName === 'logs') {
             loadSystemLogs();
         }
@@ -1118,4 +1128,89 @@ function initializeAdminFeatures() {
         });
     }
 }
+
+// IP Logs Functions (Owner Only)
+let currentIPLogsPage = 0;
+let ipLogsPerPage = 50;
+
+async function loadIPLogs(offset = 0, username = null) {
+    const container = document.getElementById('ipLogsContainer');
+    
+    try {
+        let url = `/v2/admin/ip-logs?limit=${ipLogsPerPage}&offset=${offset}`;
+        if (username) {
+            url += `&username=${encodeURIComponent(username)}`;
+        }
+        
+        const response = await apiCall(url, {
+            method: 'GET'
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to load IP logs');
+        }
+        
+        const data = await response.json();
+        displayIPLogs(data.logs);
+        
+        // Update pagination
+        currentIPLogsPage = Math.floor(offset / ipLogsPerPage);
+        const totalPages = Math.ceil(data.total / ipLogsPerPage);
+        
+        document.getElementById('ipLogsPageInfo').textContent = `Page ${currentIPLogsPage + 1} of ${totalPages}`;
+        document.getElementById('ipLogsPrevBtn').disabled = currentIPLogsPage === 0;
+        document.getElementById('ipLogsNextBtn').disabled = currentIPLogsPage >= totalPages - 1;
+        
+    } catch (error) {
+        console.error('Error loading IP logs:', error);
+        container.innerHTML = '<p style="text-align: center; color: #ef4444; padding: 2rem;">Failed to load IP logs. Owner access required.</p>';
+    }
+}
+
+function displayIPLogs(logs) {
+    const container = document.getElementById('ipLogsContainer');
+    
+    if (logs.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--text-secondary); padding: 2rem;">No IP logs found.</p>';
+        return;
+    }
+    
+    container.innerHTML = logs.map(log => {
+        const icon = log.action === 'login' ? '🔑' : log.action === 'register' ? '✍️' : '📝';
+        const timestamp = new Date(log.timestamp).toLocaleString();
+        const success = log.success ? '✅' : '❌';
+        
+        return `
+            <div class="ip-log-item">
+                <span class="ip-log-icon">${icon}</span>
+                <div class="ip-log-details">
+                    <div class="ip-log-user">${success} ${log.username} - ${log.action}</div>
+                    <div class="ip-log-meta">IP: ${log.ipAddress} • ${log.userAgent || 'Unknown device'}</div>
+                </div>
+                <span class="ip-log-time">${timestamp}</span>
+            </div>
+        `;
+    }).join('');
+}
+
+// Initialize IP Logs pagination and search
+document.getElementById('ipLogsPrevBtn')?.addEventListener('click', () => {
+    if (currentIPLogsPage > 0) {
+        loadIPLogs((currentIPLogsPage - 1) * ipLogsPerPage, document.getElementById('ipLogSearch')?.value);
+    }
+});
+
+document.getElementById('ipLogsNextBtn')?.addEventListener('click', () => {
+    loadIPLogs((currentIPLogsPage + 1) * ipLogsPerPage, document.getElementById('ipLogSearch')?.value);
+});
+
+document.getElementById('ipLogSearch')?.addEventListener('input', (e) => {
+    const username = e.target.value.trim();
+    loadIPLogs(0, username || null);
+});
+
+document.getElementById('exportIpLogsBtn')?.addEventListener('click', () => {
+    showNotification('IP logs export feature coming soon', 'info');
+});
+
 

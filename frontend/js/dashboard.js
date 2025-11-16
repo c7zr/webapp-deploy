@@ -131,8 +131,9 @@ function displayActivity(reports) {
     
     if (reports.length === 0) {
         activityList.innerHTML = `
-            <div class="activity-loading">
-                <p style="color: rgba(255, 255, 255, 0.5);">No recent activity yet. Start reporting to see your activity here!</p>
+            <div class="stream-loading">
+                <div class="pulse-loader"></div>
+                <p>No recent activity yet. Start reporting to see your activity here!</p>
             </div>
         `;
         return;
@@ -141,22 +142,16 @@ function displayActivity(reports) {
     activityList.innerHTML = reports.map((report, index) => {
         const isSuccess = report.status === 'success';
         const isPending = report.status === 'pending';
-        const iconClass = isSuccess ? 'success' : isPending ? 'pending' : 'failed';
-        const statusText = isSuccess ? 'Successful' : isPending ? 'Pending' : 'Failed';
-        const icon = isSuccess ? '✓' : isPending ? '⏱' : '✕';
+        const statusIcon = isSuccess ? '✅' : isPending ? '⏱️' : '❌';
         
         return `
-            <div class="activity-item" style="animation: fadeInUp 0.4s ease-out ${index * 0.1}s backwards">
-                <div class="activity-icon ${iconClass}">
-                    ${icon}
-                </div>
+            <div class="activity-item-new">
+                <span class="activity-status-icon">${statusIcon}</span>
                 <div class="activity-details">
                     <div class="activity-target">@${report.target}</div>
-                    <div class="activity-meta">${report.method} • ${report.type} • ${formatTime(report.timestamp)}</div>
+                    <div class="activity-meta">${report.method} • ${report.type}</div>
                 </div>
-                <div class="activity-status ${iconClass}">
-                    ${statusText}
-                </div>
+                <span class="activity-time">${formatTime(report.timestamp)}</span>
             </div>
         `;
     }).join('');
