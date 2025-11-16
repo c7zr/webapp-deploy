@@ -612,6 +612,16 @@ async def lifespan(app: FastAPI):
 # FastAPI App
 app = FastAPI(title="SWATNFO API v2", version="2.0.0", lifespan=lifespan)
 
+# Custom middleware to disable caching for static files
+@app.middleware("http")
+async def disable_cache_middleware(request: Request, call_next):
+    response = await call_next(request)
+    if request.url.path.startswith(("/css/", "/js/", "/assets/")):
+        response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+        response.headers["Pragma"] = "no-cache"
+        response.headers["Expires"] = "0"
+    return response
+
 # Mount static files (CSS, JS)
 app.mount("/css", StaticFiles(directory=os.path.join(FRONTEND_DIR, "css")), name="css")
 app.mount("/js", StaticFiles(directory=os.path.join(FRONTEND_DIR, "js")), name="js")
