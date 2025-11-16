@@ -13,6 +13,7 @@ from contextlib import asynccontextmanager
 from urllib.parse import unquote
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import threading
+import asyncio
 import jwt
 import bcrypt
 import requests
@@ -406,6 +407,139 @@ def migrate_db():
     finally:
         conn.close()
 
+# Scheduled Reports Worker
+async def scheduled_reports_worker():
+    """Background task that checks and executes scheduled reports every 30 seconds"""
+    while True:
+        try:
+            await asyncio.sleep(30)  # Check every 30 seconds
+            
+            conn = sqlite3.connect(DB_PATH)
+            c = conn.cursor()
+            
+            # Get pending reports that are due
+            now = datetime.now(timezone.utc).isoformat()
+            c.execute("""
+                SELECT id, userId, username, targets, method, scheduleTime 
+                FROM scheduled_reports 
+                WHERE status = 'pending' AND scheduleTime <= ?
+            """, (now,))
+            
+            due_reports = c.fetchall()
+            
+            if due_reports:
+                print(f"📅 Found {len(due_reports)} scheduled report(s) due for execution")
+            
+            for report in due_reports:
+                report_id, user_id, username, targets_json, method, schedule_time = report
+                
+                try:
+                    targets = json.loads(targets_json)
+                    print(f"⏰ Executing scheduled report {report_id} for user {username}")
+                    print(f"   Targets: {len(targets)}, Method: {method}")
+                    
+                    # Mark as executing
+                    c.execute("""
+                        UPDATE scheduled_reports 
+                        SET status = 'executing' 
+                        WHERE id = ?
+                    """, (report_id,))
+                    conn.commit()
+                    
+                    # Get user credentials
+                    c.execute("SELECT sessionId, csrfToken FROM credentials WHERE userId = ?", (user_id,))
+                    creds = c.fetchone()
+                    
+                    if not creds or not creds[0] or not creds[1]:
+                        print(f"   ❌ No valid credentials found for user {username}")
+                        c.execute("""
+                            UPDATE scheduled_reports 
+                            SET status = 'failed', executedAt = ? 
+                            WHERE id = ?
+                        """, (datetime.now(timezone.utc).isoformat(), report_id))
+                        conn.commit()
+                        continue
+                    
+                    session_id, csrf_token = creds
+                    
+                    # Execute reports for each target
+                    success_count = 0
+                    failed_count = 0
+                    
+                    for target in targets:
+                        try:
+                            # Get target ID first
+                            target_id = get_target_id(target, session_id, csrf_token)
+                            
+                            if not target_id:
+                                failed_count += 1
+                                print(f"   ❌ Failed to get ID for {target}")
+                                continue
+                            
+                            # Send report using existing function
+                            success = instagram_send_report(
+                                target_id, session_id, csrf_token, method, use_random_ua=True
+                            )
+                            
+                            if success:
+                                success_count += 1
+                                print(f"   ✅ Reported {target}")
+                            else:
+                                failed_count += 1
+                                print(f"   ❌ Failed to report {target}")
+                            
+                            # Save to history
+                            c.execute("""
+                                INSERT INTO report_history 
+                                (id, userId, username, target, method, status, timestamp, details)
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                            """, (
+                                str(uuid.uuid4()),
+                                user_id,
+                                username,
+                                target,
+                                method,
+                                'success' if success else 'failed',
+                                datetime.now(timezone.utc).isoformat(),
+                                json.dumps({"scheduled": True, "scheduleId": report_id})
+                            ))
+                            
+                            # Small delay between targets
+                            time.sleep(2)
+                            
+                        except Exception as e:
+                            failed_count += 1
+                            print(f"   ❌ Error reporting {target}: {str(e)}")
+                    
+                    # Mark as completed
+                    final_status = 'completed' if success_count > 0 else 'failed'
+                    c.execute("""
+                        UPDATE scheduled_reports 
+                        SET status = ?, executedAt = ? 
+                        WHERE id = ?
+                    """, (final_status, datetime.now(timezone.utc).isoformat(), report_id))
+                    conn.commit()
+                    
+                    print(f"   ✅ Scheduled report {report_id} completed: {success_count} success, {failed_count} failed")
+                    
+                except Exception as e:
+                    print(f"   ❌ Error executing scheduled report {report_id}: {str(e)}")
+                    c.execute("""
+                        UPDATE scheduled_reports 
+                        SET status = 'failed', executedAt = ? 
+                        WHERE id = ?
+                    """, (datetime.now(timezone.utc).isoformat(), report_id))
+                    conn.commit()
+            
+            conn.close()
+            
+        except asyncio.CancelledError:
+            print("📅 Scheduled reports worker cancelled")
+            raise
+        except Exception as e:
+            print(f"❌ Error in scheduled reports worker: {str(e)}")
+            await asyncio.sleep(30)  # Wait before retrying
+
 # Lifespan
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -420,7 +554,19 @@ async def lifespan(app: FastAPI):
     print("=" * 50)
     print("Default Login: sw4t / SwAtNf0!2024#Pr0T3cT3d")
     print("=" * 50)
+    
+    # Start background scheduler task
+    scheduler_task = asyncio.create_task(scheduled_reports_worker())
+    print("✅ Scheduled reports worker started")
+    
     yield
+    
+    # Cancel scheduler on shutdown
+    scheduler_task.cancel()
+    try:
+        await scheduler_task
+    except asyncio.CancelledError:
+        print("✅ Scheduled reports worker stopped")
 
 # FastAPI App
 app = FastAPI(title="SWATNFO API v2", version="2.0.0", lifespan=lifespan)
