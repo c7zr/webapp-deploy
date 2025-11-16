@@ -1973,6 +1973,9 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
     print(f"   User: {token_data['username']} ({user_role})")
     print(f"   Using enhanced multi-threading with rotating user agents")
     
+    # Check if user has active premium (for enhanced bypasses)
+    is_premium = user_role in ["premium", "admin", "owner"]
+    
     # Get target ID
     target_id = get_target_id(target, cred["sessionId"], cred["csrfToken"])
     
@@ -1987,7 +1990,7 @@ async def send_mass_report(mass_data: dict, token_data: dict = Depends(verify_to
         try:
             # Use rotating user agent for each report to avoid detection
             # Premium users get enhanced bypasses and retries
-            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method, use_random_ua=True, is_premium=has_active_premium)
+            success = instagram_send_report(target_id, cred["sessionId"], cred["csrfToken"], method, use_random_ua=True, is_premium=is_premium)
             
             if not success and report_num <= 3:
                 # Log first 3 failures to help debug
