@@ -195,10 +195,10 @@
     <script src="js/announcement.js"></script>
     <script src="js/dashboard.js"></script>
     <script>
-        // Show announcement on dashboard load
-        document.addEventListener('DOMContentLoaded', function() {
-            setTimeout(() => showAnnouncement(), 500);
-        });
+        // Show announcement immediately on page load
+        if (localStorage.getItem('token')) {
+            showAnnouncement();
+        }
     </script>
 </body>
 </html>
