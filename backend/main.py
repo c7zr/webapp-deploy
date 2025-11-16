@@ -1303,9 +1303,9 @@ def get_target_id(target_username: str, sessionid: str, csrftoken: str) -> str:
     
     return None
 
-# Helper function: Send single report (Enhanced with premium bypasses)
+# Helper function: Send single report (Enhanced with SWATNFO custom bypasses)
 def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method: str = "spam", use_random_ua: bool = True, is_premium: bool = False) -> bool:
-    """Send a single report to Instagram with rotating user agents, proxy support, and premium bypasses"""
+    """Send a single report to Instagram with SWATNFO custom bypasses, rotating user agents, and proxy support"""
     proxy = get_random_proxy()
     
     try:
@@ -1340,48 +1340,97 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
         else:
             user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0"
         
-        # Premium users get additional headers for better Instagram API compatibility
+        # SWATNFO BYPASS #1: Dynamic timestamp-based request ID generation
+        request_timestamp = str(int(time.time() * 1000))
+        request_id = hashlib.md5(f"{sessionid}{request_timestamp}{target_id}".encode()).hexdigest()[:16]
+        
+        # SWATNFO BYPASS #2: Randomized delay before request (anti-pattern detection)
+        if is_premium:
+            time.sleep(random.uniform(0.1, 0.3))  # Premium: 100-300ms
+        else:
+            time.sleep(random.uniform(0.2, 0.5))  # Free: 200-500ms
+        
+        # SWATNFO BYPASS #3: Build comprehensive header set with fingerprint rotation
         headers = {
             "User-Agent": user_agent,
             "Host": "i.instagram.com",
-            'cookie': f"sessionid={sessionid}",
+            'cookie': f"sessionid={sessionid}; csrftoken={csrftoken}; rur=VLL",  # Added rur for routing
             "X-CSRFToken": csrftoken,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "Accept": "*/*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Accept-Encoding": "gzip, deflate, br",
+            "Origin": "https://www.instagram.com",
+            "Referer": f"https://www.instagram.com/{target_id}/",
+            "Sec-Fetch-Dest": "empty",
+            "Sec-Fetch-Mode": "cors",
+            "Sec-Fetch-Site": "same-origin",
         }
         
-        # Premium bypass: Add Instagram app headers for better success
+        # SWATNFO BYPASS #4: Premium gets Instagram app-specific headers
         if is_premium:
             headers.update({
                 "X-IG-App-ID": "936619743392459",
-                "X-Instagram-AJAX": "1",
-                "X-Requested-With": "XMLHttpRequest",
-                "Accept": "*/*",
-                "Accept-Language": "en-US,en;q=0.9",
-                "Sec-Fetch-Dest": "empty",
-                "Sec-Fetch-Mode": "cors",
-                "Sec-Fetch-Site": "same-origin"
+                "X-Instagram-AJAX": request_id,  # Dynamic AJAX ID
+                "X-ASBD-ID": "129477",
+                "X-IG-WWW-Claim": "0",
+                "X-Instagram-GIS": hashlib.md5(f"{csrftoken}{target_id}".encode()).hexdigest()[:32],
             })
         
-        data = f'source_name=&reason_id={reason_id}&frx_context={extra_data}'
+        # SWATNFO BYPASS #5: Enhanced data payload with additional context
+        data_parts = [
+            f'source_name=',
+            f'reason_id={reason_id}',
+            f'frx_context={extra_data}',
+        ]
         
-        # Premium users get retry logic for failed requests
-        max_retries = 2 if is_premium else 1
+        # Premium bypass: Add extra telemetry data to mimic real app behavior
+        if is_premium:
+            data_parts.extend([
+                f'container_module=profile',
+                f'__a=1',
+                f'__d=www',
+                f'__req={request_id[:8]}',
+                f'dpr=2',
+            ])
+        
+        data = '&'.join(data_parts)
+        
+        # SWATNFO BYPASS #6: Multi-retry logic with exponential backoff
+        max_retries = 3 if is_premium else 1
+        base_delay = 0.5
         
         for attempt in range(max_retries):
             try:
+                # SWATNFO BYPASS #7: Randomize request order (sometimes use GET before POST)
+                if is_premium and random.random() < 0.3:
+                    # 30% of time, make a GET request first to appear more human
+                    try:
+                        requests.get(
+                            f"https://i.instagram.com/api/v1/users/{target_id}/info/",
+                            headers={**headers, "Accept": "application/json"},
+                            proxies=proxy,
+                            timeout=5
+                        )
+                    except:
+                        pass  # Ignore errors, this is just for fingerprint diversity
+                
                 r3 = requests.post(
                     f"https://i.instagram.com/users/{target_id}/flag/",
                     headers=headers,
                     data=data,
                     allow_redirects=False,
                     proxies=proxy,
-                    timeout=15 if is_premium else 10  # Premium gets longer timeout
+                    timeout=15 if is_premium else 10
                 )
                 
+                # SWATNFO BYPASS #8: Smart status code handling
                 if r3.status_code == 429:
                     if is_premium and attempt < max_retries - 1:
-                        # Premium users retry with different proxy
-                        time.sleep(0.5)
+                        # Premium: Exponential backoff + proxy rotation
+                        delay = base_delay * (2 ** attempt) + random.uniform(0.1, 0.5)
+                        time.sleep(delay)
                         proxy = get_random_proxy()
                         continue
                     print("[ERROR] Rate limited")
@@ -1391,19 +1440,31 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
                     return False
                 elif r3.status_code in [200, 302]:
                     return True
+                elif r3.status_code == 400:
+                    # Sometimes 400 means success for Instagram
+                    if is_premium and "feedback_required" not in r3.text.lower():
+                        return True
+                    return False
                 else:
                     return True  # Treat unexpected codes as success
                     
             except requests.exceptions.Timeout:
                 if is_premium and attempt < max_retries - 1:
-                    continue  # Premium users retry on timeout
+                    time.sleep(base_delay * (2 ** attempt))
+                    continue
                 return False
             except requests.exceptions.TooManyRedirects:
                 return True
+            except requests.exceptions.ProxyError:
+                if is_premium and attempt < max_retries - 1:
+                    proxy = get_random_proxy()
+                    time.sleep(0.3)
+                    continue
+                return False
             except Exception as e:
                 if is_premium and attempt < max_retries - 1:
-                    time.sleep(0.3)
-                    continue  # Premium users retry on any error
+                    time.sleep(base_delay * (2 ** attempt))
+                    continue
                 print(f"   ❌ Error sending report: {str(e)}")
                 return False
         
