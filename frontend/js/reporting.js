@@ -324,16 +324,18 @@ async function startBulkReport() {
         return;
     }
     
-    // Check user role first
+    // Check user premium status first
     let userRole = null;
+    let isPremium = false;
     try {
         const profileResponse = await apiCall('/v2/user/profile', { method: 'GET' });
         if (profileResponse.ok) {
             const profileData = await profileResponse.json();
             userRole = profileData.role;
+            isPremium = profileData.isPremium;
             
-            // Only allow premium, admin, and owner roles
-            if (!['premium', 'admin', 'owner'].includes(userRole)) {
+            // Only allow users with active premium or admin/owner roles
+            if (userRole !== 'admin' && userRole !== 'owner' && !isPremium) {
                 alert('❌ Bulk Reporting is a Premium Feature!\n\n' +
                       'Bulk reporting is exclusive to Premium users.\n\n' +
                       'Upgrade to Premium to:\n' +
@@ -345,7 +347,7 @@ async function startBulkReport() {
             }
         }
     } catch (error) {
-        console.error('Error checking user role:', error);
+        console.error('Error checking user status:', error);
         alert('Error verifying account status. Please try again.');
         return;
     }
@@ -429,15 +431,16 @@ async function startMassReport() {
         return;
     }
     
-    // Check user role first - PREMIUM ONLY
+    // Check user premium status first - PREMIUM ONLY
     try {
         const profileResponse = await apiCall('/v2/user/profile', { method: 'GET' });
         if (profileResponse.ok) {
             const profileData = await profileResponse.json();
             const userRole = profileData.role;
+            const isPremium = profileData.isPremium;
             
-            // Only allow premium, admin, and owner roles
-            if (!['premium', 'admin', 'owner'].includes(userRole)) {
+            // Only allow users with active premium or admin/owner roles
+            if (userRole !== 'admin' && userRole !== 'owner' && !isPremium) {
                 alert('❌ Mass Reporting is a Premium Feature!\n\n' +
                       'Mass reporting is exclusive to Premium users.\n\n' +
                       'Upgrade to Premium to:\n' +
@@ -450,7 +453,7 @@ async function startMassReport() {
             }
         }
     } catch (error) {
-        console.error('Error checking user role:', error);
+        console.error('Error checking user status:', error);
         alert('Error verifying account status. Please try again.');
         return;
     }

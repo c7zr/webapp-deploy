@@ -5,6 +5,248 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SWATNFO - Register</title>
     <link rel="stylesheet" href="css/styles.css">
+    <style>
+        .modern-auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .modern-auth-box {
+            background: rgba(20, 20, 25, 0.85);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 48px 40px;
+            width: 100%;
+            max-width: 480px;
+            box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5),
+                        0 0 100px rgba(138, 43, 226, 0.15),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(138, 43, 226, 0.2);
+            position: relative;
+            animation: slideUpFadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        @keyframes slideUpFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modern-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .modern-logo {
+            width: 72px;
+            height: 72px;
+            background: linear-gradient(135deg, #8a2be2, #6a1bb2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 36px;
+            box-shadow: 0 12px 32px rgba(138, 43, 226, 0.4);
+        }
+        
+        .modern-header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #8a2be2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        
+        .modern-header p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 15px;
+        }
+        
+        .modern-form-group {
+            margin-bottom: 20px;
+        }
+        
+        .modern-form-group label {
+            display: block;
+            margin-bottom: 10px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .modern-input-wrapper {
+            position: relative;
+        }
+        
+        .modern-input-wrapper input {
+            width: 100%;
+            padding: 14px 16px 14px 48px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1.5px solid rgba(138, 43, 226, 0.3);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .modern-input-wrapper input:focus {
+            background: rgba(255, 255, 255, 0.08);
+            border-color: #8a2be2;
+            box-shadow: 0 0 0 4px rgba(138, 43, 226, 0.15);
+            outline: none;
+        }
+        
+        .modern-input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+            color: rgba(138, 43, 226, 0.7);
+        }
+        
+        .password-strength-container {
+            margin-top: 12px;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            border: 1px solid rgba(138, 43, 226, 0.2);
+        }
+        
+        .strength-bar-wrapper {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+        
+        .strength-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #f44336, #ff9800, #4CAF50);
+            transition: width 0.3s ease;
+            border-radius: 3px;
+        }
+        
+        .strength-text {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 8px;
+        }
+        
+        .strength-requirements {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .strength-requirements li {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 4px 0;
+            padding-left: 18px;
+            position: relative;
+        }
+        
+        .strength-requirements li::before {
+            content: '○';
+            position: absolute;
+            left: 0;
+            color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .strength-requirements li.met {
+            color: #4CAF50;
+        }
+        
+        .strength-requirements li.met::before {
+            content: '✓';
+            color: #4CAF50;
+        }
+        
+        .modern-checkbox {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .modern-checkbox input {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+        
+        .modern-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #8a2be2, #6a1bb2);
+            border: none;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 8px 24px rgba(138, 43, 226, 0.4);
+            margin-top: 24px;
+        }
+        
+        .modern-btn:hover {
+            background: linear-gradient(135deg, #9d4eed, #7a2bc2);
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(138, 43, 226, 0.5);
+        }
+        
+        .modern-btn:active {
+            transform: translateY(0);
+        }
+        
+        .modern-footer {
+            text-align: center;
+            margin-top: 28px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .modern-footer p {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+        }
+        
+        .modern-footer a {
+            color: #8a2be2;
+            text-decoration: none;
+            font-weight: 600;
+            transition: color 0.2s;
+        }
+        
+        .modern-footer a:hover {
+            color: #a255f5;
+        }
+        
+        .modern-watermark {
+            position: absolute;
+            bottom: 20px;
+            right: 24px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.3);
+            font-weight: 500;
+        }
+    </style>
 </head>
 <body>
     <div class="gradient-background">
@@ -22,33 +264,43 @@
         </div>
     </div>
     
-    <div class="container fade-in">
-        <div class="login-box register-box">
-            <div class="header">
-                <h1>Instagram Report Bot</h1>
-                <p class="subtitle">Create Your Account</p>
+    <div class="modern-auth-container">
+        <div class="modern-auth-box">
+            <div class="modern-header">
+                <div class="modern-logo">🚀</div>
+                <h1>Create Account</h1>
+                <p>Join the Instagram Report Bot platform</p>
             </div>
             
-            <form id="registerForm" class="form">
-                <div class="form-group">
+            <form id="registerForm" class="modern-form">
+                <div class="modern-form-group">
                     <label for="username">Username</label>
-                    <input type="text" id="username" name="username" required>
+                    <div class="modern-input-wrapper">
+                        <span class="modern-input-icon">👤</span>
+                        <input type="text" id="username" name="username" placeholder="Choose a username" required autocomplete="username">
+                    </div>
                 </div>
                 
-                <div class="form-group">
-                    <label for="email">Email (Optional)</label>
-                    <input type="email" id="email" name="email" placeholder="email@example.com">
+                <div class="modern-form-group">
+                    <label for="email">Email <span style="color: rgba(255,255,255,0.5); font-weight: 400;">(Optional)</span></label>
+                    <div class="modern-input-wrapper">
+                        <span class="modern-input-icon">✉️</span>
+                        <input type="email" id="email" name="email" placeholder="your@email.com" autocomplete="email">
+                    </div>
                 </div>
                 
-                <div class="form-group">
+                <div class="modern-form-group">
                     <label for="password">Password</label>
-                    <input type="password" id="password" name="password" required>
-                    <div class="password-strength" id="passwordStrength" style="display: none;">
-                        <div class="strength-bar">
-                            <div class="strength-fill" id="strengthFill"></div>
+                    <div class="modern-input-wrapper">
+                        <span class="modern-input-icon">🔒</span>
+                        <input type="password" id="password" name="password" placeholder="Create a strong password" required autocomplete="new-password">
+                    </div>
+                    <div class="password-strength-container" id="passwordStrength" style="display: none;">
+                        <div class="strength-bar-wrapper">
+                            <div class="strength-bar-fill" id="strengthFill"></div>
                         </div>
                         <div class="strength-text" id="strengthText">Password strength: Weak</div>
-                        <ul class="strength-requirements" id="strengthRequirements">
+                        <ul class="strength-requirements">
                             <li id="req-length">At least 8 characters</li>
                             <li id="req-uppercase">One uppercase letter</li>
                             <li id="req-lowercase">One lowercase letter</li>
@@ -57,27 +309,29 @@
                     </div>
                 </div>
                 
-                <div class="form-group">
+                <div class="modern-form-group">
                     <label for="confirmPassword">Confirm Password</label>
-                    <input type="password" id="confirmPassword" name="confirmPassword" required>
+                    <div class="modern-input-wrapper">
+                        <span class="modern-input-icon">🔐</span>
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirm your password" required autocomplete="new-password">
+                    </div>
                 </div>
                 
-                <div class="form-options">
-                    <label class="checkbox">
+                <div class="modern-form-group" style="margin-top: 20px;">
+                    <label class="modern-checkbox">
                         <input type="checkbox" id="terms" required>
-                        <span>I agree to the Terms of Service</span>
+                        <span>I agree to the <a href="tos.html" target="_blank" style="color: #8a2be2; text-decoration: none;">Terms of Service</a></span>
                     </label>
                 </div>
                 
-                <button type="submit" class="btn btn-primary">Create Account</button>
+                <button type="submit" class="modern-btn">Create Account</button>
                 
-                <div class="form-footer">
-                    <p>Already have an account? <a href="/login" class="link">Login</a></p>
-                    <p style="margin-top: 10px; font-size: 0.9em;">By registering, you agree to our <a href="tos.html" target="_blank" class="link" style="color: #8a2be2;">Terms of Service</a></p>
+                <div class="modern-footer">
+                    <p>Already have an account? <a href="/login">Sign in now</a></p>
                 </div>
             </form>
             
-            <div class="watermark">Made by SWATNFO</div>
+            <div class="modern-watermark">Made by SWATNFO</div>
         </div>
     </div>
     

@@ -856,12 +856,17 @@ async def get_profile(token_data: dict = Depends(verify_token)):
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     
+    # Check if user has active premium
+    has_active_premium = is_premium_active(user)
+    
     return {
         "username": user["username"],
         "email": user["email"],
         "role": user["role"],
         "reportCount": user["reportCount"],
-        "createdAt": user["createdAt"]
+        "createdAt": user["createdAt"],
+        "isPremium": has_active_premium,
+        "premiumExpiresAt": user.get("premiumExpiresAt")
     }
 
 @app.put("/v2/user/update")
@@ -1389,10 +1394,10 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
     user = cursor.fetchone()
     user_role = user["role"] if user else "user"
     
-    # Check if user has active premium (including trial)
+    # Check if user has active premium status
     has_active_premium = is_premium_active(user) if user else False
     
-    # Check if bulk reporting is allowed (premium users, active premium trial, or admin/owner)
+    # Check if bulk reporting is allowed (admin/owner OR users with active premium)
     if user_role not in ["admin", "owner"] and not has_active_premium:
         conn.close()
         raise HTTPException(
@@ -1965,6 +1970,20 @@ async def admin_update_user(user_id: str, user_data: dict, token_data: dict = De
     if "isActive" in user_data:
         updates.append("isActive = ?")
         params.append(1 if user_data["isActive"] else 0)
+    
+    if "isPremium" in user_data:
+        updates.append("isPremium = ?")
+        params.append(1 if user_data["isPremium"] else 0)
+        
+        # If setting premium to true, set expiry to 1 year from now
+        if user_data["isPremium"]:
+            updates.append("premiumExpiresAt = ?")
+            expiry_date = (datetime.now(timezone.utc) + timedelta(days=365)).isoformat()
+            params.append(expiry_date)
+        else:
+            # If removing premium, clear expiry date
+            updates.append("premiumExpiresAt = ?")
+            params.append(None)
     
     if updates:
         params.append(user_id)
