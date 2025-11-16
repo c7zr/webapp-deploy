@@ -343,6 +343,12 @@
     grid-template-columns: repeat(2, 1fr);
     gap: 1.5rem;
     margin-bottom: 1.5rem;
+    align-items: start;
+}
+
+.form-grid .form-group {
+    display: flex;
+    flex-direction: column;
 }
 
 .label-icon {
@@ -381,6 +387,7 @@
     margin-top: 0.5rem;
     font-size: 0.85rem;
     color: var(--text-muted);
+    min-height: 1.2em;
 }
 
 .textarea-modern {
