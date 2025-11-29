@@ -1,5 +1,11 @@
 // Register Form Handler
 document.addEventListener('DOMContentLoaded', () => {
+    // Fallback: check if isLoggedIn is defined
+    if (typeof isLoggedIn !== 'function') {
+        alert('Error: isLoggedIn is not defined. Make sure config.js loads before register.js.');
+        console.error('isLoggedIn is not defined.');
+        return;
+    }
     // Redirect if already logged in
     if (isLoggedIn()) {
         window.location.href = '/dashboard';
@@ -11,11 +17,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
     const confirmPasswordInput = document.getElementById('confirmPassword');
-    const termsCheckbox = document.getElementById('terms');
+    const termsCheckbox = document.getElementById('agreeTerms');
     
     // Password strength indicator
     const strengthIndicator = document.getElementById('passwordStrength');
-    const strengthFill = document.getElementById('strengthFill');
+    const strengthFill = document.getElementById('strengthBar');
     const strengthText = document.getElementById('strengthText');
     
     passwordInput.addEventListener('input', () => {
