@@ -1469,6 +1469,11 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
         base_delay = 0.5
         
         for attempt in range(max_retries):
+            print(f"\n--- SWATNFO DEBUG REPORT ATTEMPT {attempt+1}/{max_retries} ---")
+            print(f"Proxy: {proxy}")
+            print(f"User-Agent: {user_agent}")
+            print(f"Headers: {headers}")
+            print(f"Payload: {data}")
             try:
                 # SWATNFO BYPASS #7: Randomize request order (sometimes use GET before POST)
                 if is_premium and random.random() < 0.3:
@@ -1491,6 +1496,9 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
                     proxies=proxy,
                     timeout=15 if is_premium else 10
                 )
+                print(f"Response Status: {r3.status_code}")
+                print(f"Response Headers: {r3.headers}")
+                print(f"Response Text: {r3.text[:500]}")
                 
                 # SWATNFO BYPASS #8: Smart status code handling with proxy rotation
                 if r3.status_code == 429:
