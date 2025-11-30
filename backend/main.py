@@ -1419,20 +1419,11 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
         
         # SWATNFO BYPASS #3: Build comprehensive header set with fingerprint rotation
         headers = {
-            "User-Agent": user_agent,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0",
             "Host": "i.instagram.com",
-            'cookie': f"sessionid={sessionid}; csrftoken={csrftoken}; rur=VLL",  # Added rur for routing
+            "cookie": f"sessionid={sessionid}",
             "X-CSRFToken": csrftoken,
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "X-Requested-With": "XMLHttpRequest",
-            "Accept": "*/*",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Origin": "https://www.instagram.com",
-            "Referer": f"https://www.instagram.com/{target_id}/",
-            "Sec-Fetch-Dest": "empty",
-            "Sec-Fetch-Mode": "cors",
-            "Sec-Fetch-Site": "same-origin",
+            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
         }
         
         # SWATNFO BYPASS #4: Premium gets Instagram app-specific headers
@@ -1446,23 +1437,7 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
             })
         
         # SWATNFO BYPASS #5: Enhanced data payload with additional context
-        data_parts = [
-            f'source_name=',
-            f'reason_id={reason_id}',
-            f'frx_context={extra_data}',
-        ]
-        
-        # Premium bypass: Add extra telemetry data to mimic real app behavior
-        if is_premium:
-            data_parts.extend([
-                f'container_module=profile',
-                f'__a=1',
-                f'__d=www',
-                f'__req={request_id[:8]}',
-                f'dpr=2',
-            ])
-        
-        data = '&'.join(data_parts)
+        data = f'source_name=&reason_id={reason_id}&frx_context={extra_data}'
         
         # SWATNFO BYPASS #6: Multi-retry logic with exponential backoff
         max_retries = 3 if is_premium else 1
