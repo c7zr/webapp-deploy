@@ -103,16 +103,21 @@
                 display: flex;
                 flex-direction: column;
                 gap: 0.25rem;
+                overflow: hidden;
             }
             
             .update-text strong {
                 font-size: 1.1rem;
                 font-weight: 700;
+                word-break: break-word;
+                line-height: 1.3;
             }
             
             .update-text span {
                 font-size: 0.9rem;
                 opacity: 0.9;
+                word-break: break-word;
+                line-height: 1.4;
             }
             
             .update-actions {
@@ -157,12 +162,13 @@
                 #updateNotificationBanner {
                     top: 60px;
                     width: calc(100% - 1rem);
-                    padding: 1rem;
+                    padding: 0.875rem;
                 }
                 
                 .update-notification-content {
                     flex-direction: column;
                     text-align: center;
+                    gap: 0.75rem;
                 }
                 
                 .update-icon {
@@ -170,21 +176,26 @@
                 }
                 
                 .update-text strong {
-                    font-size: 1rem;
+                    font-size: 0.875rem;
+                    line-height: 1.4;
                 }
                 
                 .update-text span {
-                    font-size: 0.85rem;
+                    font-size: 0.75rem;
+                    line-height: 1.3;
                 }
                 
                 .update-actions {
                     flex-direction: column;
                     width: 100%;
+                    gap: 0.5rem;
                 }
                 
                 .update-btn {
                     width: 100%;
                     text-align: center;
+                    padding: 0.5rem 1rem;
+                    font-size: 0.875rem;
                 }
             }
         `;
