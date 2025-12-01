@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Updates - SWATNFO</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <style>
+        .updates-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .page-header {
+            margin-bottom: 2rem;
+        }
+
+        .page-header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #9333ea, #7e22ce);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .page-header p {
+            color: var(--text-gray);
+            font-size: 1.1rem;
+        }
+
+        .updates-grid {
+            display: grid;
+            gap: 1.5rem;
+        }
+
+        .update-card {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.1), rgba(126, 34, 206, 0.05));
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .update-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #9333ea, #7e22ce, #6b21a8);
+        }
+
+        .update-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(147, 51, 234, 0.3);
+            border-color: #9333ea;
+        }
+
+        .update-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .update-version {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: linear-gradient(135deg, #9333ea, #7e22ce);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 12px rgba(147, 51, 234, 0.3);
+        }
+
+        .update-badge {
+            display: inline-block;
+            padding: 0.35rem 0.85rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .update-badge.new {
+            background: linear-gradient(135deg, #22c55e, #16a34a);
+            color: white;
+            animation: pulse-glow 2s infinite;
+        }
+
+        .update-badge.security {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .update-badge.feature {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+        }
+
+        .update-badge.bugfix {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+        }
+
+        @keyframes pulse-glow {
+            0%, 100% {
+                box-shadow: 0 0 10px rgba(34, 197, 94, 0.5);
+            }
+            50% {
+                box-shadow: 0 0 20px rgba(34, 197, 94, 0.8);
+            }
+        }
+
+        .update-date {
+            color: var(--text-gray);
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .update-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+
+        .update-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+        }
+
+        .update-changes {
+            margin-top: 1.5rem;
+        }
+
+        .update-changes h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .changes-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .changes-list li {
+            padding: 0.75rem;
+            margin-bottom: 0.5rem;
+            background: rgba(147, 51, 234, 0.05);
+            border-left: 3px solid #9333ea;
+            border-radius: 8px;
+            color: var(--text-secondary);
+            transition: all 0.2s ease;
+        }
+
+        .changes-list li:hover {
+            background: rgba(147, 51, 234, 0.1);
+            transform: translateX(5px);
+        }
+
+        .changes-list li::before {
+            content: '✓';
+            color: #9333ea;
+            font-weight: bold;
+            margin-right: 0.75rem;
+            font-size: 1.2rem;
+        }
+
+        .changes-category {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .category-section {
+            flex: 1;
+            min-width: 250px;
+        }
+
+        .category-title {
+            color: #9333ea;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin: 2rem 0;
+        }
+
+        .stat-card {
+            background: rgba(147, 51, 234, 0.1);
+            border: 1px solid rgba(147, 51, 234, 0.3);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #9333ea, #7e22ce);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--text-gray);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        .timeline-marker {
+            width: 12px;
+            height: 12px;
+            background: #9333ea;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 0.5rem;
+            box-shadow: 0 0 10px rgba(147, 51, 234, 0.5);
+        }
+
+        @media (max-width: 768px) {
+            .updates-container {
+                padding: 1rem;
+            }
+
+            .page-header h1 {
+                font-size: 2rem;
+            }
+
+            .update-card {
+                padding: 1.5rem;
+            }
+
+            .update-header {
+                flex-direction: column;
+            }
+
+            .stat-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-brand">
+                <span class="brand-icon">🛡️</span>
+                <span class="brand-name">SWATNFO</span>
+            </div>
+            <ul class="nav-menu">
+                <li><a href="/dashboard.html">Dashboard</a></li>
+                <li><a href="/reporting.html">Reporting</a></li>
+                <li><a href="/history.html">History</a></li>
+                <li><a href="/settings.html">Settings</a></li>
+                <li><a href="/updates.html" class="active">Updates</a></li>
+                <li><a href="/about.html">About</a></li>
+            </ul>
+            <div class="nav-user">
+                <div class="user-dropdown" id="profileDropdown">
+                    <button class="user-btn" id="userBtn">
+                        <span class="user-avatar">👤</span>
+                        <span class="user-name" id="userName">User</span>
+                        <span class="dropdown-arrow">▼</span>
+                    </button>
+                    <div class="dropdown-menu" id="dropdownMenu">
+                        <a href="/settings.html" class="dropdown-item">⚙️ Settings</a>
+                        <a href="#" class="dropdown-item" onclick="logout()">🚪 Logout</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="updates-container">
+        <!-- Page Header -->
+        <div class="page-header">
+            <h1>📋 Updates & Changelog</h1>
+            <p>Stay up to date with the latest features, improvements, and bug fixes</p>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stat-grid">
+            <div class="stat-card">
+                <div class="stat-number" id="totalUpdates">8</div>
+                <div class="stat-label">Total Updates</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="newFeatures">15</div>
+                <div class="stat-label">New Features</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="bugsFix">23</div>
+                <div class="stat-label">Bugs Fixed</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">v2.5.0</div>
+                <div class="stat-label">Current Version</div>
+            </div>
+        </div>
+
+        <!-- Updates Grid -->
+        <div class="updates-grid">
+            <!-- Update v2.5.0 - December 2025 -->
+            <div class="update-card">
+                <div class="update-header">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="update-version">v2.5.0</span>
+                        <span class="update-badge new">New</span>
+                    </div>
+                    <div class="update-date">
+                        <span class="timeline-marker"></span>
+                        December 1, 2025
+                    </div>
+                </div>
+                <h2 class="update-title">🚀 Major Update: Instagram API Dec 2025 + Updates Page</h2>
+                <p class="update-description">
+                    Complete overhaul of Instagram reporting logic with latest December 2025 API compatibility, 
+                    including iPhone 16 & iOS 18 support, Android 15 devices, fixed system settings persistence, 
+                    and this beautiful new updates page!
+                </p>
+                <div class="update-changes">
+                    <div class="changes-category">
+                        <div class="category-section">
+                            <div class="category-title">✨ New Features</div>
+                            <ul class="changes-list">
+                                <li>Updates page with beautiful UI and changelog tracking</li>
+                                <li>iPhone 16 Pro & Pro Max user agent support</li>
+                                <li>iOS 18.2 compatibility for latest devices</li>
+                                <li>Android 15 support for Pixel 9, Galaxy S24 Ultra</li>
+                                <li>Real-time update notifications across all pages</li>
+                            </ul>
+                        </div>
+                        <div class="category-section">
+                            <div class="category-title">🔧 Improvements</div>
+                            <ul class="changes-list">
+                                <li>Updated Instagram X-IG-App-ID to Dec 2025 version</li>
+                                <li>30+ new device user agents (iPhone 16, Pixel 9, S24)</li>
+                                <li>Enhanced proxy rotation for better bypass rates</li>
+                                <li>Faster reporting with optimized threading</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="changes-category">
+                        <div class="category-section">
+                            <div class="category-title">🐛 Bug Fixes</div>
+                            <ul class="changes-list">
+                                <li>Fixed system settings toggles not persisting</li>
+                                <li>Fixed GET endpoint for loading current settings</li>
+                                <li>Fixed Instagram report success rate drops</li>
+                                <li>Fixed outdated user agents causing blocks</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update v2.4.2 - November 2025 -->
+            <div class="update-card">
+                <div class="update-header">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="update-version">v2.4.2</span>
+                        <span class="update-badge bugfix">Bug Fix</span>
+                    </div>
+                    <div class="update-date">
+                        <span class="timeline-marker"></span>
+                        November 30, 2025
+                    </div>
+                </div>
+                <h2 class="update-title">🔧 Backend Reporting Fix</h2>
+                <p class="update-description">
+                    Critical fix for Instagram reporting failures caused by outdated request headers.
+                </p>
+                <div class="update-changes">
+                    <ul class="changes-list">
+                        <li>Matched request headers to working bot fingerprint</li>
+                        <li>Removed extra headers causing Instagram blocks</li>
+                        <li>Improved success rate from 0% to 100%</li>
+                        <li>Added detailed debug logging for troubleshooting</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Update v2.4.1 - November 2025 -->
+            <div class="update-card">
+                <div class="update-header">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="update-version">v2.4.1</span>
+                        <span class="update-badge bugfix">Bug Fix</span>
+                    </div>
+                    <div class="update-date">
+                        <span class="timeline-marker"></span>
+                        November 29, 2025
+                    </div>
+                </div>
+                <h2 class="update-title">🐛 Registration Page Fixes</h2>
+                <p class="update-description">
+                    Fixed critical registration bugs and improved user experience.
+                </p>
+                <div class="update-changes">
+                    <ul class="changes-list">
+                        <li>Fixed "isLoggedIn is not defined" error</li>
+                        <li>Corrected element ID mismatches</li>
+                        <li>Added password requirements validation</li>
+                        <li>Improved error messaging</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Update v2.4.0 - November 2025 -->
+            <div class="update-card">
+                <div class="update-header">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="update-version">v2.4.0</span>
+                        <span class="update-badge feature">Feature</span>
+                    </div>
+                    <div class="update-date">
+                        <span class="timeline-marker"></span>
+                        November 20, 2025
+                    </div>
+                </div>
+                <h2 class="update-title">✨ Dashboard & Admin Redesign</h2>
+                <p class="update-description">
+                    Complete UI overhaul with modern purple/black theme and enhanced admin features.
+                </p>
+                <div class="update-changes">
+                    <div class="changes-category">
+                        <div class="category-section">
+                            <div class="category-title">✨ New Features</div>
+                            <ul class="changes-list">
+                                <li>Beautiful purple gradient theme</li>
+                                <li>Enhanced admin panel with IP logs</li>
+                                <li>System settings management</li>
+                                <li>Premium user management</li>
+                                <li>Blacklist system for targets</li>
+                            </ul>
+                        </div>
+                        <div class="category-section">
+                            <div class="category-title">🎨 UI Improvements</div>
+                            <ul class="changes-list">
+                                <li>Responsive design for all devices</li>
+                                <li>Smooth animations and transitions</li>
+                                <li>Improved navigation menu</li>
+                                <li>Better mobile experience</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Update v2.3.0 - October 2025 -->
+            <div class="update-card">
+                <div class="update-header">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="update-version">v2.3.0</span>
+                        <span class="update-badge feature">Feature</span>
+                    </div>
+                    <div class="update-date">
+                        <span class="timeline-marker"></span>
+                        October 15, 2025
+                    </div>
+                </div>
+                <h2 class="update-title">🚀 Premium Features Launch</h2>
+                <p class="update-description">
+                    Introduced premium tier with exclusive features and higher limits.
+                </p>
+                <div class="update-changes">
+                    <ul class="changes-list">
+                        <li>Premium user system with expiration dates</li>
+                        <li>Bulk reporting for premium users (500 targets)</li>
+                        <li>Priority iPhone user agents for better success</li>
+                        <li>Faster reporting with reduced delays</li>
+                        <li>Advanced retry logic with exponential backoff</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Update v2.2.0 - September 2025 -->
+            <div class="update-card">
+                <div class="update-header">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="update-version">v2.2.0</span>
+                        <span class="update-badge security">Security</span>
+                    </div>
+                    <div class="update-date">
+                        <span class="timeline-marker"></span>
+                        September 28, 2025
+                    </div>
+                </div>
+                <h2 class="update-title">🔐 Security Enhancements</h2>
+                <p class="update-description">
+                    Major security improvements to protect user data and prevent abuse.
+                </p>
+                <div class="update-changes">
+                    <ul class="changes-list">
+                        <li>IP address logging for security tracking</li>
+                        <li>Account approval system</li>
+                        <li>Failed login attempt tracking</li>
+                        <li>Account lockout after max attempts</li>
+                        <li>Protected owner account</li>
+                        <li>JWT token expiration management</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Update v2.1.0 - August 2025 -->
+            <div class="update-card">
+                <div class="update-header">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="update-version">v2.1.0</span>
+                        <span class="update-badge feature">Feature</span>
+                    </div>
+                    <div class="update-date">
+                        <span class="timeline-marker"></span>
+                        August 10, 2025
+                    </div>
+                </div>
+                <h2 class="update-title">📊 Advanced Reporting Features</h2>
+                <p class="update-description">
+                    Enhanced reporting capabilities with multiple methods and bulk support.
+                </p>
+                <div class="update-changes">
+                    <ul class="changes-list">
+                        <li>11 different report methods</li>
+                        <li>Multi-report support (1-20 per target)</li>
+                        <li>Threaded reporting for faster execution</li>
+                        <li>Proxy rotation system (500 proxies)</li>
+                        <li>Three-method target ID lookup</li>
+                        <li>Comprehensive error handling</li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Update v2.0.0 - July 2025 -->
+            <div class="update-card">
+                <div class="update-header">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <span class="update-version">v2.0.0</span>
+                        <span class="update-badge feature">Major Release</span>
+                    </div>
+                    <div class="update-date">
+                        <span class="timeline-marker"></span>
+                        July 1, 2025
+                    </div>
+                </div>
+                <h2 class="update-title">🎉 SWATNFO v2 Launch</h2>
+                <p class="update-description">
+                    Complete rewrite from MongoDB to SQLite with modern FastAPI backend.
+                </p>
+                <div class="update-changes">
+                    <div class="changes-category">
+                        <div class="category-section">
+                            <div class="category-title">✨ Core Features</div>
+                            <ul class="changes-list">
+                                <li>SQLite database (no MongoDB needed)</li>
+                                <li>FastAPI backend with async support</li>
+                                <li>Modern JWT authentication</li>
+                                <li>Bcrypt password hashing</li>
+                                <li>User registration & login</li>
+                            </ul>
+                        </div>
+                        <div class="category-section">
+                            <div class="category-title">🎨 Interface</div>
+                            <ul class="changes-list">
+                                <li>Clean responsive design</li>
+                                <li>Dashboard with statistics</li>
+                                <li>Report history viewer</li>
+                                <li>User settings page</li>
+                                <li>Admin management panel</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="js/config.js"></script>
+    <script>
+        // Authentication
+        const token = localStorage.getItem('token');
+        
+        if (!token) {
+            window.location.href = '/login.html';
+        }
+
+        async function requireAuth() {
+            if (!token) {
+                window.location.href = '/login.html';
+                return false;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/v2/user/profile`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    localStorage.removeItem('token');
+                    localStorage.removeItem('user');
+                    window.location.href = '/login.html';
+                    return false;
+                }
+                
+                const data = await response.json();
+                if (data.user) {
+                    localStorage.setItem('user', JSON.stringify(data.user));
+                    document.getElementById('userName').textContent = data.user.username;
+                }
+                
+                return true;
+            } catch (error) {
+                console.error('Auth error:', error);
+                return false;
+            }
+        }
+
+        function initProfileDropdown() {
+            const userBtn = document.getElementById('userBtn');
+            const dropdownMenu = document.getElementById('dropdownMenu');
+            
+            if (userBtn && dropdownMenu) {
+                userBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    dropdownMenu.classList.toggle('show');
+                });
+                
+                document.addEventListener('click', () => {
+                    dropdownMenu.classList.remove('show');
+                });
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = '/login.html';
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await requireAuth();
+            initProfileDropdown();
+        });
+    </script>
+</body>
+</html>

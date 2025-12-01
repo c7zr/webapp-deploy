@@ -1,3 +1,4 @@
+console.log('config.js loaded, isLoggedIn:', typeof isLoggedIn);
 // API Configuration
 const API_BASE_URL = window.location.origin;
 

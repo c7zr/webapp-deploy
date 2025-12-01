@@ -124,49 +124,49 @@ def get_random_proxy(exclude_list=None):
     
     return selected
 
-# Instagram User Agents Pool - Updated November 2025 (Latest versions with iPhone focus)
+# Instagram User Agents Pool - Updated December 2025 (Latest versions with iPhone 16 & iOS 18 focus)
 INSTAGRAM_USER_AGENTS = [
-    # iOS Instagram App User Agents (iPhone 15, 14, 13 Pro models - Most reliable for bypasses)
-    "Instagram 320.0.0.37.98 (iPhone16,1; iOS 17_5_1; en_US; en; scale=3.00; 1179x2556; 540844007)",  # iPhone 15 Pro
-    "Instagram 321.0.0.36.110 (iPhone16,2; iOS 17_5_1; en_US; en; scale=3.00; 1290x2796; 541123456)",  # iPhone 15 Pro Max
-    "Instagram 319.0.0.31.101 (iPhone15,2; iOS 17_4_1; en_US; en; scale=3.00; 1179x2556; 539456789)",  # iPhone 14 Pro
-    "Instagram 318.0.0.32.109 (iPhone15,3; iOS 17_4_1; en_US; en; scale=3.00; 1290x2796; 538789012)",  # iPhone 14 Pro Max
-    "Instagram 320.1.0.30.111 (iPhone14,2; iOS 17_3_1; en_US; en; scale=3.00; 1170x2532; 540234567)",  # iPhone 13 Pro
-    "Instagram 319.2.0.35.98 (iPhone14,3; iOS 17_3_1; en_US; en; scale=3.00; 1284x2778; 539890123)",  # iPhone 13 Pro Max
-    "Instagram 318.1.0.29.102 (iPhone16,1; iOS 17_5; en_US; en; scale=3.00; 1179x2556; 538567890)",  # iPhone 15 Pro
-    "Instagram 320.0.0.38.95 (iPhone15,2; iOS 17_4; en_US; en; scale=3.00; 1179x2556; 540901234)",  # iPhone 14 Pro
-    "Instagram 317.0.0.33.113 (iPhone14,5; iOS 17_2_1; en_US; en; scale=3.00; 1170x2532; 537345678)",  # iPhone 13
-    "Instagram 319.0.0.34.104 (iPhone15,3; iOS 17_4; en_US; en; scale=3.00; 1290x2796; 539123456)",  # iPhone 14 Pro Max
-    "Instagram 316.0.0.31.105 (iPhone14,2; iOS 17_1_2; en_US; en; scale=3.00; 1170x2532; 536678901)",  # iPhone 13 Pro
-    "Instagram 320.0.0.36.102 (iPhone16,2; iOS 17_5; en_US; en; scale=3.00; 1290x2796; 540456789)",  # iPhone 15 Pro Max
-    "Instagram 318.0.0.30.106 (iPhone15,2; iOS 17_3; en_US; en; scale=3.00; 1179x2556; 538012345)",  # iPhone 14 Pro
-    "Instagram 319.1.0.32.98 (iPhone14,3; iOS 17_2; en_US; en; scale=3.00; 1284x2778; 539567890)",  # iPhone 13 Pro Max
-    "Instagram 317.0.0.35.99 (iPhone16,1; iOS 17_4_1; en_US; en; scale=3.00; 1179x2556; 537890123)",  # iPhone 15 Pro
-    # Android Instagram App User Agents (Android 14 devices - Secondary for diversity)
-    "Instagram 320.0.0.34.98 Android (34/14; 560dpi; 1440x3120; samsung; SM-S918B; dm1q; qcom; en_US; 540678901)",  # Galaxy S23 Ultra
-    "Instagram 319.0.0.36.101 Android (34/14; 420dpi; 1080x2400; Google; Pixel 8 Pro; husky; google; en_US; 539234567)",  # Pixel 8 Pro
-    "Instagram 318.0.0.33.105 Android (34/14; 480dpi; 1080x2400; OnePlus; CPH2581; OP594DL1; qcom; en_US; 538456789)",  # OnePlus 12
-    "Instagram 320.1.0.31.102 Android (34/14; 560dpi; 1440x3200; samsung; SM-S921B; b0s; exynos2400; en_US; 540890123)",  # Galaxy S24
-    "Instagram 317.0.0.32.108 Android (33/13; 420dpi; 1080x2340; Xiaomi; 23078PND5G; mondrian; qcom; en_US; 537567890)",  # Xiaomi 13
-    "Instagram 319.0.0.35.103 Android (34/14; 480dpi; 1080x2400; Google; Pixel 8; shiba; google; en_US; 539901234)",  # Pixel 8
-    "Instagram 316.0.0.30.109 Android (33/13; 560dpi; 1440x3088; samsung; SM-S908B; b0s; exynos2200; en_US; 536234567)",  # Galaxy S22 Ultra
-    "Instagram 318.1.0.34.104 Android (34/14; 440dpi; 1080x2400; OnePlus; CPH2449; OP535DL1; qcom; en_US; 538678901)",  # OnePlus 11
-    "Instagram 320.0.0.37.99 Android (34/14; 420dpi; 1080x2340; Xiaomi; 2311DRK48C; zijin; qcom; en_US; 540123456)",  # Xiaomi 14
-    "Instagram 319.2.0.33.106 Android (33/13; 560dpi; 1440x3200; samsung; SM-S911B; dm1q; exynos2300; en_US; 539789012)"  # Galaxy S23
+    # iOS Instagram App User Agents (iPhone 16, 15, 14 Pro models - Most reliable for bypasses)
+    "Instagram 358.0.0.30.111 (iPhone17,1; iOS 18_2; en_US; en; scale=3.00; 1179x2556; 558234567)",  # iPhone 16 Pro - Latest
+    "Instagram 357.0.0.28.120 (iPhone17,2; iOS 18_2; en_US; en; scale=3.00; 1320x2868; 557890123)",  # iPhone 16 Pro Max - Latest
+    "Instagram 356.0.0.31.114 (iPhone16,1; iOS 18_1_1; en_US; en; scale=3.00; 1179x2556; 556789012)",  # iPhone 15 Pro
+    "Instagram 355.0.0.29.118 (iPhone16,2; iOS 18_1_1; en_US; en; scale=3.00; 1290x2796; 555456789)",  # iPhone 15 Pro Max
+    "Instagram 354.0.0.32.109 (iPhone17,1; iOS 18_1; en_US; en; scale=3.00; 1179x2556; 554123456)",  # iPhone 16 Pro
+    "Instagram 353.0.0.30.115 (iPhone15,2; iOS 18_0_1; en_US; en; scale=3.00; 1179x2556; 553890123)",  # iPhone 14 Pro
+    "Instagram 352.0.0.28.121 (iPhone15,3; iOS 18_0_1; en_US; en; scale=3.00; 1290x2796; 552567890)",  # iPhone 14 Pro Max
+    "Instagram 351.0.0.31.116 (iPhone16,1; iOS 18_0; en_US; en; scale=3.00; 1179x2556; 551234567)",  # iPhone 15 Pro
+    "Instagram 350.0.0.29.113 (iPhone14,2; iOS 17_7; en_US; en; scale=3.00; 1170x2532; 550901234)",  # iPhone 13 Pro
+    "Instagram 349.0.0.32.110 (iPhone17,2; iOS 18_1_1; en_US; en; scale=3.00; 1320x2868; 549567890)",  # iPhone 16 Pro Max
+    "Instagram 348.0.0.30.117 (iPhone16,2; iOS 18_1; en_US; en; scale=3.00; 1290x2796; 548234567)",  # iPhone 15 Pro Max
+    "Instagram 347.0.0.28.119 (iPhone15,2; iOS 17_6_1; en_US; en; scale=3.00; 1179x2556; 547890123)",  # iPhone 14 Pro
+    "Instagram 346.0.0.31.112 (iPhone14,3; iOS 17_6; en_US; en; scale=3.00; 1284x2778; 546567890)",  # iPhone 13 Pro Max
+    "Instagram 345.0.0.29.114 (iPhone17,1; iOS 18_0_1; en_US; en; scale=3.00; 1179x2556; 545234567)",  # iPhone 16 Pro
+    "Instagram 344.0.0.32.108 (iPhone16,1; iOS 17_6_1; en_US; en; scale=3.00; 1179x2556; 544901234)",  # iPhone 15 Pro
+    # Android Instagram App User Agents (Android 15 & 14 devices - Latest builds)
+    "Instagram 358.0.0.31.110 Android (35/15; 560dpi; 1440x3120; samsung; SM-S926B; e3q; qcom; en_US; 558678901)",  # Galaxy S24 Ultra - Android 15
+    "Instagram 357.0.0.29.116 Android (35/15; 420dpi; 1080x2400; Google; Pixel 9 Pro; comet; google; en_US; 557234567)",  # Pixel 9 Pro - Android 15
+    "Instagram 356.0.0.32.113 Android (34/14; 560dpi; 1440x3200; samsung; SM-S921B; b0s; exynos2400; en_US; 556890123)",  # Galaxy S24
+    "Instagram 355.0.0.30.115 Android (35/15; 480dpi; 1080x2400; OnePlus; CPH2609; OP5D5DL1; qcom; en_US; 555456789)",  # OnePlus 12 - Android 15
+    "Instagram 354.0.0.28.118 Android (34/14; 420dpi; 1080x2340; Xiaomi; 24030PN60G; peridot; qcom; en_US; 554123456)",  # Xiaomi 14
+    "Instagram 353.0.0.31.111 Android (35/15; 560dpi; 1440x3120; samsung; SM-S918B; dm1q; qcom; en_US; 553789012)",  # Galaxy S23 Ultra - Android 15
+    "Instagram 352.0.0.29.117 Android (35/15; 480dpi; 1080x2400; Google; Pixel 8; shiba; google; en_US; 552456789)",  # Pixel 8 - Android 15
+    "Instagram 351.0.0.32.109 Android (34/14; 440dpi; 1080x2400; OnePlus; CPH2449; OP535DL1; qcom; en_US; 551123456)",  # OnePlus 11
+    "Instagram 350.0.0.30.114 Android (35/15; 420dpi; 1080x2400; Google; Pixel 9; caiman; google; en_US; 550890123)",  # Pixel 9 - Android 15
+    "Instagram 349.0.0.28.112 Android (34/14; 560dpi; 1440x3200; samsung; SM-S911B; dm1q; exynos2300; en_US; 549567890)"  # Galaxy S23
 ]
 
-# Web Browser User Agents for scraping - Updated November 2025
+# Web Browser User Agents for scraping - Updated December 2025
 WEB_USER_AGENTS = [
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:133.0) Gecko/20100101 Firefox/133.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.2 Safari/605.1.15",
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36",
+    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 Edg/131.0.0.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:132.0) Gecko/20100101 Firefox/132.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1 Safari/605.1.15",
-    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36 Edg/130.0.0.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 11.0; Win64; x64; rv:131.0) Gecko/20100101 Firefox/131.0",
-    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:132.0) Gecko/20100101 Firefox/132.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Safari/605.1.15"
+    "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:133.0) Gecko/20100101 Firefox/133.0",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 14_6_1) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15"
 ]
 
 def get_random_user_agent():
@@ -348,6 +348,8 @@ def init_db():
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('dailyReportLimit', '5', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('apiTimeout', '30', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('rateLimitPerMinute', '60', ?)", (datetime.now(timezone.utc).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('logIpAddresses', 'true', ?)", (datetime.now(timezone.utc).isoformat(),))
+    cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('ipWhitelist', '', ?)", (datetime.now(timezone.utc).isoformat(),))
     cursor.execute("INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES ('requireApproval', 'false', ?)", (datetime.now(timezone.utc).isoformat(),))
     
     conn.commit()
@@ -1348,7 +1350,7 @@ def get_target_id(target_username: str, sessionid: str, csrftoken: str) -> str:
                 'Host': 'www.instagram.com',
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/110.0',
                 'X-CSRFToken': csrftoken,
-                'X-IG-App-ID': '936619743392459',
+                'X-IG-App-ID': '1217981644879628',  # Updated Dec 2025
                 'Cookie': f'sessionid={sessionid}'
             },
             proxies=proxy,
@@ -1426,10 +1428,10 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
             "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8"
         }
         
-        # SWATNFO BYPASS #4: Premium gets Instagram app-specific headers
+        # SWATNFO BYPASS #4: Premium gets Instagram app-specific headers (Dec 2025 updated)
         if is_premium:
             headers.update({
-                "X-IG-App-ID": "936619743392459",
+                "X-IG-App-ID": "1217981644879628",  # Updated Dec 2025
                 "X-Instagram-AJAX": request_id,  # Dynamic AJAX ID
                 "X-ASBD-ID": "129477",
                 "X-IG-WWW-Claim": "0",
@@ -3384,6 +3386,11 @@ async def settings_page():
 async def about_page():
     """Serve about page"""
     return FileResponse(os.path.join(FRONTEND_DIR, "about.html"))
+
+@app.get("/updates.html", response_class=HTMLResponse)
+async def updates_page():
+    """Serve updates/changelog page"""
+    return FileResponse(os.path.join(FRONTEND_DIR, "updates.html"))
 
 @app.get("/tos.html", response_class=HTMLResponse)
 async def tos_page():
