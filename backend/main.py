@@ -1415,9 +1415,9 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
         
         # SWATNFO BYPASS #2: Minimal delay for speed (proxies handle rate limiting)
         if is_premium:
-            time.sleep(random.uniform(0.05, 0.15))  # Premium: 50-150ms (faster)
+            time.sleep(random.uniform(0.01, 0.05))  # Premium: 10-50ms (ultra fast)
         else:
-            time.sleep(random.uniform(0.15, 0.3))  # Free: 150-300ms
+            time.sleep(random.uniform(0.05, 0.1))  # Free: 50-100ms (fast)
         
         # SWATNFO BYPASS #3: Build comprehensive header set with fingerprint rotation
         headers = {
@@ -1492,7 +1492,7 @@ def instagram_send_report(target_id: str, sessionid: str, csrftoken: str, method
                     if is_premium and attempt < max_retries - 1:
                         print(f"[INFO] 403 blocked - rotating proxy and retrying ({attempt + 1}/{max_retries})")
                         proxy = get_random_proxy()
-                        time.sleep(random.uniform(0.3, 0.7))
+                        time.sleep(random.uniform(0.1, 0.3))
                         continue
                     print(f"[ERROR] Request blocked (403) - Rate limited or invalid credentials")
                     return False
@@ -1660,9 +1660,9 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
             else:
                 failed_reports += 1
             
-            # 1.5 second delay between reports
+            # 0.3 second delay between reports for speed
             if i < report_count - 1:
-                time.sleep(1.5)
+                time.sleep(0.3)
     else:
         # Use threading for 6-20 reports for faster execution
         print(f"   🚀 Using 3 parallel threads for faster reporting")
@@ -1696,7 +1696,7 @@ async def send_report(report: ReportRequest, token_data: dict = Depends(verify_t
                 else:
                     failed_reports += 1
                 
-                time.sleep(0.5)  # Small delay between threads
+                time.sleep(0.1)  # Small delay between threads
     
     conn.commit()
     conn.close()
@@ -1767,7 +1767,7 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
     
     print(f"📦 BULK REPORT: {len(targets)} targets x {count} reports each, method: {method}")
     print(f"   User: {token_data['username']} ({user_role})")
-    print(f"   Using 4 concurrent threads for faster processing")
+    print(f"   Using 6 concurrent threads for faster processing")
     
     results = {
         "total": len(targets),
@@ -1852,7 +1852,7 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
                 
                 # Small delay between reports for same target
                 if report_num < count - 1:
-                    time.sleep(0.8)
+                    time.sleep(0.2)
             
             target_conn.commit()
             target_conn.close()
@@ -1884,7 +1884,7 @@ async def send_bulk_report(bulk_data: dict, token_data: dict = Depends(verify_to
             }
     
     # Use ThreadPoolExecutor for concurrent target processing
-    max_workers = 4  # Process 4 targets concurrently
+    max_workers = 6  # Process 6 targets concurrently for faster bulk reporting
     
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         # Create target list with indices
