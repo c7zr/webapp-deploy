@@ -150,6 +150,8 @@
             font-weight: 700;
             color: #9333ea;
             margin-bottom: 0.5rem;
+            word-break: break-word;
+            line-height: 1.1;
         }
 
         .stat-label {
@@ -157,6 +159,8 @@
             font-size: 0.95rem;
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            word-break: break-word;
+            line-height: 1.3;
         }
 
         /* Updates Timeline */
@@ -271,6 +275,8 @@
             font-size: 1.1rem;
             box-shadow: 0 4px 15px rgba(147, 51, 234, 0.4);
             animation: shimmer 3s ease-in-out infinite;
+            word-break: keep-all;
+            white-space: nowrap;
         }
 
         @keyframes shimmer {
@@ -411,11 +417,13 @@
             .stat-number {
                 font-size: 1.5rem;
                 line-height: 1.2;
+                word-break: keep-all;
             }
 
             .stat-label {
                 font-size: 0.75rem;
                 line-height: 1.3;
+                word-break: break-word;
             }
 
             .updates-timeline {
@@ -581,6 +589,7 @@
                         <ul class="change-list">
                             <li>Beautiful animated updates page with timeline</li>
                             <li>Update notification banner system</li>
+                            <li>Optimized reporting speed (3-5x faster)</li>
                             <li>iPhone 16 Pro/Max user agent support (iOS 18.2)</li>
                             <li>Android 15 device support (Pixel 9, Galaxy S24 Ultra)</li>
                             <li>30+ new device user agents</li>
@@ -595,6 +604,8 @@
                         <ul class="change-list">
                             <li>Updated Instagram X-IG-App-ID to latest Dec 2025 version</li>
                             <li>Enhanced proxy rotation for better bypass rates</li>
+                            <li>Faster single reporting (0.3s delay vs 1.5s)</li>
+                            <li>Faster bulk reporting (6 concurrent threads vs 4)</li>
                             <li>Better mobile responsive design across all pages</li>
                             <li>Improved credential persistence with localStorage backup</li>
                             <li>Better error messages and logging</li>
