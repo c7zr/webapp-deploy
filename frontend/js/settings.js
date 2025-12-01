@@ -3,7 +3,27 @@ document.addEventListener('DOMContentLoaded', async () => {
     await requireAuth();
     initProfileDropdown();
     loadAccountData();
-    loadCredentials();
+    
+    // Load credentials with retry logic
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    const tryLoadCredentials = async () => {
+        try {
+            await loadCredentials();
+            console.log('✅ Credentials loaded successfully');
+        } catch (error) {
+            retryCount++;
+            if (retryCount < maxRetries) {
+                console.log(`⚠️ Retrying credential load (${retryCount}/${maxRetries})...`);
+                setTimeout(tryLoadCredentials, 1000);
+            } else {
+                console.error('❌ Failed to load credentials after', maxRetries, 'attempts');
+            }
+        }
+    };
+    
+    await tryLoadCredentials();
     initializeForms();
 });
 
@@ -25,6 +45,7 @@ function loadAccountData() {
 
 async function loadCredentials() {
     const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+    console.log('🔄 Loading credentials...');
     
     try {
         const response = await fetch(`${window.location.origin}/v2/credentials`, {
@@ -35,21 +56,80 @@ async function loadCredentials() {
             }
         });
         
+        console.log('Credentials API response status:', response.status);
+        
         if (response.ok) {
             const data = await response.json();
-            if (data.credentials) {
-                document.getElementById('sessionId').value = data.credentials.sessionId || '';
-                document.getElementById('csrfToken').value = data.credentials.csrfToken || '';
+            console.log('Credentials data:', data);
+            
+            if (data.credentials && data.credentials.sessionId && data.credentials.csrfToken) {
+                // Populate input fields
+                const sessionIdInput = document.getElementById('sessionId');
+                const csrfTokenInput = document.getElementById('csrfToken');
+                
+                if (sessionIdInput) {
+                    sessionIdInput.value = data.credentials.sessionId;
+                    console.log('✅ SessionId loaded:', data.credentials.sessionId.substring(0, 20) + '...');
+                }
+                if (csrfTokenInput) {
+                    csrfTokenInput.value = data.credentials.csrfToken;
+                    console.log('✅ CsrfToken loaded:', data.credentials.csrfToken.substring(0, 20) + '...');
+                }
+                
+                // Also store in localStorage as backup
+                localStorage.setItem('instagram_sessionId', data.credentials.sessionId);
+                localStorage.setItem('instagram_csrfToken', data.credentials.csrfToken);
                 
                 if (data.credentials.isValid) {
                     updateCredentialsStatus(true);
                 } else {
                     updateCredentialsStatus(false);
                 }
+            } else {
+                console.log('⚠️ No credentials found in database, checking localStorage...');
+                // Try loading from localStorage as fallback
+                const savedSessionId = localStorage.getItem('instagram_sessionId');
+                const savedCsrfToken = localStorage.getItem('instagram_csrfToken');
+                
+                if (savedSessionId && savedCsrfToken) {
+                    const sessionIdInput = document.getElementById('sessionId');
+                    const csrfTokenInput = document.getElementById('csrfToken');
+                    
+                    if (sessionIdInput) sessionIdInput.value = savedSessionId;
+                    if (csrfTokenInput) csrfTokenInput.value = savedCsrfToken;
+                    console.log('✅ Loaded credentials from localStorage');
+                }
+            }
+        } else {
+            console.error('❌ Failed to load credentials from API');
+            // Try loading from localStorage as fallback
+            const savedSessionId = localStorage.getItem('instagram_sessionId');
+            const savedCsrfToken = localStorage.getItem('instagram_csrfToken');
+            
+            if (savedSessionId && savedCsrfToken) {
+                const sessionIdInput = document.getElementById('sessionId');
+                const csrfTokenInput = document.getElementById('csrfToken');
+                
+                if (sessionIdInput) sessionIdInput.value = savedSessionId;
+                if (csrfTokenInput) csrfTokenInput.value = savedCsrfToken;
+                console.log('✅ Loaded credentials from localStorage (fallback)');
             }
         }
     } catch (error) {
         console.error('Error loading credentials:', error);
+        
+        // Try loading from localStorage as fallback
+        const savedSessionId = localStorage.getItem('instagram_sessionId');
+        const savedCsrfToken = localStorage.getItem('instagram_csrfToken');
+        
+        if (savedSessionId && savedCsrfToken) {
+            const sessionIdInput = document.getElementById('sessionId');
+            const csrfTokenInput = document.getElementById('csrfToken');
+            
+            if (sessionIdInput) sessionIdInput.value = savedSessionId;
+            if (csrfTokenInput) csrfTokenInput.value = savedCsrfToken;
+            console.log('✅ Loaded credentials from localStorage (error fallback)');
+        }
     }
 }
 
@@ -130,6 +210,10 @@ async function saveCredentials() {
         return;
     }
     
+    console.log('💾 Saving credentials...');
+    console.log('SessionId length:', sessionId.length);
+    console.log('CsrfToken length:', csrfToken.length);
+    
     try {
         const response = await fetch(`${window.location.origin}/v2/credentials`, {
             method: 'POST',
@@ -143,15 +227,29 @@ async function saveCredentials() {
             })
         });
         
-        if (response.ok) {
-            showMessage('Credentials saved successfully', 'success');
+        const responseData = await response.json();
+        console.log('Save response:', responseData);
+        
+        if (response.ok && responseData.success) {
+            // Save to localStorage for persistence
+            localStorage.setItem('instagram_sessionId', sessionId);
+            localStorage.setItem('instagram_csrfToken', csrfToken);
+            
+            console.log('✅ Credentials saved successfully');
+            showMessage('✅ Credentials saved successfully! They will persist across sessions.', 'success');
             updateCredentialsStatus(true);
+            
+            // Reload credentials to verify they were saved
+            setTimeout(() => {
+                loadCredentials();
+            }, 500);
         } else {
-            showMessage('Failed to save credentials', 'error');
+            console.error('❌ Failed to save:', responseData);
+            showMessage(`Failed to save credentials: ${responseData.message || 'Unknown error'}`, 'error');
         }
     } catch (error) {
         console.error('Error saving credentials:', error);
-        showMessage('Error saving credentials', 'error');
+        showMessage('Error saving credentials. Check console for details.', 'error');
     }
 }
 

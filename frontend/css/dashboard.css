@@ -630,6 +630,7 @@
     .stats-grid-new {
         grid-template-columns: 1fr;
         grid-template-rows: repeat(4, auto);
+        gap: 1rem;
     }
     
     .stat-large,
@@ -641,17 +642,88 @@
     
     .dashboard-container-new {
         padding: 1rem;
+        padding-top: 80px;
+    }
+    
+    /* Fix hero section for mobile */
+    .hero-section {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 1rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .greeting-wrapper {
+        flex-direction: column;
+        gap: 0.25rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .greeting-label {
+        font-size: 0.75rem;
     }
     
     .hero-title {
-        font-size: 2rem;
+        font-size: 1.75rem;
+        line-height: 1.2;
+        word-break: break-word;
     }
     
+    .hero-subtitle {
+        font-size: 0.95rem;
+        line-height: 1.4;
+    }
+    
+    /* Fix stat cards for mobile */
     .stat-number {
-        font-size: 2.5rem;
+        font-size: 2rem;
+        line-height: 1;
     }
     
     .stat-large .stat-number {
-        font-size: 3rem;
+        font-size: 2.5rem;
+        line-height: 1;
+    }
+    
+    .stat-label {
+        font-size: 0.85rem;
+        margin-top: 0.5rem;
+    }
+    
+    .stat-change {
+        font-size: 0.75rem;
+    }
+    
+    /* Fix floating premium badge */
+    .floating-premium {
+        padding: 0.5rem 1rem;
+        font-size: 0.85rem;
+        margin-top: 1rem;
+    }
+    
+    .premium-icon {
+        font-size: 1.25rem;
+    }
+    
+    /* Fix stat icons */
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1.25rem;
+    }
+    
+    /* Fix quick actions */
+    .quick-actions-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .action-btn {
+        padding: 1rem;
+        font-size: 0.9rem;
+    }
+    
+    .action-icon {
+        font-size: 1.5rem;
     }
 }
